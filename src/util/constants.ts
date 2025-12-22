@@ -17,8 +17,24 @@ export const VALIDATION_PATTERNS = {
 export const APP_ROUTES = {
   NOTFOUND: "*",
   HOME: "/",
+  DASHBOARD: "/dashboard",
   LOGIN: "/login",
   REGISTER: "/register",
+  // Rotas dos Cards
+  SELECTIVE: "/seletivo",
+  EXAM_SCHEDULED: "/lista-presenca",
+  MERIT_VALIDATION: "/aprovacao-merito",
+  EXAMS: "/resultado-provas",
+  MERIT_RESULTS: "/resultados-merito",
+  ENEM_RESULTS: "/resultados-enem",
+  STUDENTS: "/dados-alunos",
+  STUDENT_CREATE: "/cadastro-alunos",
+  RETENTION: "/retencao",
+  CITIES: "/cidades",
+  CONTRACTS: "/contratos",
+  EXAM_DATES: "/datas-prova",
+  DOCUMENTS: "/documentos",
+  USERS_LIST: "/usuarios",
 };
 
 export const ENDPOINTS = {

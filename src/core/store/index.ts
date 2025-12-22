@@ -16,14 +16,29 @@ import { authService } from "../http/services/authService";
 const rootReducer = combineReducers({ auth: authReducer });
 export type RootState = ReturnType<typeof rootReducer>;
 
+// Gera uma chave secreta padrão para desenvolvimento se não estiver definida
+const getSecretKey = () => {
+  const envSecret = import.meta.env.VITE_PERSIST_SECRET;
+  if (envSecret) {
+    return envSecret;
+  }
+  // Chave padrão para desenvolvimento (NÃO usar em produção!)
+  console.warn(
+    "[store] VITE_PERSIST_SECRET não definida. Usando chave padrão para desenvolvimento."
+  );
+  return "dev-secret-key-change-in-production-2024";
+};
+
 const persistConfig: PersistConfig<RootState> = {
   key: "root",
   storage,
   whitelist: ["auth"],
   transforms: [
     encryptTransform({
-      secretKey: import.meta.env.VITE_PERSIST_SECRET || "",
-      onError: (_err) => {},
+      secretKey: getSecretKey(),
+      onError: (err) => {
+        console.error("[store] Erro ao criptografar dados persistidos:", err);
+      },
     }),
   ],
 };

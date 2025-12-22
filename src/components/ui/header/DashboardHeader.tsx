@@ -13,11 +13,7 @@ import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import logoDesenvolve from "../../../assets/images/logo/LOGO DESENVOLVE.png";
 
-interface HeaderProps {
-  onMenuClick?: () => void;
-}
-
-const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
+const DashboardHeader: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -36,15 +32,12 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
         bgcolor: "#FFFFFF",
         color: "#4A4A4A",
         boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-        width: "100%",
-        zIndex: 1100, // Menor que o sidebar para ficar abaixo
       }}
     >
       <Toolbar sx={{ justifyContent: "space-between", py: 1.5 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
           <IconButton
             edge="start"
-            onClick={onMenuClick}
             sx={{
               color: "#4A4A4A",
               "&:hover": { bgcolor: "rgba(0,0,0,0.04)" },
@@ -119,5 +112,5 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   );
 };
 
-export default Header;
+export default DashboardHeader;
 

@@ -5,7 +5,7 @@ export const getTheme = (mode: PaletteMode) =>
     palette: {
       mode,
       primary: {
-        main: "#0052CC",
+        main: "#A650F0",
         contrastText: "#FFFFFF",
       },
       secondary: {
@@ -47,15 +47,15 @@ export const getTheme = (mode: PaletteMode) =>
       },
     },
     typography: {
-      fontFamily: "Ubuntu, sans-serif",
+      fontFamily: "'Montserrat', sans-serif",
       h1: { fontWeight: 700 },
       h2: { fontWeight: 600 },
       h3: { fontWeight: 500 },
       h4: { fontWeight: 500 },
       h5: { fontWeight: 400 },
       h6: { fontWeight: 400 },
-      body1: { fontWeight: 300 },
-      body2: { fontWeight: 300 },
+      body1: { fontWeight: 400 },
+      body2: { fontWeight: 400 },
     },
   });
 

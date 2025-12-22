@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Drawer,
   List,
@@ -10,7 +10,10 @@ import {
   Box,
   Typography,
   Button,
+  Divider,
+  IconButton,
 } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 import { Link } from "react-router";
 import { useAuth } from "../../../hooks/useAuth";
 
@@ -23,9 +26,15 @@ interface SidebarMenu {
   to: string;
 }
 
+interface SidebarMenuGroup {
+  title?: string;
+  menus: SidebarMenu[];
+}
+
 interface SidebarProps {
   collapsed: boolean;
-  menus: SidebarMenu[];
+  menuGroups: SidebarMenuGroup[];
+  onClose?: () => void;
 }
 
 const UserBox: React.FC<{ collapsed: boolean }> = ({ collapsed }) => {
@@ -83,65 +92,156 @@ const UserBox: React.FC<{ collapsed: boolean }> = ({ collapsed }) => {
   );
 };
 
-const LayoutSidebar: React.FC<SidebarProps> = ({ collapsed, menus }) => (
-  <Drawer
-    variant="permanent"
-    sx={{
-      width: collapsed ? collapsedWidth : drawerWidth,
-      flexShrink: 0,
-      "& .MuiDrawer-paper": {
-        width: collapsed ? collapsedWidth : drawerWidth,
-        boxSizing: "border-box",
-        overflowX: "hidden",
-        transition: "width 0.3s",
-        bgcolor: "background.paper",
-        borderRight: "1px solid",
-        borderColor: "divider",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: collapsed ? "center" : "flex-start",
-      },
-    }}
-  >
-    <Toolbar sx={{ minHeight: 64 }} />
+const LayoutSidebar: React.FC<SidebarProps> = ({
+  collapsed,
+  menuGroups,
+  onClose,
+}) => {
+  const [isHovered, setIsHovered] = useState(false);
+  
+  // Se está colapsado, pode expandir por hover
+  // Se não está colapsado (aberto por clique), não fecha no mouseLeave
+  const isExpanded = !collapsed || (collapsed && isHovered);
 
-    <List
+  const handleMouseEnter = () => {
+    if (collapsed) {
+      setIsHovered(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    // Só fecha por hover se estiver colapsado (aberto apenas por hover)
+    if (collapsed) {
+      setIsHovered(false);
+    }
+  };
+
+  return (
+    <Drawer
+      variant="permanent"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       sx={{
-        width: "100%",
-        p: 0,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: collapsed ? "center" : "flex-start",
+        width: collapsedWidth,
+        flexShrink: 0,
+        position: "relative",
+        zIndex: 1300, // Maior que o header para passar por cima
+        "& .MuiDrawer-paper": {
+          width: isExpanded ? drawerWidth : collapsedWidth,
+          boxSizing: "border-box",
+          overflowX: "hidden",
+          transition: "width 0.15s ease",
+          bgcolor: "background.paper",
+          borderRight: "1px solid",
+          borderColor: "divider",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: isExpanded ? "flex-start" : "center",
+          position: "fixed",
+          height: "100vh",
+          top: 0,
+          left: 0,
+        },
       }}
     >
-      {menus.map(({ icon, label, to }) => (
-        <ListItemButton
-          key={to}
-          component={Link}
-          to={to}
-          sx={{
-            justifyContent: collapsed ? "center" : "flex-start",
-            px: collapsed ? 1 : 2,
-            width: "100%",
-          }}
-        >
-          <ListItemIcon
+      <Toolbar
+        sx={{
+          minHeight: 64,
+          display: "flex",
+          justifyContent: isExpanded ? "flex-end" : "center",
+          alignItems: "center",
+          px: isExpanded ? 2 : 1,
+          width: "100%",
+        }}
+      >
+        {!collapsed && onClose && (
+          <IconButton
+            onClick={onClose}
+            size="small"
             sx={{
-              minWidth: 0,
-              justifyContent: "center",
-              marginRight: collapsed ? 0 : 2,
+              color: "text.secondary",
+              "&:hover": { bgcolor: "rgba(0,0,0,0.04)" },
+              ml: "auto",
             }}
           >
-            {icon}
-          </ListItemIcon>
-          {!collapsed && (
-            <ListItemText primary={label} sx={{ flexGrow: 1, minWidth: 0 }} />
+            <CloseIcon />
+          </IconButton>
+        )}
+      </Toolbar>
+
+    <Box
+      sx={{
+        width: "100%",
+        flex: 1,
+        overflowY: "auto",
+        overflowX: "hidden",
+      }}
+    >
+      {menuGroups.map((group, groupIndex) => (
+        <React.Fragment key={groupIndex}>
+          {group.title && isExpanded && (
+            <Box sx={{ px: 2, py: 1 }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "text.secondary",
+                  fontWeight: 600,
+                  fontSize: "0.75rem",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                }}
+              >
+                {group.title}
+              </Typography>
+            </Box>
           )}
-        </ListItemButton>
+          <List
+            sx={{
+              width: "100%",
+              p: 0,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: isExpanded ? "flex-start" : "center",
+            }}
+          >
+            {group.menus.map(({ icon, label, to }) => (
+              <ListItemButton
+                key={to}
+                component={Link}
+                to={to}
+                sx={{
+                  justifyContent: isExpanded ? "flex-start" : "center",
+                  px: isExpanded ? 2 : 1,
+                  width: "100%",
+                }}
+              >
+                <ListItemIcon
+                  sx={{
+                    minWidth: 0,
+                    justifyContent: "center",
+                    marginRight: isExpanded ? 2 : 0,
+                  }}
+                >
+                  {icon}
+                </ListItemIcon>
+                {isExpanded && (
+                  <ListItemText
+                    primary={label}
+                    sx={{ flexGrow: 1, minWidth: 0 }}
+                  />
+                )}
+              </ListItemButton>
+            ))}
+          </List>
+          {groupIndex < menuGroups.length - 1 && isExpanded && (
+            <Divider sx={{ my: 1 }} />
+          )}
+        </React.Fragment>
       ))}
-    </List>
-    <UserBox collapsed={collapsed} />
+    </Box>
+    <UserBox collapsed={!isExpanded} />
   </Drawer>
-);
+  );
+};
 
 export default LayoutSidebar;
