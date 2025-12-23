@@ -20,7 +20,7 @@ import PersonIcon from "@mui/icons-material/Person";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 
 export default function AppLayout() {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const themeMode = "light";
   const theme = useMemo(() => getTheme(themeMode), [themeMode]);
 
