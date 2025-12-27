@@ -11,13 +11,16 @@ import {
 import MenuIcon from "@mui/icons-material/Menu";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import { useNavigate } from "react-router";
 import logoDesenvolve from "../../../assets/images/logo/LOGO DESENVOLVE.png";
+import { APP_ROUTES } from "../../../util/constants";
 
 interface HeaderProps {
   onMenuClick?: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
+  const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -26,6 +29,15 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
 
   const handleMenuClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleLogoClick = () => {
+    navigate(APP_ROUTES.DASHBOARD);
+  };
+
+  const handleProfileClick = () => {
+    navigate(APP_ROUTES.MY_PROFILE);
+    handleMenuClose();
   };
 
   return (
@@ -65,9 +77,15 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
               component="img"
               src={logoDesenvolve}
               alt="Desenvolve"
+              onClick={handleLogoClick}
               sx={{
                 width: { xs: 140, sm: 160, md: 180 },
                 height: "auto",
+                cursor: "pointer",
+                transition: "opacity 0.2s",
+                "&:hover": {
+                  opacity: 0.8,
+                },
               }}
             />
           </Box>
@@ -109,8 +127,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
               horizontal: "right",
             }}
           >
-            <MenuItem onClick={handleMenuClose}>Perfil</MenuItem>
-            <MenuItem onClick={handleMenuClose}>Configurações</MenuItem>
+            <MenuItem onClick={handleProfileClick}>Meu Perfil</MenuItem>
             <MenuItem onClick={handleMenuClose}>Sair</MenuItem>
           </Menu>
         </Box>

@@ -4,7 +4,7 @@ const Retencao = () => {
   return (
     <Box sx={{ p: 4 }}>
       <Typography variant="h4">Retenção</Typography>
-      <Typography variant="body1">Página de Retenção</Typography>
+      <Typography variant="body1">Página de Retenção em BREVE!</Typography>
     </Box>
   );
 };

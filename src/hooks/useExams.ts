@@ -1,8 +1,5 @@
 import { useState, useCallback } from "react";
-import { httpClient } from "../core/http/httpClient";
 import type { Exam } from "../interfaces/exam";
-
-const API_URL = import.meta.env.VITE_API_URL as string;
 
 export const useExams = () => {
   const [exams, setExams] = useState<Exam[]>([]);

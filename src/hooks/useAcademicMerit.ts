@@ -1,8 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
-import { httpClient } from "../core/http/httpClient";
 import type { AcademicMerit } from "../interfaces/academicMerit";
-
-const API_URL = import.meta.env.VITE_API_URL as string;
 
 export const useAcademicMerit = () => {
   const [merits, setMerits] = useState<AcademicMerit[]>([]);

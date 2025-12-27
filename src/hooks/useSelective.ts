@@ -1,8 +1,5 @@
 import { useState, useCallback } from "react";
-import { httpClient } from "../core/http/httpClient";
 import type { UserProfile } from "../interfaces/userProfile";
-
-const API_URL = import.meta.env.VITE_API_URL as string;
 
 interface SnackbarState {
   open: boolean;

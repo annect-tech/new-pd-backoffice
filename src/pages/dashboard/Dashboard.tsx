@@ -89,12 +89,6 @@ const Dashboard: React.FC = () => {
       isAdmin: true,
     },
     {
-      title: "Datas de Prova",
-      icon: <CalendarMonthIcon sx={{ fontSize: 48 }} />,
-      link: APP_ROUTES.EXAM_DATES,
-      isAdmin: true,
-    },
-    {
       title: "Visualização de Documentos",
       icon: <InsertDriveFileIcon sx={{ fontSize: 48 }} />,
       link: APP_ROUTES.DOCUMENTS,

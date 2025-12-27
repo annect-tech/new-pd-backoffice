@@ -35,7 +35,7 @@ export function useAuth() {
     setLoading(true)
     setError(null)
     try {
-      const response = await authService.register({ first_name, last_name, email, password, password2 })
+      await authService.register({ first_name, last_name, email, password, password2 })
     } catch (err: any) {
       setError(err.message || 'Erro ao cadastrar')
       throw err

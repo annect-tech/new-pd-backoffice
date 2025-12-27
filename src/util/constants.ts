@@ -35,6 +35,11 @@ export const APP_ROUTES = {
   EXAM_DATES: "/datas-prova",
   DOCUMENTS: "/documentos",
   USERS_LIST: "/usuarios",
+  PROFILE: "/usuario/:id",
+  PROFILE_EDIT: "/usuario/:id/editar",
+  USER_DETAIL: "/usuario/",
+  USER_EDIT: "/usuario/",
+  MY_PROFILE: "/meu-perfil",
 };
 
 export const ENDPOINTS = {

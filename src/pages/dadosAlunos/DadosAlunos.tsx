@@ -10,6 +10,7 @@ import {
   Menu,
   MenuItem,
   Paper,
+  Snackbar,
   Table,
   TableBody,
   TableCell,
@@ -28,9 +29,14 @@ import {
   Download as DownloadIcon,
   Refresh as RefreshIcon,
   Add as AddIcon,
+  Edit as EditIcon,
+  Email as EmailIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router";
 import { APP_ROUTES } from "../../util/constants";
+import AgentModal from "../../components/modals/AgentModal";
+import PsychologistModal from "../../components/modals/PsychologistModal";
+import EditStudentModal from "../../components/modals/EditStudentModal";
 
 interface StudentRow {
   id: string;
@@ -85,32 +91,6 @@ const MOCK_NEW_STUDENTS: StudentRow[] = [
   },
 ];
 
-const MOCK_OLD_STUDENTS: StudentRow[] = [
-  {
-    id: "A-1001",
-    completeName: "Carla Menezes",
-    registration: "2019B010",
-    corp_email: "carla.menezes@aluno.com",
-    monitor: "N/A",
-    status: "Inativo",
-    cpf: "321.654.987-00",
-    birth_date: "1995-05-12",
-    username: "agente.paulo",
-    origin: "antigo",
-  },
-  {
-    id: "A-1002",
-    completeName: "Bruno Lima",
-    registration: "2018B011",
-    corp_email: "bruno.lima@aluno.com",
-    monitor: "N/A",
-    status: "Retido",
-    cpf: "741.852.963-00",
-    birth_date: "1994-11-03",
-    username: "agente.marina",
-    origin: "antigo",
-  },
-];
 
 const DadosAlunos: React.FC = () => {
   const navigate = useNavigate();
@@ -118,9 +98,9 @@ const DadosAlunos: React.FC = () => {
   const [items, setItems] = useState<StudentRow[]>([...MOCK_NEW_STUDENTS]);
   const [oldItems, setOldItems] = useState<StudentRow[]>([]);
   const [oldLoading, setOldLoading] = useState(false);
-  const [oldError, setOldError] = useState<string | null>(null);
+  const [_oldError, setOldError] = useState<string | null>(null);
   const [hasFetchedOld, setHasFetchedOld] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   const [error] = useState<string | null>(null);
   const [viewerUrl] = useState<string | null>(null); // reservado se necessário
   const [statusAnchor, setStatusAnchor] = useState<null | HTMLElement>(null);
@@ -129,9 +109,28 @@ const DadosAlunos: React.FC = () => {
   >("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
   const [downloadAnchor, setDownloadAnchor] = useState<null | HTMLElement>(null);
   const [showOld, setShowOld] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<StudentRow | null>(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: "" });
+  const [openAgentModal, setOpenAgentModal] = useState(false);
+  const [openPsychoModal, setOpenPsychoModal] = useState(false);
+  const [openEditModal, setOpenEditModal] = useState(false);
+  const [seeMore, setSeeMore] = useState(false);
+  
+  // Dados mockados para agentes e psicólogos
+  const MOCK_AGENTS = [
+    { name: "Carlos Mendes", value: "carlos.mendes@projetodesenvolve.com.br", email: "carlos.mendes@projetodesenvolve.com.br" },
+    { name: "Ana Prado", value: "ana.prado@projetodesenvolve.com.br", email: "ana.prado@projetodesenvolve.com.br" },
+  ];
+  
+  const MOCK_PSYCHOLOGISTS = [
+    { name: "Marcos Amatoshi", value: "marcos.amatoshi@projetodesenvolve.com.br" },
+    { name: "Nislayne julia", value: "nislayne@projetodesenvolve.com.br" },
+    { name: "Isabela Jales", value: "isabelajales@projetodesenvolve.com.br" },
+  ];
+  
 
   const combinedRows = useMemo(() => {
     return showOld ? oldItems : items;
@@ -165,6 +164,88 @@ const DadosAlunos: React.FC = () => {
     setOldError(null);
     setShowOld(false);
     setPage(0);
+    setSelectedStudent(null);
+  };
+  
+  const fetchOldFromApi = async () => {
+    if (hasFetchedOld) {
+      setShowOld(true);
+      return;
+    }
+    
+    setOldLoading(true);
+    setOldError(null);
+    try {
+      const res = await fetch("https://form.pdinfinita.com.br/enrolled", {
+        headers: {
+          "api-key": "Rm9ybUFwaUZlaXRhUGVsb0plYW5QaWVycmVQYXJhYURlc2Vudm9sdmU=",
+        },
+      });
+      if (!res.ok) throw new Error(`Erro ao buscar dados antigos (${res.status})`);
+      const data = await res.json();
+      const arr = Array.isArray(data) ? data : data?.data ? data.data : [];
+      const mapped: StudentRow[] = arr.map((s: any, idx: number) => ({
+        id: s.id?.toString() || s.registrationCode?.toString() || s.inscription?.toString() || `old-${idx}`,
+        completeName: s.nomeCompleto || s.name || "N/A",
+        registration: s.registrationCode || s.matricula || s.inscription || "",
+        corp_email: s.emailPd || s.email || "",
+        monitor: s.monitor || "N/A",
+        status: s.status || "Inativo",
+        cpf: s.cpf || "",
+        birth_date: s.dataNasc || "",
+        username: s.agenteDoSucesso || s.username || "",
+        origin: "antigo",
+      }));
+      setOldItems(mapped);
+      setHasFetchedOld(true);
+      setShowOld(true);
+      setPage(0);
+    } catch (err: any) {
+      setOldError(err.message || "Erro ao buscar dados antigos");
+    } finally {
+      setOldLoading(false);
+    }
+  };
+  
+  const toggleOldData = () => {
+    if (showOld) {
+      setShowOld(false);
+      setPage(0);
+      setSelectedStudent(null);
+    } else {
+      fetchOldFromApi();
+    }
+  };
+  
+  const handleSelectStudent = (student: StudentRow) => {
+    setSelectedStudent(student);
+    setSeeMore(false);
+  };
+  
+  const handleSaveStudent = (updatedStudent: StudentRow) => {
+    if (updatedStudent.origin === "novo") {
+      setItems((prev) =>
+        prev.map((item) => (item.id === updatedStudent.id ? updatedStudent : item))
+      );
+    } else {
+      setOldItems((prev) =>
+        prev.map((item) => (item.id === updatedStudent.id ? updatedStudent : item))
+      );
+    }
+    setSelectedStudent(updatedStudent);
+    handleSnackbarMessage("Aluno atualizado com sucesso!");
+  };
+  
+  const handleEditError = (message: string) => {
+    handleSnackbarMessage(message);
+  };
+  
+  const handleSnackbarMessage = (message: string) => {
+    setSnackbar({ open: true, message });
+  };
+  
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
   };
 
   const handleChangePage = (_event: unknown, newPage: number) => {
@@ -227,7 +308,7 @@ const DadosAlunos: React.FC = () => {
   };
 
   return (
-    <Box p={2}>
+    <Box p={2} sx={{ maxWidth: "1200px", mx: "auto" }}> 
       <Breadcrumbs
         aria-label="breadcrumb"
         separator={<NavigateNextIcon fontSize="small" />}
@@ -272,7 +353,7 @@ const DadosAlunos: React.FC = () => {
         </Paper>
       </Box>
 
-      <Paper elevation={2} sx={{ borderRadius: 2, overflow: "hidden" }}>
+      <Paper elevation={2} sx={{ borderRadius: 2, overflow: "hidden", maxWidth: "1100px", mx: "auto" }}>
         <Toolbar sx={{ display: "flex", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}>
           <Box display="flex" alignItems="center" sx={{ flex: 1, minWidth: 240, maxWidth: 420 }}>
             <SearchIcon sx={{ mr: 1, color: "#A650F0" }} />
@@ -335,10 +416,11 @@ const DadosAlunos: React.FC = () => {
             </Button>
             <Button
               variant="text"
-              onClick={() => setShowOld((p) => !p)}
+              onClick={toggleOldData}
+              disabled={oldLoading}
               sx={{ color: "#A650F0" }}
             >
-              {showOld ? "Ocultar dados antigos" : "Mostrar dados antigos"}
+              {oldLoading ? "Carregando..." : showOld ? "Ocultar dados antigos" : "Mostrar dados antigos"}
             </Button>
           </Box>
         </Toolbar>
@@ -382,9 +464,15 @@ const DadosAlunos: React.FC = () => {
                     <TableRow
                       key={row.id}
                       hover
+                      onClick={() => handleSelectStudent(row)}
                       sx={{
+                        cursor: "pointer",
                         "&:nth-of-type(even)": { backgroundColor: "#F9F9F9" },
                         "&:hover": { backgroundColor: "#F3E5F5" },
+                        ...(selectedStudent?.id === row.id && {
+                          backgroundColor: "#E1BEE7",
+                          "&:hover": { backgroundColor: "#CE93D8" },
+                        }),
                       }}
                     >
                       <TableCell>{row.id}</TableCell>
@@ -420,6 +508,228 @@ const DadosAlunos: React.FC = () => {
           </TableContainer>
         )}
       </Paper>
+
+      {/* Componentes do pd-dados-alunos embaixo da tabela */}
+      {selectedStudent && (
+        <Box sx={{ mt: 3, maxWidth: "1100px", mx: "auto" }}>
+          {/* DashboardHead - Botões de ação */}
+          <Paper
+            elevation={2}
+            sx={{
+              borderRadius: 2,
+              overflow: "hidden",
+              mb: 2,
+              borderTopLeftRadius: "12px",
+              borderBottomRightRadius: "12px",
+              boxShadow: "2px 2px 10px 0px rgba(0,0,0,0.75)",
+            }}
+          >
+            <Box
+              display={"flex"}
+              justifyContent={"space-evenly"}
+              alignItems={"center"}
+              margin={0.75}
+            >
+              <Button
+                variant="text"
+                color="primary"
+                onClick={() => setOpenPsychoModal(true)}
+              >
+                Enviar para Recuperação
+              </Button>
+              <Button
+                variant="text"
+                color="primary"
+                onClick={() => setOpenAgentModal(true)}
+              >
+                Transferir Aluno
+              </Button>
+            </Box>
+          </Paper>
+
+          {/* DataTable - Dados detalhados do aluno */}
+          <Paper
+            elevation={2}
+            sx={{
+              borderRadius: 2,
+              overflow: "hidden",
+              mb: 2,
+              borderTopLeftRadius: "12px",
+              boxShadow: "2px 2px 10px 0px rgba(0,0,0,0.75)",
+            }}
+          >
+            {/* Status destacado */}
+            <Box
+              width={"100%"}
+              bgcolor={getStatusColor(selectedStudent.status)}
+              sx={{ borderTopLeftRadius: "12px" }}
+            >
+              <Typography
+                p={1}
+                textAlign={"center"}
+                variant="h3"
+                fontWeight={700}
+                fontSize={"1.5rem"}
+              >
+                {selectedStudent.status}
+              </Typography>
+            </Box>
+
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell colSpan={3} align="center">
+                      <Box
+                        display={"flex"}
+                        justifyContent={"space-between"}
+                        alignItems={"center"}
+                        position={"relative"}
+                        p={2}
+                      >
+                        <Typography
+                          variant="h3"
+                          fontWeight={700}
+                          color={"#1F2937"}
+                          position={"absolute"}
+                          left={"50%"}
+                          sx={{
+                            fontSize: {
+                              xs: "2rem",
+                              sm: "1.5rem",
+                              md: "1.5rem",
+                              lg: "1.8rem",
+                              xl: "1.8rem",
+                            },
+                            transform: "translateX(-50%)",
+                          }}
+                        >
+                          Dados do aluno
+                        </Typography>
+                        <IconButton
+                          sx={{ position: "absolute", right: 0 }}
+                          onClick={() => setOpenEditModal(true)}
+                        >
+                          <EditIcon />
+                        </IconButton>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  <TableRow>
+                    <TableCell colSpan={2} align="justify">
+                      <Typography>
+                        <strong>Nome:</strong> {selectedStudent.completeName}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="justify">
+                      <Typography>
+                        <strong>CPF:</strong> {selectedStudent.cpf}
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell colSpan={2} align="justify">
+                      <Box display={"flex"} alignItems={"center"}>
+                        <Typography>
+                          <strong>Email:</strong> {selectedStudent.corp_email}
+                        </Typography>
+                        <IconButton
+                          onClick={() =>
+                            window.open(`mailto:${selectedStudent.corp_email}`, "_blank")
+                          }
+                        >
+                          <EmailIcon />
+                        </IconButton>
+                      </Box>
+                    </TableCell>
+                    <TableCell align="justify">
+                      <Typography>
+                        <strong>Matrícula:</strong> {selectedStudent.registration}
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                  {seeMore && (
+                    <>
+                      <TableRow>
+                        <TableCell align="justify">
+                          <Typography>
+                            <strong>Data de nascimento:</strong> {selectedStudent.birth_date}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="justify">
+                          <Typography>
+                            <strong>Monitor:</strong> {selectedStudent.monitor}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="justify">
+                          <Typography>
+                            <strong>Agente de Sucesso:</strong> {selectedStudent.username}
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    </>
+                  )}
+                  <TableRow>
+                    <TableCell colSpan={3} align="center">
+                      <Box>
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          onClick={() => setSeeMore(!seeMore)}
+                        >
+                          {seeMore ? "Ver menos" : "Ver mais"}
+                        </Button>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Paper>
+        </Box>
+      )}
+
+      {/* Modais */}
+      <AgentModal
+        open={openAgentModal}
+        agentesOp={MOCK_AGENTS}
+        close={(agente) => {
+          if (agente !== "close") {
+            handleSnackbarMessage(`Aluno transferido para ${agente}`);
+          }
+          setOpenAgentModal(false);
+        }}
+      />
+
+      <PsychologistModal
+        open={openPsychoModal}
+        psicologosOp={MOCK_PSYCHOLOGISTS}
+        close={(psychologist) => {
+          if (psychologist !== "close") {
+            handleSnackbarMessage(`Aluno enviado para recuperação: ${psychologist}`);
+          }
+          setOpenPsychoModal(false);
+        }}
+      />
+
+      <EditStudentModal
+        open={openEditModal}
+        student={selectedStudent}
+        onClose={() => setOpenEditModal(false)}
+        onSave={handleSaveStudent}
+        onError={handleEditError}
+        agents={MOCK_AGENTS}
+      />
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        message={snackbar.message}
+      />
 
       {viewerUrl && null}
     </Box>

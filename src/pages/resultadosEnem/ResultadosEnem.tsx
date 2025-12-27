@@ -91,7 +91,7 @@ const ResultadosEnem: React.FC = () => {
   const navigate = useNavigate();
 
   const [items, setItems] = useState<EnemResult[]>(MOCK_RESULTS);
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   const [error] = useState<string | null>(null);
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
   const [statusAnchor, setStatusAnchor] = useState<null | HTMLElement>(null);

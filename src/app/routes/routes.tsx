@@ -14,9 +14,11 @@ import CadastroAlunos from "../../pages/cadastroAlunos/CadastroAlunos";
 import Retencao from "../../pages/retencao/Retencao";
 import Cidades from "../../pages/cidades/Cidades";
 import Contratos from "../../pages/contratos/Contratos";
-import DatasProva from "../../pages/datasProva/DatasProva";
 import Documentos from "../../pages/documentos/Documentos";
 import Usuarios from "../../pages/usuarios/Usuarios";
+import Perfil from "../../pages/perfil/Perfil";
+import EditarPerfil from "../../pages/perfil/EditarPerfil";
+import MeuPerfil from "../../pages/meuPerfil/MeuPerfil";
 
 export const AppRoutes = () => (
   <Routes>
@@ -39,9 +41,11 @@ export const AppRoutes = () => (
       {/* Rotas dos Cards de Admin */}
       <Route path={APP_ROUTES.CITIES} element={<Cidades />} />
       <Route path={APP_ROUTES.CONTRACTS} element={<Contratos />} />
-      <Route path={APP_ROUTES.EXAM_DATES} element={<DatasProva />} />
       <Route path={APP_ROUTES.DOCUMENTS} element={<Documentos />} />
       <Route path={APP_ROUTES.USERS_LIST} element={<Usuarios />} />
+      <Route path="/usuario/:id" element={<Perfil />} />
+      <Route path="/usuario/:id/editar" element={<EditarPerfil />} />
+      <Route path={APP_ROUTES.MY_PROFILE} element={<MeuPerfil />} />
       
       <Route path={APP_ROUTES.NOTFOUND} element={<NotFound />} />
     </Route>

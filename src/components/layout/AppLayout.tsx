@@ -1,10 +1,26 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Box, ThemeProvider, CssBaseline } from "@mui/material";
 import { Outlet } from "react-router";
 import Header from "../ui/header/Header";
 import LayoutSidebar from "../ui/sidebar/LayoutSidebar";
 import getTheme from "../../assets/styles/theme";
 import { APP_ROUTES } from "../../util/constants";
+import { useAuthContext } from "../../app/providers/AuthProvider";
+import CreateProfileModal from "../modals/CreateProfileModal";
+
+// Interface definida localmente para evitar problemas de resolução de módulo
+interface UserProfilePayload {
+  cpf?: string;
+  personal_email?: string;
+  bio?: string;
+  birth_date?: string;
+  hire_date?: string;
+  occupation?: string;
+  department?: string;
+  equipment_patrimony?: string;
+  work_location?: string;
+  manager?: string;
+}
 import TrackChangesIcon from "@mui/icons-material/TrackChanges";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import WorkspacePremiumIcon from "@mui/icons-material/WorkspacePremium";
@@ -23,6 +39,71 @@ export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(true);
   const themeMode = "light";
   const theme = useMemo(() => getTheme(themeMode), [themeMode]);
+  const { user, accessToken } = useAuthContext();
+  const [showCreateProfile, setShowCreateProfile] = useState(false);
+  const [profileData, setProfileData] = useState<UserProfilePayload>({});
+  const [profileLoading, setProfileLoading] = useState(false);
+
+  // Verifica se deve mostrar o modal de criação de perfil
+  useEffect(() => {
+    if (accessToken && user) {
+      // Simula verificação se o usuário tem perfil
+      // Em produção, isso viria de uma API
+      const hasProfile = localStorage.getItem(`user_${user.id}_has_profile`);
+      if (!hasProfile) {
+        setShowCreateProfile(true);
+      }
+    }
+  }, [accessToken, user]);
+
+  const handleCreateProfile = async () => {
+    setProfileLoading(true);
+    try {
+      // Simula criação de perfil com dados mockados
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      
+      // Simula resposta da API com dados mockados
+      const mockProfileResponse = {
+        id: user?.id || 1,
+        ...profileData,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      
+      // Salva no localStorage (mock)
+      if (user) {
+        localStorage.setItem(`user_${user.id}_has_profile`, 'true');
+        localStorage.setItem(`user_${user.id}_profile`, JSON.stringify(mockProfileResponse));
+      }
+      
+      console.log('Perfil criado com sucesso (mockado):', mockProfileResponse);
+    } catch (error) {
+      console.error('Erro ao criar perfil (mockado):', error);
+      throw error;
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
+  const handleUploadPhoto = async (file: File) => {
+    // Simula upload de foto com dados mockados
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    
+    // Simula URL da foto enviada
+    const mockPhotoUrl = URL.createObjectURL(file);
+    
+    // Salva no localStorage (mock)
+    if (user) {
+      const profile = localStorage.getItem(`user_${user.id}_profile`);
+      if (profile) {
+        const profileData = JSON.parse(profile);
+        profileData.profile_photo = mockPhotoUrl;
+        localStorage.setItem(`user_${user.id}_profile`, JSON.stringify(profileData));
+      }
+    }
+    
+    console.log('Foto enviada com sucesso (mockado):', file.name, 'URL:', mockPhotoUrl);
+  };
 
   const sidebarMenuGroups = [
     {
@@ -94,11 +175,6 @@ export default function AppLayout() {
           to: APP_ROUTES.CONTRACTS,
         },
         {
-          icon: <CalendarMonthIcon />,
-          label: "Datas de Prova",
-          to: APP_ROUTES.EXAM_DATES,
-        },
-        {
           icon: <InsertDriveFileIcon />,
           label: "Visualização de Documentos",
           to: APP_ROUTES.DOCUMENTS,
@@ -152,6 +228,17 @@ export default function AppLayout() {
           </Box>
         </Box>
       </Box>
+
+      {/* Modal de Criação de Perfil */}
+      <CreateProfileModal
+        open={showCreateProfile}
+        loading={profileLoading}
+        profileData={profileData}
+        onChange={setProfileData}
+        onCreateProfile={handleCreateProfile}
+        onUploadPhoto={handleUploadPhoto}
+        onClose={() => setShowCreateProfile(false)}
+      />
     </ThemeProvider>
   );
 }
