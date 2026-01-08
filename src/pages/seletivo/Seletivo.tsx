@@ -25,6 +25,7 @@ import {
   TablePagination,
   Breadcrumbs,
   Link,
+  Fade,
 } from "@mui/material";
 import {
   FilterList as FilterListIcon,
@@ -157,370 +158,594 @@ const Seletivo: React.FC = () => {
   };
 
   return (
-    <Box p={2}>
-      {/* Breadcrumb */}
-      <Breadcrumbs
-        aria-label="breadcrumb"
-        separator={<NavigateNextIcon fontSize="small" />}
-        sx={{ mb: 3 }}
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {/* Conteúdo Principal */}
+      <Box
+        sx={{
+          flex: 1,
+          p: { xs: 2, sm: 3, md: 4 },
+          display: "flex",
+          flexDirection: "column",
+          overflow: "auto",
+        }}
       >
-        <Link
-          component="button"
-          variant="body1"
-          onClick={() => navigate(APP_ROUTES.DASHBOARD)}
+        <Box
           sx={{
-            color: "#A650F0",
-            textDecoration: "none",
-            cursor: "pointer",
-            "&:hover": {
-              textDecoration: "underline",
-            },
+            maxWidth: 1400,
+            width: "100%",
+            margin: "0 auto",
           }}
         >
-          Dashboard
-        </Link>
-        <Typography color="text.primary">Seletivo</Typography>
-      </Breadcrumbs>
+          {/* Breadcrumb */}
+          <Fade in timeout={600}>
+            <Breadcrumbs
+              aria-label="breadcrumb"
+              separator={<NavigateNextIcon fontSize="small" />}
+              sx={{ mb: 3 }}
+            >
+              <Link
+                component="button"
+                variant="body1"
+                onClick={() => navigate(APP_ROUTES.DASHBOARD)}
+                sx={{
+                  color: "#9333EA",
+                  textDecoration: "none",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  "&:hover": {
+                    color: "#A650F0",
+                  },
+                  transition: "color 0.2s ease",
+                }}
+              >
+                Dashboard
+              </Link>
+              <Typography color="#1F2937" fontWeight={500}>
+                Seletivo
+              </Typography>
+            </Breadcrumbs>
+          </Fade>
 
-      {/* Título e Texto Explicativo */}
-      <Box sx={{ mb: 3 }}>
-        <Typography
-          variant="h4"
-          sx={{
-            color: "#A650F0",
-            fontWeight: 600,
-            mb: 2,
-          }}
-        >
-          Seletivo
-        </Typography>
-        <Paper
-          elevation={1}
-          sx={{
-            p: 2,
-            backgroundColor: "#F3E5F5",
-            borderRadius: 2,
-            borderLeft: "4px solid #A650F0",
-          }}
-        >
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
-            <strong>Seletivo</strong>
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Esta página permite gerenciar e visualizar todos os CANDIDATOS do processo seletivo.
-            Você pode pesquisar candidatos por CPF, nome ou email, filtrar por status (ativos/inativos),
-            exportar os dados em diferentes formatos (CSV, JSON, XLSX) e visualizar informações detalhadas
-            de cada candidato, incluindo dados de persona, endereços, guardiões e informações de registro.
-            Utilize os ícones nas colunas da tabela para acessar informações específicas de cada candidato.
-          </Typography>
-        </Paper>
-      </Box>
+          {/* Título e Texto Explicativo */}
+          <Fade in timeout={800}>
+            <Box sx={{ mb: 5 }}>
+              <Typography
+                variant="h4"
+                sx={{
+                  fontWeight: 600,
+                  color: "#1F2937",
+                  mb: 1,
+                  fontSize: { xs: "1.75rem", sm: "2rem", md: "2.25rem" },
+                }}
+              >
+                Seletivo
+              </Typography>
+              <Typography
+                variant="body1"
+                sx={{
+                  color: "#6B7280",
+                  fontSize: { xs: "0.95rem", sm: "1rem" },
+                  mb: 3,
+                }}
+              >
+                Gerencie e visualize todos os candidatos do processo seletivo.
+              </Typography>
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 3,
+                  backgroundColor: "#F9FAFB",
+                  borderRadius: 3,
+                  border: "1px solid #E5E7EB",
+                  position: "relative",
+                  overflow: "hidden",
+                  "&::before": {
+                    content: '""',
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: "3px",
+                    background: "linear-gradient(90deg, #A650F0 0%, #C084FC 100%)",
+                  },
+                }}
+              >
+                <Typography variant="body2" color="#4B5563" sx={{ lineHeight: 1.7 }}>
+                  Pesquise candidatos por CPF, nome ou email, filtre por status (ativos/inativos),
+                  exporte os dados em diferentes formatos (CSV, JSON, XLSX) e visualize informações detalhadas
+                  de cada candidato, incluindo dados de persona, endereços, guardiões e informações de registro.
+                </Typography>
+              </Paper>
+            </Box>
+          </Fade>
 
-      <Paper elevation={2} sx={{ borderRadius: 2, overflow: "hidden" }}>
-        <Toolbar sx={{ display: "flex", justifyContent: "space-between", gap: 2 }}>
-          <Box display="flex" alignItems="center" sx={{ flex: 1, maxWidth: 400 }}>
-            <SearchIcon sx={{ mr: 1, color: "#A650F0" }} />
-            <TextField
-              placeholder="Pesquisar por CPF, nome, email..."
-              variant="standard"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              fullWidth
+          {/* Tabela de Dados */}
+          <Fade in timeout={1000}>
+            <Paper
+              elevation={0}
               sx={{
-                "& .MuiInput-underline:before": {
-                  borderBottomColor: "#A650F0",
-                },
-                "& .MuiInput-underline:hover:before": {
-                  borderBottomColor: "#A650F0",
-                },
-                "& .MuiInput-underline:after": {
-                  borderBottomColor: "#A650F0",
-                },
+                borderRadius: 3,
+                overflow: "hidden",
+                border: "1px solid #E5E7EB",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
               }}
-            />
-          </Box>
-          <Box>
-            <IconButton onClick={openFilterMenu}>
-              <FilterListIcon />
-            </IconButton>
-            <Menu
-              anchorEl={filterAnchor}
-              open={Boolean(filterAnchor)}
-              onClose={closeFilterMenu}
             >
-              <MenuItem onClick={() => applyFilter("all")}>
-                Todos ({users.length})
-              </MenuItem>
-              <MenuItem onClick={() => applyFilter("active")}>
-                Ativos ({users.filter((u) => u.allowed_city.active).length})
-              </MenuItem>
-              <MenuItem onClick={() => applyFilter("inactive")}>
-                Inativos ({users.filter((u) => !u.allowed_city.active).length})
-              </MenuItem>
-            </Menu>
-            <IconButton onClick={openDownloadMenu}>
-              <DownloadIcon />
-            </IconButton>
-            <Menu
-              anchorEl={downloadAnchor}
-              open={Boolean(downloadAnchor)}
-              onClose={() => setDownloadAnchor(null)}
-            >
-              <MenuItem
-                onClick={() => {
-                  handleExportCSV();
-                  setDownloadAnchor(null);
+              <Toolbar
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 2,
+                  p: 3,
+                  backgroundColor: "#FFFFFF",
+                  borderBottom: "1px solid #E5E7EB",
                 }}
               >
-                CSV
-              </MenuItem>
-              <MenuItem
-                onClick={() => {
-                  handleExportJSON();
-                  setDownloadAnchor(null);
-                }}
-              >
-                JSON
-              </MenuItem>
-              <MenuItem
-                onClick={() => {
-                  handleExportXLSX();
-                  setDownloadAnchor(null);
-                }}
-              >
-                XLSX
-              </MenuItem>
-            </Menu>
-            <IconButton onClick={fetchUsers}>
-              <RefreshIcon />
-            </IconButton>
-          </Box>
-        </Toolbar>
-
-        {loading ? (
-          <Box display="flex" justifyContent="center" p={4}>
-            <CircularProgress />
-          </Box>
-        ) : (
-          <TableContainer>
-            <Table stickyHeader>
-              <TableHead>
-                <TableRow>
-                  <TableCell
+                <Box display="flex" alignItems="center" sx={{ flex: 1, maxWidth: 500 }}>
+                  <SearchIcon sx={{ mr: 1, color: "#6B7280" }} />
+                  <TextField
+                    placeholder="Pesquisar por CPF, nome, email..."
+                    variant="standard"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    fullWidth
                     sx={{
-                      backgroundColor: "#A650F0",
-                      color: "#FFFFFF",
-                      fontWeight: 600,
-                      minWidth: 50,
+                      "& .MuiInput-underline:before": {
+                        borderBottomColor: "#D1D5DB",
+                      },
+                      "& .MuiInput-underline:hover:before": {
+                        borderBottomColor: "#9CA3AF",
+                      },
+                      "& .MuiInput-underline:after": {
+                        borderBottomColor: "#A650F0",
+                      },
+                      "& input": {
+                        color: "#1F2937",
+                      },
+                    }}
+                  />
+                </Box>
+                <Box display="flex" gap={1}>
+                  <IconButton
+                    onClick={openFilterMenu}
+                    sx={{
+                      color: "#6B7280",
+                      "&:hover": {
+                        backgroundColor: "#FAF5FF",
+                        color: "#A650F0",
+                      },
                     }}
                   >
-                    ID
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      backgroundColor: "#A650F0",
-                      color: "#FFFFFF",
-                      fontWeight: 600,
-                      minWidth: 120,
-                    }}
-                  >
-                    CPF
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      backgroundColor: "#A650F0",
-                      color: "#FFFFFF",
-                      fontWeight: 600,
-                      minWidth: 200,
-                    }}
-                  >
-                    Nome
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      backgroundColor: "#A650F0",
-                      color: "#FFFFFF",
-                      fontWeight: 600,
-                      minWidth: 120,
-                    }}
-                  >
-                    Data Nasc.
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      backgroundColor: "#A650F0",
-                      color: "#FFFFFF",
-                      fontWeight: 600,
-                      minWidth: 120,
-                    }}
-                  >
-                    Celular
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      backgroundColor: "#A650F0",
-                      color: "#FFFFFF",
-                      fontWeight: 600,
-                      minWidth: 200,
-                    }}
-                  >
-                    Email
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      backgroundColor: "#A650F0",
-                      color: "#FFFFFF",
-                      fontWeight: 600,
-                      minWidth: 100,
-                    }}
-                  >
-                    Cidade
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      backgroundColor: "#A650F0",
-                      color: "#FFFFFF",
-                      fontWeight: 600,
-                      minWidth: 50,
-                    }}
-                  >
-                    UF
-                  </TableCell>
-                  <TableCell
-                    align="center"
-                    sx={{
-                      backgroundColor: "#A650F0",
-                      color: "#FFFFFF",
-                      fontWeight: 600,
-                      minWidth: 80,
-                    }}
-                  >
-                    Persona
-                  </TableCell>
-                  <TableCell
-                    align="center"
-                    sx={{
-                      backgroundColor: "#A650F0",
-                      color: "#FFFFFF",
-                      fontWeight: 600,
-                      minWidth: 100,
-                    }}
-                  >
-                    Endereços
-                  </TableCell>
-                  <TableCell
-                    align="center"
-                    sx={{
-                      backgroundColor: "#A650F0",
-                      color: "#FFFFFF",
-                      fontWeight: 600,
-                      minWidth: 100,
-                    }}
-                  >
-                    Guardião
-                  </TableCell>
-                  <TableCell
-                    align="center"
-                    sx={{
-                      backgroundColor: "#A650F0",
-                      color: "#FFFFFF",
-                      fontWeight: 600,
-                      minWidth: 80,
-                    }}
-                  >
-                    Registro
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {paginatedData.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={12} align="center" sx={{ py: 3 }}>
-                      <Typography color="textSecondary">
-                        {searchTerm || filterStatus !== "all"
-                          ? "Nenhum resultado encontrado"
-                          : "Nenhum dado disponível"}
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  paginatedData.map((user) => (
-                    <TableRow
-                      key={user.id}
-                      hover
-                      sx={{
-                        "&:nth-of-type(even)": {
-                          backgroundColor: "#F9F9F9",
+                    <FilterListIcon />
+                  </IconButton>
+                  <Menu
+                    anchorEl={filterAnchor}
+                    open={Boolean(filterAnchor)}
+                    onClose={closeFilterMenu}
+                    slotProps={{
+                      paper: {
+                        sx: {
+                          borderRadius: 2,
+                          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                         },
-                        "&:hover": {
-                          backgroundColor: "#F3E5F5",
+                      },
+                    }}
+                  >
+                    <MenuItem onClick={() => applyFilter("all")}>
+                      Todos ({users.length})
+                    </MenuItem>
+                    <MenuItem onClick={() => applyFilter("active")}>
+                      Ativos ({users.filter((u) => u.allowed_city.active).length})
+                    </MenuItem>
+                    <MenuItem onClick={() => applyFilter("inactive")}>
+                      Inativos ({users.filter((u) => !u.allowed_city.active).length})
+                    </MenuItem>
+                  </Menu>
+                  <IconButton
+                    onClick={openDownloadMenu}
+                    sx={{
+                      color: "#6B7280",
+                      "&:hover": {
+                        backgroundColor: "#FAF5FF",
+                        color: "#A650F0",
+                      },
+                    }}
+                  >
+                    <DownloadIcon />
+                  </IconButton>
+                  <Menu
+                    anchorEl={downloadAnchor}
+                    open={Boolean(downloadAnchor)}
+                    onClose={() => setDownloadAnchor(null)}
+                    slotProps={{
+                      paper: {
+                        sx: {
+                          borderRadius: 2,
+                          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                         },
+                      },
+                    }}
+                  >
+                    <MenuItem
+                      onClick={() => {
+                        handleExportCSV();
+                        setDownloadAnchor(null);
                       }}
                     >
-                      <TableCell>{user.id}</TableCell>
-                      <TableCell>{user.cpf}</TableCell>
-                      <TableCell>
-                        {user.first_name} {user.last_name}
-                      </TableCell>
-                      <TableCell>{user.birth_date}</TableCell>
-                      <TableCell>{user.celphone}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>{user.allowed_city.localidade}</TableCell>
-                      <TableCell>{user.allowed_city.uf}</TableCell>
-                      <TableCell align="center">
-                        <IconButton
-                          size="small"
-                          onClick={() => openModal("persona", user)}
-                        >
-                          <PersonIcon fontSize="small" />
-                        </IconButton>
-                      </TableCell>
-                      <TableCell align="center">
-                        <IconButton
-                          size="small"
-                          onClick={() => openModal("addresses", user)}
-                        >
-                          <HomeIcon fontSize="small" />
-                        </IconButton>
-                      </TableCell>
-                      <TableCell align="center">
-                        <IconButton
-                          size="small"
-                          onClick={() => openModal("guardians", user)}
-                        >
-                          <PeopleIcon fontSize="small" />
-                        </IconButton>
-                      </TableCell>
-                      <TableCell align="center">
-                        <IconButton
-                          size="small"
-                          onClick={() => openModal("registration", user)}
-                        >
-                          <DescriptionIcon fontSize="small" />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-            <TablePagination
-              component="div"
-              count={filtered.length}
-              page={page}
-              onPageChange={handleChangePage}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              rowsPerPageOptions={[5, 10, 25, 50]}
-              labelRowsPerPage="Linhas por página:"
-              labelDisplayedRows={({ from, to, count }) =>
-                `${from}-${to} de ${count !== -1 ? count : `mais de ${to}`}`
-              }
-            />
-          </TableContainer>
-        )}
-      </Paper>
+                      CSV
+                    </MenuItem>
+                    <MenuItem
+                      onClick={() => {
+                        handleExportJSON();
+                        setDownloadAnchor(null);
+                      }}
+                    >
+                      JSON
+                    </MenuItem>
+                    <MenuItem
+                      onClick={() => {
+                        handleExportXLSX();
+                        setDownloadAnchor(null);
+                      }}
+                    >
+                      XLSX
+                    </MenuItem>
+                  </Menu>
+                  <IconButton
+                    onClick={fetchUsers}
+                    sx={{
+                      color: "#6B7280",
+                      "&:hover": {
+                        backgroundColor: "#FAF5FF",
+                        color: "#A650F0",
+                      },
+                    }}
+                  >
+                    <RefreshIcon />
+                  </IconButton>
+                </Box>
+              </Toolbar>
 
+              {loading ? (
+                <Box display="flex" justifyContent="center" p={4}>
+                  <CircularProgress sx={{ color: "#A650F0" }} />
+                </Box>
+              ) : (
+                <TableContainer sx={{ maxWidth: "100%" }}>
+                  <Table size="small" sx={{ tableLayout: "fixed", width: "100%" }}>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell
+                          sx={{
+                            backgroundColor: "#F9FAFB",
+                            color: "#374151",
+                            fontWeight: 600,
+                            width: "40px",
+                            borderBottom: "2px solid #E5E7EB",
+                            fontSize: "0.875rem",
+                          }}
+                        >
+                          ID
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            backgroundColor: "#F9FAFB",
+                            color: "#374151",
+                            fontWeight: 600,
+                            width: "110px",
+                            borderBottom: "2px solid #E5E7EB",
+                            fontSize: "0.875rem",
+                          }}
+                        >
+                          CPF
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            backgroundColor: "#F9FAFB",
+                            color: "#374151",
+                            fontWeight: 600,
+                            width: "150px",
+                            borderBottom: "2px solid #E5E7EB",
+                            fontSize: "0.875rem",
+                          }}
+                        >
+                          Nome
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            backgroundColor: "#F9FAFB",
+                            color: "#374151",
+                            fontWeight: 600,
+                            width: "90px",
+                            borderBottom: "2px solid #E5E7EB",
+                            fontSize: "0.875rem",
+                          }}
+                        >
+                          Data Nasc.
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            backgroundColor: "#F9FAFB",
+                            color: "#374151",
+                            fontWeight: 600,
+                            width: "110px",
+                            borderBottom: "2px solid #E5E7EB",
+                            fontSize: "0.875rem",
+                          }}
+                        >
+                          Celular
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            backgroundColor: "#F9FAFB",
+                            color: "#374151",
+                            fontWeight: 600,
+                            width: "180px",
+                            borderBottom: "2px solid #E5E7EB",
+                            fontSize: "0.875rem",
+                          }}
+                        >
+                          Email
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            backgroundColor: "#F9FAFB",
+                            color: "#374151",
+                            fontWeight: 600,
+                            width: "100px",
+                            borderBottom: "2px solid #E5E7EB",
+                            fontSize: "0.875rem",
+                          }}
+                        >
+                          Cidade
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            backgroundColor: "#F9FAFB",
+                            color: "#374151",
+                            fontWeight: 600,
+                            width: "40px",
+                            borderBottom: "2px solid #E5E7EB",
+                            fontSize: "0.875rem",
+                          }}
+                        >
+                          UF
+                        </TableCell>
+                        <TableCell
+                          align="center"
+                          sx={{
+                            backgroundColor: "#F9FAFB",
+                            color: "#374151",
+                            fontWeight: 600,
+                            width: "50px",
+                            borderBottom: "2px solid #E5E7EB",
+                            fontSize: "0.875rem",
+                          }}
+                        >
+                          <PersonIcon fontSize="small" sx={{ fontSize: "1rem" }} />
+                        </TableCell>
+                        <TableCell
+                          align="center"
+                          sx={{
+                            backgroundColor: "#F9FAFB",
+                            color: "#374151",
+                            fontWeight: 600,
+                            width: "50px",
+                            borderBottom: "2px solid #E5E7EB",
+                            fontSize: "0.875rem",
+                          }}
+                        >
+                          <HomeIcon fontSize="small" sx={{ fontSize: "1rem" }} />
+                        </TableCell>
+                        <TableCell
+                          align="center"
+                          sx={{
+                            backgroundColor: "#F9FAFB",
+                            color: "#374151",
+                            fontWeight: 600,
+                            width: "50px",
+                            borderBottom: "2px solid #E5E7EB",
+                            fontSize: "0.875rem",
+                          }}
+                        >
+                          <PeopleIcon fontSize="small" sx={{ fontSize: "1rem" }} />
+                        </TableCell>
+                        <TableCell
+                          align="center"
+                          sx={{
+                            backgroundColor: "#F9FAFB",
+                            color: "#374151",
+                            fontWeight: 600,
+                            width: "50px",
+                            borderBottom: "2px solid #E5E7EB",
+                            fontSize: "0.875rem",
+                          }}
+                        >
+                          <DescriptionIcon fontSize="small" sx={{ fontSize: "1rem" }} />
+                        </TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {paginatedData.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={12} align="center" sx={{ py: 4 }}>
+                            <Typography color="#6B7280" fontSize="0.95rem">
+                              {searchTerm || filterStatus !== "all"
+                                ? "Nenhum resultado encontrado"
+                                : "Nenhum dado disponível"}
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        paginatedData.map((user) => (
+                          <TableRow
+                            key={user.id}
+                            hover
+                            sx={{
+                              "&:nth-of-type(odd)": {
+                                backgroundColor: "#FFFFFF",
+                              },
+                              "&:nth-of-type(even)": {
+                                backgroundColor: "#F9FAFB",
+                              },
+                              "&:hover": {
+                                backgroundColor: "#FAF5FF !important",
+                              },
+                              transition: "background-color 0.2s ease",
+                            }}
+                          >
+                            <TableCell sx={{ color: "#374151", fontSize: "0.875rem", py: 1.5 }}>
+                              {user.id}
+                            </TableCell>
+                            <TableCell sx={{ color: "#374151", fontSize: "0.875rem", py: 1.5 }}>
+                              {user.cpf}
+                            </TableCell>
+                            <TableCell
+                              sx={{
+                                color: "#1F2937",
+                                fontWeight: 500,
+                                fontSize: "0.875rem",
+                                py: 1.5,
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                              }}
+                            >
+                              {user.first_name} {user.last_name}
+                            </TableCell>
+                            <TableCell sx={{ color: "#374151", fontSize: "0.875rem", py: 1.5 }}>
+                              {user.birth_date}
+                            </TableCell>
+                            <TableCell sx={{ color: "#374151", fontSize: "0.875rem", py: 1.5 }}>
+                              {user.celphone}
+                            </TableCell>
+                            <TableCell
+                              sx={{
+                                color: "#374151",
+                                fontSize: "0.875rem",
+                                py: 1.5,
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                              }}
+                            >
+                              {user.email}
+                            </TableCell>
+                            <TableCell
+                              sx={{
+                                color: "#374151",
+                                fontSize: "0.875rem",
+                                py: 1.5,
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                              }}
+                            >
+                              {user.allowed_city.localidade}
+                            </TableCell>
+                            <TableCell sx={{ color: "#374151", fontSize: "0.875rem", py: 1.5 }}>
+                              {user.allowed_city.uf}
+                            </TableCell>
+                            <TableCell align="center" sx={{ py: 1.5 }}>
+                              <IconButton
+                                size="small"
+                                onClick={() => openModal("persona", user)}
+                                sx={{
+                                  color: "#6B7280",
+                                  padding: "4px",
+                                  "&:hover": {
+                                    backgroundColor: "#F3E8FF",
+                                    color: "#A650F0",
+                                  },
+                                }}
+                              >
+                                <PersonIcon sx={{ fontSize: "1.1rem" }} />
+                              </IconButton>
+                            </TableCell>
+                            <TableCell align="center" sx={{ py: 1.5 }}>
+                              <IconButton
+                                size="small"
+                                onClick={() => openModal("addresses", user)}
+                                sx={{
+                                  color: "#6B7280",
+                                  padding: "4px",
+                                  "&:hover": {
+                                    backgroundColor: "#F3E8FF",
+                                    color: "#A650F0",
+                                  },
+                                }}
+                              >
+                                <HomeIcon sx={{ fontSize: "1.1rem" }} />
+                              </IconButton>
+                            </TableCell>
+                            <TableCell align="center" sx={{ py: 1.5 }}>
+                              <IconButton
+                                size="small"
+                                onClick={() => openModal("guardians", user)}
+                                sx={{
+                                  color: "#6B7280",
+                                  padding: "4px",
+                                  "&:hover": {
+                                    backgroundColor: "#F3E8FF",
+                                    color: "#A650F0",
+                                  },
+                                }}
+                              >
+                                <PeopleIcon sx={{ fontSize: "1.1rem" }} />
+                              </IconButton>
+                            </TableCell>
+                            <TableCell align="center" sx={{ py: 1.5 }}>
+                              <IconButton
+                                size="small"
+                                onClick={() => openModal("registration", user)}
+                                sx={{
+                                  color: "#6B7280",
+                                  padding: "4px",
+                                  "&:hover": {
+                                    backgroundColor: "#F3E8FF",
+                                    color: "#A650F0",
+                                  },
+                                }}
+                              >
+                                <DescriptionIcon sx={{ fontSize: "1.1rem" }} />
+                              </IconButton>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                  <TablePagination
+                    component="div"
+                    count={filtered.length}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    rowsPerPage={rowsPerPage}
+                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    rowsPerPageOptions={[5, 10, 25, 50]}
+                    labelRowsPerPage="Linhas por página:"
+                    labelDisplayedRows={({ from, to, count }) =>
+                      `${from}-${to} de ${count !== -1 ? count : `mais de ${to}`}`
+                    }
+                    sx={{
+                      borderTop: "1px solid #E5E7EB",
+                      backgroundColor: "#F9FAFB",
+                    }}
+                  />
+                </TableContainer>
+              )}
+            </Paper>
+          </Fade>
+        </Box>
+      </Box>
+
+      {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}
@@ -542,18 +767,38 @@ const Seletivo: React.FC = () => {
         onClose={closeModal}
         fullWidth
         maxWidth="sm"
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: 3,
+            },
+          },
+        }}
       >
-        <DialogTitle>Persona Data</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 600, color: "#1F2937" }}>
+          Dados de Persona
+        </DialogTitle>
         <DialogContent dividers>
           {currentUser?.personas &&
             Object.entries(currentUser.personas).map(([k, v]) => (
-              <Typography key={k} sx={{ mb: 1 }}>
-                <strong>{translateLabel(k)}:</strong> {v}
+              <Typography key={k} sx={{ mb: 1.5, color: "#374151" }}>
+                <strong style={{ color: "#1F2937" }}>{translateLabel(k)}:</strong> {v}
               </Typography>
             ))}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={closeModal}>Fechar</Button>
+        <DialogActions sx={{ p: 2 }}>
+          <Button
+            onClick={closeModal}
+            sx={{
+              color: "#A650F0",
+              fontWeight: 600,
+              "&:hover": {
+                backgroundColor: "#FAF5FF",
+              },
+            }}
+          >
+            Fechar
+          </Button>
         </DialogActions>
       </Dialog>
 
@@ -563,35 +808,55 @@ const Seletivo: React.FC = () => {
         onClose={closeModal}
         fullWidth
         maxWidth="sm"
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: 3,
+            },
+          },
+        }}
       >
-        <DialogTitle>Endereços</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 600, color: "#1F2937" }}>
+          Endereços
+        </DialogTitle>
         <DialogContent dividers>
           {currentUser?.addresses && currentUser.addresses.length > 0 ? (
             currentUser.addresses.map((a) => (
-              <Box key={a.id} mb={2}>
-                <Typography>
-                  <strong>CEP:</strong> {a.cep}
+              <Box key={a.id} mb={2} pb={2} borderBottom="1px solid #E5E7EB">
+                <Typography sx={{ mb: 0.5, color: "#374151" }}>
+                  <strong style={{ color: "#1F2937" }}>CEP:</strong> {a.cep}
                 </Typography>
-                <Typography>
-                  <strong>Logradouro:</strong> {a.logradouro}
+                <Typography sx={{ mb: 0.5, color: "#374151" }}>
+                  <strong style={{ color: "#1F2937" }}>Logradouro:</strong> {a.logradouro}
                 </Typography>
-                <Typography>
-                  <strong>Complemento:</strong> {a.complemento || "—"}
+                <Typography sx={{ mb: 0.5, color: "#374151" }}>
+                  <strong style={{ color: "#1F2937" }}>Complemento:</strong> {a.complemento || "—"}
                 </Typography>
-                <Typography>
-                  <strong>Bairro:</strong> {a.bairro}
+                <Typography sx={{ mb: 0.5, color: "#374151" }}>
+                  <strong style={{ color: "#1F2937" }}>Bairro:</strong> {a.bairro}
                 </Typography>
-                <Typography>
-                  <strong>Cidade:</strong> {a.localidade} ({a.uf})
+                <Typography sx={{ color: "#374151" }}>
+                  <strong style={{ color: "#1F2937" }}>Cidade:</strong> {a.localidade} ({a.uf})
                 </Typography>
               </Box>
             ))
           ) : (
-            <Typography>Nenhum endereço cadastrado</Typography>
+            <Typography color="#6B7280">Nenhum endereço cadastrado</Typography>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={closeModal}>Fechar</Button>
+        <DialogActions sx={{ p: 2 }}>
+          <Button
+            onClick={closeModal}
+            sx={{
+              color: "#A650F0",
+              fontWeight: 600,
+              "&:hover": {
+                backgroundColor: "#FAF5FF",
+              },
+            }}
+          >
+            Fechar
+          </Button>
         </DialogActions>
       </Dialog>
 
@@ -601,35 +866,55 @@ const Seletivo: React.FC = () => {
         onClose={closeModal}
         fullWidth
         maxWidth="sm"
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: 3,
+            },
+          },
+        }}
       >
-        <DialogTitle>Dados do Guardião</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 600, color: "#1F2937" }}>
+          Dados do Guardião
+        </DialogTitle>
         <DialogContent dividers>
           {currentUser?.guardians && currentUser.guardians.length > 0 ? (
             currentUser.guardians.map((g) => (
-              <Box key={g.cpf} mb={2}>
-                <Typography>
-                  <strong>Relacionamento:</strong> {g.relationship}
+              <Box key={g.cpf} mb={2} pb={2} borderBottom="1px solid #E5E7EB">
+                <Typography sx={{ mb: 0.5, color: "#374151" }}>
+                  <strong style={{ color: "#1F2937" }}>Relacionamento:</strong> {g.relationship}
                 </Typography>
-                <Typography>
-                  <strong>Nome:</strong> {g.name}
+                <Typography sx={{ mb: 0.5, color: "#374151" }}>
+                  <strong style={{ color: "#1F2937" }}>Nome:</strong> {g.name}
                 </Typography>
-                <Typography>
-                  <strong>CPF:</strong> {g.cpf}
+                <Typography sx={{ mb: 0.5, color: "#374151" }}>
+                  <strong style={{ color: "#1F2937" }}>CPF:</strong> {g.cpf}
                 </Typography>
-                <Typography>
-                  <strong>Celular:</strong> {g.cellphone}
+                <Typography sx={{ mb: 0.5, color: "#374151" }}>
+                  <strong style={{ color: "#1F2937" }}>Celular:</strong> {g.cellphone}
                 </Typography>
-                <Typography>
-                  <strong>Email:</strong> {g.email}
+                <Typography sx={{ color: "#374151" }}>
+                  <strong style={{ color: "#1F2937" }}>Email:</strong> {g.email}
                 </Typography>
               </Box>
             ))
           ) : (
-            <Typography>Nenhum guardião cadastrado</Typography>
+            <Typography color="#6B7280">Nenhum guardião cadastrado</Typography>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={closeModal}>Fechar</Button>
+        <DialogActions sx={{ p: 2 }}>
+          <Button
+            onClick={closeModal}
+            sx={{
+              color: "#A650F0",
+              fontWeight: 600,
+              "&:hover": {
+                backgroundColor: "#FAF5FF",
+              },
+            }}
+          >
+            Fechar
+          </Button>
         </DialogActions>
       </Dialog>
 
@@ -639,15 +924,24 @@ const Seletivo: React.FC = () => {
         onClose={closeModal}
         fullWidth
         maxWidth="sm"
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: 3,
+            },
+          },
+        }}
       >
-        <DialogTitle>Dados de Registro</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 600, color: "#1F2937" }}>
+          Dados de Registro
+        </DialogTitle>
         <DialogContent dividers>
           {currentUser && (
             <>
               {currentUser.registration_data &&
                 Object.entries(currentUser.registration_data).map(([k, v]) => (
-                  <Typography key={k}>
-                    <strong>{translateLabel(k)}:</strong>{" "}
+                  <Typography key={k} sx={{ mb: 1.5, color: "#374151" }}>
+                    <strong style={{ color: "#1F2937" }}>{translateLabel(k)}:</strong>{" "}
                     {typeof v === "string"
                       ? v
                           .replace(/_/g, " ")
@@ -656,15 +950,26 @@ const Seletivo: React.FC = () => {
                   </Typography>
                 ))}
               {currentUser.contract && (
-                <Typography>
-                  <strong>Contrato:</strong> {currentUser.contract.status}
+                <Typography sx={{ color: "#374151" }}>
+                  <strong style={{ color: "#1F2937" }}>Contrato:</strong> {currentUser.contract.status}
                 </Typography>
               )}
             </>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={closeModal}>Fechar</Button>
+        <DialogActions sx={{ p: 2 }}>
+          <Button
+            onClick={closeModal}
+            sx={{
+              color: "#A650F0",
+              fontWeight: 600,
+              "&:hover": {
+                backgroundColor: "#FAF5FF",
+              },
+            }}
+          >
+            Fechar
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>
