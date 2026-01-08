@@ -27,8 +27,8 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
     <Card
       sx={{
         width: "100%",
-        height: 160,
-        borderRadius: 3,
+        height: 130,
+        borderRadius: 2.5,
         boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
         cursor: onClick ? "pointer" : "default",
         transition: "all 0.2s ease",
@@ -70,26 +70,26 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          py: 3,
-          px: 2.5,
+          py: 2,
+          px: 1.5,
           height: "100%",
           width: "100%",
           boxSizing: "border-box",
           "&:last-child": {
-            paddingBottom: 3,
+            paddingBottom: 2,
           },
         }}
       >
         <Box
           sx={{
-            mb: 2,
+            mb: 1.2,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
             position: "relative",
             "& svg": {
-              fontSize: "44px !important",
+              fontSize: "36px !important",
               fill: `url(#${gradientId})`,
             },
           }}
@@ -110,8 +110,8 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
             color: cardColor,
             fontWeight: 600,
             textAlign: "center",
-            fontSize: "0.9rem",
-            lineHeight: 1.3,
+            fontSize: "0.8rem",
+            lineHeight: 1.25,
             wordBreak: "break-word",
             overflow: "hidden",
             textOverflow: "ellipsis",

@@ -123,7 +123,9 @@ const Dashboard: React.FC = () => {
       <Box
         sx={{
           flex: 1,
-          p: { xs: 2, sm: 3, md: 4 },
+          pl: { xs: 2, sm: 2, md: 2 },
+          pr: { xs: 2, sm: 4, md: 8 },
+          py: { xs: 2, sm: 3, md: 4 },
           display: "flex",
           flexDirection: "column",
           overflow: "auto",
@@ -194,9 +196,9 @@ const Dashboard: React.FC = () => {
                     xs: "1fr",
                     sm: "repeat(2, 1fr)",
                     md: "repeat(3, 1fr)",
-                    lg: "repeat(4, 1fr)",
+                    lg: "repeat(5, 1fr)",
                   },
-                  gap: 3,
+                  gap: 2.5,
                 }}
               >
                 {dashboardCards
@@ -246,9 +248,9 @@ const Dashboard: React.FC = () => {
                     xs: "1fr",
                     sm: "repeat(2, 1fr)",
                     md: "repeat(3, 1fr)",
-                    lg: "repeat(4, 1fr)",
+                    lg: "repeat(5, 1fr)",
                   },
-                  gap: 3,
+                  gap: 2.5,
                 }}
               >
                 {dashboardCards

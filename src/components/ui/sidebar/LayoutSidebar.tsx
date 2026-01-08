@@ -51,34 +51,38 @@ const UserBox: React.FC<{ collapsed: boolean }> = ({ collapsed }) => {
         flexDirection: collapsed ? "column" : "row",
         alignItems: "center",
         justifyContent: collapsed ? "center" : "flex-start",
-        p: 2,
-        borderTop: "1px solid #E5E7EB",
+        p: collapsed ? 1.5 : 2,
+        borderTop: "1px solid rgba(0, 0, 0, 0.06)",
         mt: "auto",
-        gap: 1,
-        backgroundColor: "#FAFAFA",
+        gap: 1.5,
+        background: "linear-gradient(to bottom, #FAFAFA, #FFFFFF)",
+        transition: "all 0.2s ease",
       }}
     >
       <Avatar
         sx={{
-          width: 32,
-          height: 32,
-          background: "#E5E7EB",
-          fontWeight: 500,
-          fontSize: "0.8rem",
-          color: "#9CA3AF",
+          width: collapsed ? 36 : 40,
+          height: collapsed ? 36 : 40,
+          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          fontWeight: 600,
+          fontSize: collapsed ? "0.875rem" : "0.9375rem",
+          color: "#FFFFFF",
+          boxShadow: "0 2px 8px rgba(102, 126, 234, 0.25)",
+          transition: "all 0.2s ease",
         }}
       >
-        {user.first_name?.[0] || user.email[0]}
+        {user.first_name?.[0]?.toUpperCase() || user.email[0]?.toUpperCase()}
       </Avatar>
       {!collapsed && (
-        <Box sx={{ ml: 1, flex: 1, minWidth: 0 }}>
+        <Box sx={{ ml: 0.5, flex: 1, minWidth: 0 }}>
           <Typography
             variant="subtitle2"
             noWrap
             sx={{
-              fontWeight: 500,
-              color: "#6B7280",
-              fontSize: "0.8125rem",
+              fontWeight: 600,
+              color: "#1F2937",
+              fontSize: "0.875rem",
+              mb: 0.25,
             }}
           >
             {user.first_name} {user.last_name}
@@ -87,7 +91,7 @@ const UserBox: React.FC<{ collapsed: boolean }> = ({ collapsed }) => {
             variant="caption"
             color="text.secondary"
             noWrap
-            sx={{ fontSize: "0.6875rem", color: "#9CA3AF" }}
+            sx={{ fontSize: "0.75rem", color: "#6B7280" }}
           >
             {user.email}
           </Typography>
@@ -140,9 +144,9 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
           width: isExpanded ? drawerWidth : collapsedWidth,
           boxSizing: "border-box",
           overflowX: "hidden",
-          transition: "width 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+          transition: "width 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
           bgcolor: "#FFFFFF",
-          borderRight: "1px solid #F3F4F6",
+          borderRight: "none",
           display: "flex",
           flexDirection: "column",
           alignItems: isExpanded ? "flex-start" : "center",
@@ -150,19 +154,20 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
           height: "100vh",
           top: 0,
           left: 0,
-          boxShadow: "none",
+          boxShadow: "0 0 40px rgba(0, 0, 0, 0.05), 0 0 1px rgba(0, 0, 0, 0.1)",
         },
       }}
     >
       <Toolbar
         sx={{
-          minHeight: 64,
+          minHeight: 72,
           display: "flex",
           justifyContent: isExpanded ? "space-between" : "center",
           alignItems: "center",
-          px: isExpanded ? 2 : 0,
+          px: isExpanded ? 2.5 : 0,
           width: "100%",
           backgroundColor: "#FFFFFF",
+          borderBottom: "1px solid rgba(0, 0, 0, 0.04)",
         }}
       >
         {/* Logo */}
@@ -173,9 +178,10 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            transition: "opacity 0.2s ease",
+            transition: "transform 0.2s ease, opacity 0.2s ease",
             "&:hover": {
-              opacity: 0.8,
+              opacity: 0.85,
+              transform: "scale(1.02)",
             },
           }}
         >
@@ -207,9 +213,12 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
             onClick={onClose}
             size="small"
             sx={{
-              color: "#6B7280",
+              color: "#9CA3AF",
+              transition: "all 0.2s ease",
               "&:hover": {
-                color: "#A650F0",
+                color: "#667eea",
+                backgroundColor: "rgba(102, 126, 234, 0.08)",
+                transform: "rotate(90deg)",
               },
             }}
           >
@@ -229,15 +238,15 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
       {menuGroups.map((group, groupIndex) => (
         <React.Fragment key={groupIndex}>
           {group.title && isExpanded && (
-            <Box sx={{ px: 2, py: 2, pt: groupIndex === 0 ? 3 : 3 }}>
+            <Box sx={{ px: 2.5, py: 2, pt: groupIndex === 0 ? 3 : 2.5 }}>
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#9CA3AF",
+                  color: "#6B7280",
                   fontWeight: 700,
-                  fontSize: "0.7rem",
+                  fontSize: "0.6875rem",
                   textTransform: "uppercase",
-                  letterSpacing: "1px",
+                  letterSpacing: "1.2px",
                 }}
               >
                 {group.title}
@@ -265,22 +274,43 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
                 sx={{
                   justifyContent: isExpanded ? "flex-start" : "center",
                   px: isExpanded ? 2 : 1,
-                  py: 1.25,
+                  py: 1.5,
                   width: "100%",
-                  borderRadius: 1.5,
-                  mb: 0.25,
-                  color: "#9CA3AF",
-                  transition: "all 0.15s ease",
+                  borderRadius: 2,
+                  mb: 0.5,
+                  color: "#6B7280",
+                  position: "relative",
+                  transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+                  "&::before": {
+                    content: '""',
+                    position: "absolute",
+                    left: 0,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    width: "3px",
+                    height: 0,
+                    backgroundColor: "#667eea",
+                    borderRadius: "0 4px 4px 0",
+                    transition: "height 0.2s ease",
+                  },
                   "&:hover": {
-                    color: "#6B7280",
-                    backgroundColor: "#F9FAFB",
+                    color: "#1F2937",
+                    backgroundColor: "rgba(102, 126, 234, 0.06)",
+                    transform: "translateX(2px)",
+                    "& .MuiListItemIcon-root": {
+                      color: "#667eea",
+                    },
                   },
                   "&.active": {
-                    backgroundColor: "#F3F4F6",
-                    color: "#1F2937",
-                    fontWeight: 500,
+                    backgroundColor: "rgba(102, 126, 234, 0.1)",
+                    color: "#667eea",
+                    fontWeight: 600,
+                    boxShadow: "0 2px 4px rgba(102, 126, 234, 0.08)",
+                    "&::before": {
+                      height: "70%",
+                    },
                     "& .MuiListItemIcon-root": {
-                      color: "#1F2937",
+                      color: "#667eea",
                     },
                   },
                 }}
@@ -289,9 +319,10 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
                   sx={{
                     minWidth: 0,
                     justifyContent: "center",
-                    marginRight: isExpanded ? 2 : 0,
+                    marginRight: isExpanded ? 2.5 : 0,
                     color: "inherit",
                     fontSize: "1.25rem",
+                    transition: "all 0.2s ease",
                   }}
                 >
                   {icon}
@@ -300,8 +331,8 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
                   <ListItemText
                     primary={label}
                     primaryTypographyProps={{
-                      fontSize: "0.8125rem",
-                      fontWeight: 400,
+                      fontSize: "0.875rem",
+                      fontWeight: 500,
                     }}
                     sx={{ flexGrow: 1, minWidth: 0 }}
                   />
@@ -310,7 +341,7 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
             ))}
           </List>
           {groupIndex < menuGroups.length - 1 && isExpanded && (
-            <Divider sx={{ my: 2, mx: 2, borderColor: "#E5E7EB" }} />
+            <Divider sx={{ my: 2.5, mx: 2.5, borderColor: "rgba(0, 0, 0, 0.06)" }} />
           )}
         </React.Fragment>
       ))}

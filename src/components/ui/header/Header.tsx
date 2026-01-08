@@ -62,20 +62,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
       <Toolbar sx={{ justifyContent: "space-between", py: 1, minHeight: 60 }}>
         {/* Menu Toggle */}
         <Box sx={{ display: "flex", alignItems: "center" }}>
-          <IconButton
-            edge="start"
-            onClick={onMenuClick}
-            sx={{
-              color: "#9CA3AF",
-              "&:hover": {
-                bgcolor: "transparent",
-                color: "#6B7280",
-              },
-              transition: "all 0.15s ease",
-            }}
-          >
-            <MenuIcon sx={{ fontSize: "1.25rem" }} />
-          </IconButton>
+
         </Box>
 
         {/* Perfil com dropdown */}
