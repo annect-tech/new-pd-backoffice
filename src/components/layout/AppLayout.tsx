@@ -210,7 +210,7 @@ export default function AppLayout() {
             left: 0,
             right: 0,
             bottom: 0,
-            bgcolor: "rgba(0, 0, 0, 0.0000001)",
+            bgcolor: "rgba(255, 255, 255, 0.7)",
             zIndex: 0,
           }}
         />

@@ -1,9 +1,11 @@
 import React, { useState } from 'react'
-import { Box, Typography, TextField, Button, Alert} from '@mui/material'
-import AuthCard from '../../components/ui/cards/AuthCard'
+import { Box, Typography, TextField, Button, Alert, InputAdornment, IconButton, Link } from '@mui/material'
 import { useAuth } from '../../hooks/useAuth'
 import { useNavigate } from 'react-router'
+import Visibility from '@mui/icons-material/Visibility'
+import VisibilityOff from '@mui/icons-material/VisibilityOff'
 import { APP_ROUTES } from '../../util/constants'
+import AuthPromotionalSection from '../../components/auth/SideAuthSection'
 
 export default function Register() {
   const { register, loading, error } = useAuth()
@@ -13,6 +15,8 @@ export default function Register() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [password2, setPassword2] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showPassword2, setShowPassword2] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,32 +35,82 @@ export default function Register() {
   }
 
   return (
-    <Box>
+    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+      {/* Seção promocional lateral */}
+      <AuthPromotionalSection />
+
+      {/* Seção do formulário */}
       <Box
         sx={{
           flex: 1,
-          display: { xs: 'none', md: 'flex' },
+          display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          bgcolor: 'primary.main',
+          p: 3,
+          bgcolor: '#fff',
         }}
       >
-       
-      </Box>
-      <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2 }}>
-        <AuthCard>
-          <Typography variant="h5" fontWeight={700} mb={2} align="center">
-            Criar conta
-          </Typography>
+        <Box
+          sx={{
+            width: '100%',
+            maxWidth: 480,
+          }}
+        >
+          {/* Título minimalista */}
+          <Box sx={{ mb: 5 }}>
+            <Typography
+              variant="h4"
+              fontWeight={600}
+              color="#1a1a1a"
+              sx={{ mb: 0.5 }}
+            >
+              Criar conta
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Preencha os dados para começar
+            </Typography>
+          </Box>
+
+          {/* Formulário */}
           <form onSubmit={handleSubmit}>
-            <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+            {/* Mensagem de erro */}
+            {(formError || error) && (
+              <Alert
+                severity="error"
+                sx={{
+                  mb: 3,
+                  borderRadius: 1,
+                  border: '1px solid #fee',
+                  bgcolor: '#fef2f2',
+                }}
+              >
+                {formError || error}
+              </Alert>
+            )}
+
+            {/* Nome e Sobrenome */}
+            <Box sx={{ display: 'flex', gap: 2, mb: 2.5 }}>
               <TextField
                 label="Nome"
                 value={firstName}
                 onChange={e => setFirstName(e.target.value)}
                 fullWidth
                 required
-                margin="normal"
+                autoFocus
+                variant="outlined"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 1.5,
+                    bgcolor: '#fafafa',
+                    '&:hover': {
+                      bgcolor: '#f5f5f5',
+                    },
+                    '&.Mui-focused': {
+                      bgcolor: '#fff',
+                    },
+                  },
+                }}
               />
               <TextField
                 label="Sobrenome"
@@ -64,9 +118,23 @@ export default function Register() {
                 onChange={e => setLastName(e.target.value)}
                 fullWidth
                 required
-                margin="normal"
+                variant="outlined"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 1.5,
+                    bgcolor: '#fafafa',
+                    '&:hover': {
+                      bgcolor: '#f5f5f5',
+                    },
+                    '&.Mui-focused': {
+                      bgcolor: '#fff',
+                    },
+                  },
+                }}
               />
             </Box>
+
+            {/* E-mail */}
             <TextField
               label="E-mail"
               type="email"
@@ -74,46 +142,142 @@ export default function Register() {
               onChange={e => setEmail(e.target.value)}
               fullWidth
               required
-              margin="normal"
+              variant="outlined"
+              sx={{
+                mb: 2.5,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 1.5,
+                  bgcolor: '#fafafa',
+                  '&:hover': {
+                    bgcolor: '#f5f5f5',
+                  },
+                  '&.Mui-focused': {
+                    bgcolor: '#fff',
+                  },
+                },
+              }}
             />
+
+            {/* Senha */}
             <TextField
               label="Senha"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={e => setPassword(e.target.value)}
               fullWidth
               required
-              margin="normal"
+              variant="outlined"
+              sx={{
+                mb: 2.5,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 1.5,
+                  bgcolor: '#fafafa',
+                  '&:hover': {
+                    bgcolor: '#f5f5f5',
+                  },
+                  '&.Mui-focused': {
+                    bgcolor: '#fff',
+                  },
+                },
+              }}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowPassword(v => !v)}
+                      edge="end"
+                      size="small"
+                    >
+                      {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
             />
+
+            {/* Confirmar senha */}
             <TextField
               label="Confirmar senha"
-              type="password"
+              type={showPassword2 ? 'text' : 'password'}
               value={password2}
               onChange={e => setPassword2(e.target.value)}
               fullWidth
               required
-              margin="normal"
+              variant="outlined"
+              sx={{
+                mb: 3,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 1.5,
+                  bgcolor: '#fafafa',
+                  '&:hover': {
+                    bgcolor: '#f5f5f5',
+                  },
+                  '&.Mui-focused': {
+                    bgcolor: '#fff',
+                  },
+                },
+              }}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowPassword2(v => !v)}
+                      edge="end"
+                      size="small"
+                    >
+                      {showPassword2 ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
             />
-            {(formError || error) && (
-              <Alert severity="error" sx={{ mt: 2 }}>
-                {formError || error}
-              </Alert>
-            )}
+
+            {/* Botão de cadastro */}
             <Button
               type="submit"
               variant="contained"
               color="primary"
               fullWidth
-              sx={{ mt: 3, mb: 1, py: 1.5, fontWeight: 600 }}
+              size="large"
               disabled={loading}
+              sx={{
+                py: 1.5,
+                fontWeight: 600,
+                fontSize: '0.9375rem',
+                textTransform: 'none',
+                borderRadius: 1.5,
+                boxShadow: 'none',
+                '&:hover': {
+                  boxShadow: 'none',
+                },
+              }}
             >
-              {loading ? 'Cadastrando...' : 'Cadastrar'}
+              {loading ? 'Cadastrando...' : 'Criar conta'}
             </Button>
+
+            {/* Link para login */}
+            <Box sx={{ textAlign: 'center', mt: 3 }}>
+              <Typography variant="body2" color="text.secondary">
+                Já tem uma conta?{' '}
+                <Link
+                  component="button"
+                  type="button"
+                  onClick={() => navigate(APP_ROUTES.LOGIN)}
+                  underline="none"
+                  sx={{
+                    color: 'primary.main',
+                    fontWeight: 600,
+                    '&:hover': {
+                      textDecoration: 'underline',
+                    },
+                  }}
+                >
+                  Entrar
+                </Link>
+              </Typography>
+            </Box>
           </form>
-          <Typography variant="body2" align="center" sx={{ mt: 2 }}>
-            Já tem uma conta? <Button variant="text" color="primary" onClick={() => navigate(APP_ROUTES.LOGIN)}>Entrar</Button>
-          </Typography>
-        </AuthCard>
+        </Box>
       </Box>
     </Box>
   )

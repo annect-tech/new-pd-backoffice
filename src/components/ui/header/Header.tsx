@@ -43,6 +43,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const handleLogout = () => {
     logout();
     handleMenuClose();
+    navigate(APP_ROUTES.LOGIN);
   };
 
   return (

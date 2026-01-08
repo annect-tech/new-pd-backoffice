@@ -49,3 +49,11 @@ export interface RefreshTokenResponse {
   access: string;
   refresh: string;
 }
+
+export interface LogoutPayload {
+  refresh: string;
+}
+
+export interface LogoutResponse {
+  message: string;
+}

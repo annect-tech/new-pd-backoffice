@@ -1,10 +1,12 @@
 import {
   type LoginPayload,
-  type RegisterPayload,
   type LoginResponse,
+  type RegisterPayload,
   type RegisterResponse,
   type RefreshTokenPayload,
   type RefreshTokenResponse,
+  type LogoutPayload,
+  type LogoutResponse,
 } from "../../../interfaces/authInterfaces";
 import { ENDPOINTS } from "../../../util/constants";
 import { httpClient } from "../httpClient";
@@ -16,11 +18,7 @@ export const authService = {
     httpClient.post<LoginResponse>(API_URL, ENDPOINTS.AUTH.LOGIN, payload),
 
   register: (payload: RegisterPayload) =>
-    httpClient.post<RegisterResponse>(
-      API_URL,
-      ENDPOINTS.AUTH.REGISTER,
-      payload
-    ),
+    httpClient.post<RegisterResponse>(API_URL, ENDPOINTS.AUTH.REGISTER, payload),
 
   refreshToken: (payload: RefreshTokenPayload) =>
     httpClient.post<RefreshTokenResponse>(
@@ -28,4 +26,7 @@ export const authService = {
       ENDPOINTS.AUTH.REFRESH_TOKEN,
       payload
     ),
+
+  logout: (payload: LogoutPayload) =>
+    httpClient.post<LogoutResponse>(API_URL, ENDPOINTS.AUTH.LOGOUT, payload),
 };
