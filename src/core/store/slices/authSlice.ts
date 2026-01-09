@@ -41,14 +41,9 @@ const authSlice = createSlice({
       state.accessToken = action.payload;
       httpClient.setAuthToken(action.payload);
     },
-    updateUserProfilePhoto(state, action: PayloadAction<string>) {
-      if (state.user) {
-        state.user.profile_photo = action.payload;
-      }
-    },
   },
 });
 
-export const { setCredentials, clearCredentials, setAccessToken, updateUserProfilePhoto } =
+export const { setCredentials, clearCredentials, setAccessToken } =
   authSlice.actions;
 export default authSlice.reducer;
