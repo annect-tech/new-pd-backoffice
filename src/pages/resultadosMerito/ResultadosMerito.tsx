@@ -26,7 +26,6 @@ import {
   FilterList as FilterListIcon,
   Download as DownloadIcon,
 } from "@mui/icons-material";
-import { useNavigate } from "react-router";
 import { useAcademicMerit } from "../../hooks/useAcademicMerit";
 import PdfViewModa from "../../components/modals/PdfViewModa";
 import { APP_ROUTES } from "../../util/constants";
@@ -44,7 +43,6 @@ import {
 } from "../../styles/designSystem";
 
 const ResultadosMerito: React.FC = () => {
-  const navigate = useNavigate();
   const { allMerits, loading, error, fetchAllMerits } = useAcademicMerit();
 
   const [searchTerm, setSearchTerm] = useState("");

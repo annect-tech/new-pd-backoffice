@@ -181,28 +181,8 @@ export default function Login() {
             >
               {loading ? 'Entrando...' : 'Entrar'}
             </Button>
-
-            {/* Link para cadastro */}
-            <Box sx={{ textAlign: 'center', mt: 3 }}>
-              <Typography variant="body2" color="text.secondary">
-                Não tem uma conta?{' '}
-                <Link
-                  component="button"
-                  type="button"
-                  onClick={() => navigate(APP_ROUTES.REGISTER)}
-                  underline="none"
-                  sx={{
-                    color: 'primary.main',
-                    fontWeight: 600,
-                    '&:hover': {
-                      textDecoration: 'underline',
-                    },
-                  }}
-                >
-                  Criar conta
-                </Link>
-              </Typography>
-            </Box>
+            {/* Registro removido - não existe no backend */}
+            {/* Apenas administradores podem criar usuários */}
           </form>
         </Box>
       </Box>

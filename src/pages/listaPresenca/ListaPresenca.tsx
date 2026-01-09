@@ -27,7 +27,6 @@ import {
   Search as SearchIcon,
   MoreVert as MoreVertIcon,
 } from "@mui/icons-material";
-import { useNavigate } from "react-router";
 import { useExamsScheduled } from "../../hooks/useExamsScheduled";
 import ScheduledStatusUpdaterModal from "../../components/modals/ScheduledStatusUpdaterModal";
 import { APP_ROUTES } from "../../util/constants";
@@ -45,7 +44,6 @@ import {
 } from "../../styles/designSystem";
 
 const ListaPresenca: React.FC = () => {
-  const navigate = useNavigate();
   const {
     exams,
     loading,

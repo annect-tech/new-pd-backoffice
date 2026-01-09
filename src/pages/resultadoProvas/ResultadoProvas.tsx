@@ -27,7 +27,6 @@ import {
   FilterList as FilterListIcon,
   Download as DownloadIcon,
 } from "@mui/icons-material";
-import { useNavigate } from "react-router";
 import { useExams } from "../../hooks/useExams";
 import NoteUpdaterModal from "../../components/modals/NoteUpdaterModal";
 import { APP_ROUTES } from "../../util/constants";
@@ -45,7 +44,6 @@ import {
 } from "../../styles/designSystem";
 
 const ResultadoProvas: React.FC = () => {
-  const navigate = useNavigate();
   const {
     exams,
     loading,

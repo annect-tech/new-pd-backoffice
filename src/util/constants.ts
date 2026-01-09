@@ -1,5 +1,3 @@
-import { t } from "i18next";
-
 export const CACHE_CONFIG = {
   DEFAULT_TTL: 300000, // 5 minutos
   AUTH_CACHE_KEY: "auth_cache",

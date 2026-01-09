@@ -19,14 +19,12 @@ import {
   TableRow,
   TablePagination,
   TextField,
-  InputAdornment,
 } from "@mui/material";
 import {
   MoreVert as MoreVertIcon,
   Refresh as RefreshIcon,
 } from "@mui/icons-material";
 import SearchIcon from "@mui/icons-material/Search";
-import { useNavigate } from "react-router";
 import { useContracts } from "../../hooks/useContracts";
 import { APP_ROUTES } from "../../util/constants";
 import PageHeader from "../../components/ui/page/PageHeader";
@@ -42,7 +40,6 @@ import {
 } from "../../styles/designSystem";
 
 const Contratos: React.FC = () => {
-  const navigate = useNavigate();
   const { contracts, loading, error, fetchContracts } = useContracts();
 
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);

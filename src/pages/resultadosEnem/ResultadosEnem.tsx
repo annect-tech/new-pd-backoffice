@@ -27,7 +27,6 @@ import {
   FilterList as FilterListIcon,
   Download as DownloadIcon,
 } from "@mui/icons-material";
-import { useNavigate } from "react-router";
 import PageHeader from "../../components/ui/page/PageHeader";
 import {
   designSystem,
@@ -98,7 +97,6 @@ const MOCK_RESULTS: EnemResult[] = [
 ];
 
 const ResultadosEnem: React.FC = () => {
-  const navigate = useNavigate();
 
   const [items, setItems] = useState<EnemResult[]>(MOCK_RESULTS);
   const [loading] = useState(false);

@@ -7,13 +7,7 @@ import {
   Avatar,
   Menu,
   MenuItem,
-  Typography,
-  Divider,
 } from "@mui/material";
-import MenuIcon from "@mui/icons-material/Menu";
-import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
-import PersonIcon from "@mui/icons-material/Person";
-import LogoutIcon from "@mui/icons-material/Logout";
 import { useNavigate } from "react-router";
 import { useAuth } from "../../../hooks/useAuth";
 import { APP_ROUTES } from "../../../util/constants";
@@ -22,7 +16,7 @@ interface HeaderProps {
   onMenuClick?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
+const Header: React.FC<HeaderProps> = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);

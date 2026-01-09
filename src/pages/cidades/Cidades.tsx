@@ -35,7 +35,6 @@ import {
   Image as ImageIcon,
   PictureAsPdf as PictureAsPdfIcon,
 } from "@mui/icons-material";
-import { useNavigate } from "react-router";
 import { useCities } from "../../hooks/useCities";
 import { APP_ROUTES } from "../../util/constants";
 import PageHeader from "../../components/ui/page/PageHeader";
@@ -66,7 +65,6 @@ interface City extends CityDataPayload {
 type Mode = "create" | "edit";
 
 const Cidades: React.FC = () => {
-  const navigate = useNavigate();
   const {
     cities,
     loading,

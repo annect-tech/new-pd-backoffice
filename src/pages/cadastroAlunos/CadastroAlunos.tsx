@@ -29,7 +29,7 @@ import {
 import { useNavigate } from "react-router";
 import { APP_ROUTES } from "../../util/constants";
 import PageHeader from "../../components/ui/page/PageHeader";
-import { designSystem, primaryButtonStyles, progressStyles } from "../../styles/designSystem";
+import { designSystem, primaryButtonStyles } from "../../styles/designSystem";
 
 // Funções utilitárias para CPF
 const formatCPF = (value: string): string => {

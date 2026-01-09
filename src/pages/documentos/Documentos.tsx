@@ -16,13 +16,11 @@ import {
   TableRow,
   TablePagination,
   TextField,
-  InputAdornment,
 } from "@mui/material";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SearchIcon from "@mui/icons-material/Search";
-import { useNavigate } from "react-router";
 import PageHeader from "../../components/ui/page/PageHeader";
 import {
   designSystem,

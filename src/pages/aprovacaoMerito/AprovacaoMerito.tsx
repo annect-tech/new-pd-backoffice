@@ -5,18 +5,15 @@ import {
   CircularProgress,
   Typography,
   Paper,
-  Divider,
   Alert,
   Fade,
 } from "@mui/material";
-import { useNavigate } from "react-router";
 import { useAcademicMerit } from "../../hooks/useAcademicMerit";
 import { APP_ROUTES } from "../../util/constants";
 import PageHeader from "../../components/ui/page/PageHeader";
 import { designSystem, paperStyles, progressStyles } from "../../styles/designSystem";
 
 const AprovacaoMerito: React.FC = () => {
-  const navigate = useNavigate();
   const {
     loading,
     error,
