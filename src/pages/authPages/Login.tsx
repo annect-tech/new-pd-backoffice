@@ -10,7 +10,7 @@ import { APP_ROUTES } from '../../util/constants'
 export default function Login() {
   const { login, loading, error } = useAuth()
   const navigate = useNavigate()
-  const [email, setEmail] = useState('')
+  const [credential, setCredential] = useState('') // Renomeado de email
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
@@ -19,8 +19,8 @@ export default function Login() {
     e.preventDefault()
     setFormError(null)
     try {
-      await login({ email, password })
-      navigate(APP_ROUTES.HOME)
+      await login({ credential, password }) // Usar credential
+      navigate(APP_ROUTES.DASHBOARD) // Redirecionar para dashboard
     } catch (err: any) {
       setFormError(err.message || 'Erro ao fazer login')
     }
@@ -54,14 +54,15 @@ export default function Login() {
           </Typography>
           <form onSubmit={handleSubmit}>
             <TextField
-              label="E-mail"
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
+              label="Email, CPF ou Username"
+              type="text"
+              value={credential}
+              onChange={e => setCredential(e.target.value)}
               fullWidth
               margin="normal"
               required
               autoFocus
+              helperText="Você pode usar email, CPF ou username para entrar"
             />
             <TextField
               label="Senha"
@@ -96,11 +97,8 @@ export default function Login() {
             >
               {loading ? 'Entrando...' : 'Entrar'}
             </Button>
-            <Box sx={{ textAlign: 'center', mt: 2 }}>
-              <Button variant="text" color="primary" onClick={() => navigate(APP_ROUTES.REGISTER)}>
-                Não tem uma conta? Cadastre-se
-              </Button>
-            </Box>
+            {/* Registro removido - não existe no backend */}
+            {/* Apenas administradores podem criar usuários */}
           </form>
         </AuthCard>
       </Box>

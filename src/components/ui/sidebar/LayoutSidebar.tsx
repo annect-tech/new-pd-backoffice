@@ -56,7 +56,7 @@ const UserBox: React.FC<{ collapsed: boolean }> = ({ collapsed }) => {
       }}
     >
       <Avatar sx={{ width: 40, height: 40 }}>
-        {user.first_name?.[0] || user.email[0]}
+        {user.first_name?.[0] || user.email?.[0] || "U"}
       </Avatar>
       {!collapsed && (
         <Box sx={{ ml: 1, flex: 1, minWidth: 0 }}>

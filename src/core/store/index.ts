@@ -66,10 +66,12 @@ httpClient.setOnUnauthorized(async () => {
     return store.dispatch(clearCredentials());
   }
   try {
-    const res = await authService.refreshToken({ refresh: refreshToken });
+    // Usar novo formato: { refreshToken: string }
+    const res = await authService.refreshToken({ refreshToken });
     console.log("[store] refreshToken resposta", res);
     if (res.status === 200 && res.data) {
-      store.dispatch(setAccessToken(res.data.access));
+      // Usar novo campo: accessToken (não access)
+      store.dispatch(setAccessToken(res.data.accessToken));
       console.log("[store] Novo accessToken definido");
     } else {
       console.warn("[store] refreshToken falhou, limpando credenciais");

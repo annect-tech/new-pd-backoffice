@@ -19,7 +19,7 @@ export const APP_ROUTES = {
   HOME: "/",
   DASHBOARD: "/dashboard",
   LOGIN: "/login",
-  REGISTER: "/register",
+  // REGISTER: "/register", // Removido - não existe no backend
   // Rotas dos Cards
   SELECTIVE: "/seletivo",
   EXAM_SCHEDULED: "/lista-presenca",
@@ -44,12 +44,12 @@ export const APP_ROUTES = {
 
 export const ENDPOINTS = {
   AUTH: {
-    LOGIN: "/auth/login/",
+    LOGIN: "/auth/login", // Removida barra final
     OTP_VERIFY: "/auth/otp-verify/",
     RECOVERY: "/auth/recovery/",
-    REGISTER: "/auth/register/",
+    // REGISTER: Não existe no backend - apenas admin pode criar usuários
     RESET_PASSWORD: "/auth/reset-password/",
-    REFRESH_TOKEN: "/auth/refresh/",
+    REFRESH_TOKEN: "/auth/refresh-token", // Endpoint correto do backend
   },
   CRM: {
     CLIENTS: "/crm/clientes/",

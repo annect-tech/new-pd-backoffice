@@ -19,9 +19,14 @@ import Usuarios from "../../pages/usuarios/Usuarios";
 import Perfil from "../../pages/perfil/Perfil";
 import EditarPerfil from "../../pages/perfil/EditarPerfil";
 import MeuPerfil from "../../pages/meuPerfil/MeuPerfil";
+import Login from "../../pages/authPages/Login";
 
 export const AppRoutes = () => (
   <Routes>
+    {/* Rotas Públicas (sem AppLayout) */}
+    <Route path={APP_ROUTES.LOGIN} element={<Login />} />
+
+    {/* Rotas Protegidas (com AppLayout) */}
     <Route element={<AppLayout />}>
       {/* Dashboard como página inicial */}
       <Route path={APP_ROUTES.HOME} element={<Dashboard />} />

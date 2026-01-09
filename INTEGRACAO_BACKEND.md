@@ -1,1097 +1,1088 @@
-# Documento de Integração Backend - Sistema Backoffice
+# Roteiro de Integração - Frontend
+
+## ⚠️ ATENÇÃO: Leia Primeiro
+
+**IMPORTANTE:** Antes de começar a integração, leia o documento **[CORRECOES_CONTRATO_API.md](./CORRECOES_CONTRATO_API.md)** que contém correções importantes sobre o contrato da API, especialmente:
+
+- Formato correto das respostas (`accessToken`/`refreshToken` vs `access`/`refresh`)
+- Endpoints de perfil de usuário (não existe `/user/user-profiles/me`)
+- Upload de foto (formato multipart correto)
+- Logout (não existe endpoint no backend)
+
+---
 
 ## 📋 Índice
-1. [Visão Geral](#visão-geral)
-2. [Sistema de Autenticação](#sistema-de-autenticação)
-3. [Modal de Criação de Perfil](#modal-de-criação-de-perfil)
-4. [Integração das Páginas Internas](#integração-das-páginas-internas)
-5. [Logout](#logout)
-6. [Estrutura de Dados](#estrutura-de-dados)
+
+1. [Informações Gerais](#informações-gerais)
+2. [Configuração Inicial](#configuração-inicial)
+3. [Autenticação](#autenticação)
+4. [Estrutura de Respostas](#estrutura-de-respostas)
+5. [Paginação](#paginação)
+6. [Tratamento de Erros](#tratamento-de-erros)
+7. [Endpoints Principais](#endpoints-principais)
+8. [Exemplos de Código](#exemplos-de-código)
+9. [Boas Práticas](#boas-práticas)
+10. [Troubleshooting](#troubleshooting)
 
 ---
 
-## 🎯 Visão Geral
+## 📌 Informações Gerais
 
-Este documento descreve os passos necessários para integrar o front-end do sistema backoffice com as APIs do backend. O sistema está atualmente utilizando **dados mockados** para facilitar a visualização e desenvolvimento dos componentes internos.
-
-### ⚠️ Importante: Sistema de Login Comentado
-
-O sistema de login está **comentado/desabilitado** para facilitar a visualização dos componentes internos do sistema sem necessidade de autenticação. **É altamente recomendável que a integração comece pelo sistema de autenticação**, pois ele é a base para todas as outras funcionalidades.
-
----
-
-## 🔐 Sistema de Autenticação
-
-### Localização dos Arquivos
-- **Página de Login**: `src/pages/authPages/login/Login.tsx`
-- **Hook de Autenticação**: `src/hooks/useAuth.ts`
-- **Serviço de Autenticação**: `src/core/http/services/authService.ts`
-- **Provider de Autenticação**: `src/app/providers/AuthProvider.tsx`
-
-### Endpoint Esperado
-
-**POST** `/auth/login`
-
-**Request Body:**
-```json
-{
-  "credential": "12345678901",  // CPF sem máscara (11 dígitos)
-  "password": "senha123"
-}
+### URL Base da API
+```
+http://186.248.135.172:31535
 ```
 
-**Response Esperada:**
-```json
-{
-  "access": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refresh": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "user": {
-    "id": 1,
-    "email": "usuario@example.com",
-    "first_name": "João",
-    "last_name": "Silva",
-    "username": "joao.silva",
-    "role": "admin" // ou "monitor"
+### Documentação Swagger
+A API possui documentação Swagger disponível em:
+```
+http://186.248.135.172:31535/swagger
+```
+
+### Formato de Dados
+- **Content-Type**: `application/json`
+- **Accept**: `application/json`
+- Todas as requisições devem enviar dados em formato JSON
+- Todas as respostas retornam dados em formato JSON
+
+### CORS
+A API está configurada para aceitar requisições de qualquer origem (`enableCors()`).
+
+---
+
+## ⚙️ Configuração Inicial
+
+### Variáveis de Ambiente Recomendadas
+
+```env
+VITE_API_BASE_URL=http://186.248.135.172:31535
+# ou
+REACT_APP_API_BASE_URL=http://186.248.135.172:31535
+# ou
+NEXT_PUBLIC_API_BASE_URL=http://186.248.135.172:31535
+```
+
+### Configuração do Cliente HTTP
+
+**Exemplo com Axios:**
+
+```typescript
+import axios from 'axios';
+
+const api = axios.create({
+  baseURL: process.env.VITE_API_BASE_URL || 'http://186.248.135.172:31535',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Interceptor para adicionar token automaticamente
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('accessToken');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
-}
+  return config;
+});
+
+// Interceptor para tratar erros de autenticação
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    
+    // Se receber 401 e ainda não tentou refresh
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      
+      try {
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (!refreshToken) {
+          // Redirecionar para login
+          window.location.href = '/login';
+          return Promise.reject(error);
+        }
+        
+        const { data } = await axios.post(
+          `${api.defaults.baseURL}/auth/refresh-token`,
+          { refreshToken }
+        );
+        
+        localStorage.setItem('accessToken', data.accessToken);
+        localStorage.setItem('refreshToken', data.refreshToken);
+        
+        originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
+        return api(originalRequest);
+      } catch (refreshError) {
+        // Refresh token inválido, fazer logout
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
+      }
+    }
+    
+    return Promise.reject(error);
+  }
+);
+
+export default api;
 ```
-
-### Passos para Integração
-
-1. **Descomentar/Ativar o sistema de login**:
-   - Verificar se há rotas protegidas que precisam ser ajustadas
-   - Garantir que o `AuthProvider` está envolvendo a aplicação
-
-2. **Atualizar `authService.ts`**:
-   - O arquivo já está preparado para fazer a chamada à API
-   - Verificar se a URL base da API está configurada corretamente
-   - Ajustar o endpoint se necessário
-
-3. **Implementar tratamento de erros**:
-   - Credenciais inválidas
-   - Usuário inativo
-   - Erros de rede
-
-4. **Implementar refresh token**:
-   - O sistema já possui estrutura para refresh token
-   - Implementar lógica de renovação automática quando o access token expirar
-
-### Validações no Front-end
-- CPF deve ter 11 dígitos (sem máscara)
-- Senha é obrigatória
-- Formato de CPF é validado antes do envio
 
 ---
 
-## 👤 Modal de Criação de Perfil (Primeiro Login)
+## 🔐 Autenticação
 
-### Localização dos Arquivos
-- **Modal**: `src/components/modals/CreateProfileModal.tsx`
-- **Integração**: `src/components/layout/AppLayout.tsx` (linhas 30-67)
+### 1. Login
 
-### Fluxo de Funcionamento
+**Endpoint:** `POST /auth/login`
 
-1. Após o login bem-sucedido, o sistema verifica se o usuário possui perfil completo
-2. Se não possuir, o modal de criação de perfil é exibido automaticamente
-3. O usuário preenche os dados em etapas (com os dados pessoais que serão usados para a criação do perfil)
-4. Após completar, o perfil é criado e o modal é fechado
-
-### Endpoint Esperado
-
-**POST** `/user-profiles/`
-
-**Request Body:**
-```json
+**Payload:**
+```typescript
 {
-  "cpf": "12345678901",
-  "personal_email": "email.pessoal@example.com",
-  "bio": "Biografia do usuário",
-  "birth_date": "1990-01-15",
-  "hire_date": "2024-01-01",
-  "occupation": "Agente de Sucesso",
-  "department": "Sucesso do Aluno",
-  "equipment_patrimony": "12345",
-  "work_location": "Rua Tome de Souza 810 - 5º andar",
-  "manager": "Mariana"
+  credential: string; // Email, CPF ou username
+  password: string;
 }
 ```
 
-**Response Esperada:**
-```json
+**⚠️ IMPORTANTE:** 
+- Use sempre o campo `credential` ao invés de `email`
+- O campo `credential` aceita: email, CPF (com ou sem formatação) ou username
+- O backend busca automaticamente em todos esses campos usando OR
+- O campo é automaticamente trimado pelo backend
+
+**Resposta de Sucesso (200):**
+```typescript
 {
-  "id": 1,
-  "cpf": "12345678901",
-  "personal_email": "email.pessoal@example.com",
-  "bio": "Biografia do usuário",
-  "birth_date": "1990-01-15",
-  "hire_date": "2024-01-01",
-  "occupation": "Agente de Sucesso",
-  "department": "Sucesso do Aluno",
-  "equipment_patrimony": "12345",
-  "work_location": "Rua Tome de Souza 810 - 5º andar",
-  "manager": "Mariana",
-  "created_at": "2024-01-01T10:00:00Z",
-  "updated_at": "2024-01-01T10:00:00Z"
+  accessToken: string; // JWT token
+  refreshToken: string; // UUID v4 token
 }
 ```
 
-### Endpoint para Upload de Foto (se estiver liberado o armazenamento de imagens)
+**Exemplo de Requisição:**
+```typescript
+const response = await api.post('/auth/login', {
+  credential: 'luke@pectecbh.com.br', // ou CPF ou username
+  password: 'qweasd32'
+});
 
-**POST** `/user-profiles/{id}/upload-photo`
+const { accessToken, refreshToken } = response.data;
 
-**Request:**
-- Content-Type: `multipart/form-data`
-- Body: arquivo de imagem (máximo 1MB)
+// Armazenar tokens
+localStorage.setItem('accessToken', accessToken);
+localStorage.setItem('refreshToken', refreshToken);
+```
 
-**Response Esperada:**
-```json
+**Possíveis Erros:**
+
+| Status | Mensagem | Significado |
+|--------|----------|-------------|
+| 400 | `credential é obrigatório` | Campo credential não foi enviado ou está vazio |
+| 400 | `credential deve ser uma string` | Campo credential não é uma string válida |
+| 400 | `password é obrigatório` | Campo password não foi enviado ou está vazio |
+| 400 | `Credenciais inválidas.` | Usuário não encontrado ou senha incorreta |
+| 403 | `A sua conta foi suspensa. Entre em contato com a administração para mais detalhes.` | Conta inativa (is_active = false) |
+| 403 | `Acesso negado.` | Usuário não possui roles associadas |
+
+### 2. Refresh Token
+
+**Endpoint:** `POST /auth/refresh-token`
+
+**Payload:**
+```typescript
 {
-  "id": 1,
-  "profile_photo": "https://api.example.com/media/profiles/photo_123.jpg",
-  "updated_at": "2024-01-01T10:05:00Z"
+  refreshToken: string;
 }
 ```
 
-### Endpoint para Verificar se Usuário Tem Perfil
-
-**GET** `/user-profiles/me/`
-
-**Response (se tiver perfil):**
-```json
+**Resposta de Sucesso (200):**
+```typescript
 {
-  "id": 1,
-  "cpf": "12345678901",
+  accessToken: string; // Novo JWT token
+  refreshToken: string; // Novo refresh token
+}
+```
+
+**⚠️ IMPORTANTE:**
+- Após usar um refresh token, ele é automaticamente removido e um novo é gerado
+- O token antigo não pode ser reutilizado
+- Sempre atualize ambos os tokens no storage após refresh
+
+**Possíveis Erros:**
+
+| Status | Mensagem | Significado |
+|--------|----------|-------------|
+| 400 | `refreshToken é obrigatório` | Campo refreshToken não foi enviado |
+| 400 | `Refresh token inválido.` | Refresh token não existe no banco |
+| 400 | `Refresh token expirado.` | Refresh token expirou (expiresAt < data atual) |
+| 404 | `Usuário não encontrado.` | Usuário associado ao refresh token não existe mais |
+
+### 3. Logout
+
+**⚠️ IMPORTANTE:**
+- Não existe endpoint explícito de logout no backend
+- O logout deve ser feito no frontend removendo os tokens do storage
+- Para invalidar o refresh token no backend, seria necessário deletá-lo manualmente (não há endpoint público)
+
+**Exemplo de Logout:**
+```typescript
+const logout = () => {
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
+  // Redirecionar para página de login
+  window.location.href = '/login';
+};
+```
+
+### 4. Estrutura do JWT Token
+
+O payload do JWT contém:
+
+```typescript
+{
+  sub: number; // user_id do auth_user
+  roles: string[]; // Array de nomes de roles, ex: ['ADMIN', 'USER']
+  tenant_city_id: string; // ID da cidade/tenant do usuário
+}
+```
+
+**Exemplo de decodificação (sem validação):**
+```typescript
+const decodeJWT = (token: string) => {
+  const base64Url = token.split('.')[1];
+  const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+  const jsonPayload = decodeURIComponent(
+    atob(base64)
+      .split('')
+      .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+      .join('')
+  );
+  return JSON.parse(jsonPayload);
+};
+
+const token = localStorage.getItem('accessToken');
+if (token) {
+  const payload = decodeJWT(token);
+  console.log('User ID:', payload.sub);
+  console.log('Roles:', payload.roles);
+  console.log('Tenant City ID:', payload.tenant_city_id);
+}
+```
+
+### 5. Header de Autenticação
+
+Todas as requisições autenticadas devem incluir:
+
+```
+Authorization: Bearer {accessToken}
+```
+
+**Exemplo:**
+```
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+---
+
+## 📊 Estrutura de Respostas
+
+### Resposta de Sucesso Simples
+
+```typescript
+{
+  // Dados da resposta
+  id: string;
+  name: string;
   // ... outros campos
 }
 ```
 
-**Response (se não tiver perfil):**
-```json
+### Resposta de Erro
+
+```typescript
 {
-  "detail": "Not found."
+  message: string; // Mensagem de erro descritiva
+  statusCode: number; // Código HTTP do erro
 }
 ```
-ou status `404`
 
-### Passos para Integração
-
-1. **Atualizar `AppLayout.tsx`**:
-   - Substituir a verificação mockada (linha 39) por uma chamada real à API
-   - Implementar `handleCreateProfile` para chamar o endpoint de criação
-   - Implementar `handleUploadPhoto` para fazer upload da foto
-
-2. **Validações**:
-   - CPF deve ser único
-   - E-mail pessoal deve ser válido
-   - Datas devem estar no formato ISO (YYYY-MM-DD)
-   - Patrimônio deve ter entre 4 e 6 dígitos (se informado)
-
-3. **Tratamento de Erros**:
-   - CPF já cadastrado
-   - Campos obrigatórios faltando
-   - Erros de validação
-
----
-
-## 📄 Integração das Páginas Internas
-
-### Cards Gerais
-
-#### 1. Seletivo
-**Arquivo**: `src/pages/seletivo/Seletivo.tsx`  
-**Hook**: `src/hooks/useSelective.ts`
-
-**Endpoint Esperado:**
-- **GET** `/selective/` - Listar processos seletivos
-
-**Dados Mockados Atuais:**
-- Lista de processos seletivos com status, datas, etc.
-
-**Estrutura de Dados Esperada:**
-```json
+**Exemplo:**
+```typescript
 {
-  "results": [
-    {
-      "id": 1,
-      "name": "Processo Seletivo 2024",
-      "status": "active",
-      "start_date": "2024-01-01",
-      "end_date": "2024-12-31",
-      "city": {
-        "id": 1,
-        "name": "São Paulo",
-        "uf": "SP"
-      }
-    }
-  ],
-  "count": 10
+  message: "credential é obrigatório",
+  statusCode: 400
 }
 ```
 
 ---
 
-#### 2. Lista de Presença
-**Arquivo**: `src/pages/listaPresenca/ListaPresenca.tsx`  
-**Hook**: `src/hooks/useExamsScheduled.ts`
+## 📄 Paginação
 
-**Endpoint Esperado:**
-- **GET** `/exams-scheduled/` - Listar provas agendadas
+### Query Parameters
 
-**Dados Mockados Atuais:**
-- Lista de provas com datas, horários, locais
+Todos os endpoints que retornam listas aceitam os seguintes query parameters:
 
-**Estrutura de Dados Esperada:**
-```json
-{
-  "results": [
-    {
-      "id": 1,
-      "exam_date": "2024-02-15",
-      "exam_time": "14:00",
-      "location": "Escola Municipal",
-      "city": {
-        "id": 1,
-        "name": "São Paulo"
-      },
-      "status": "scheduled"
-    }
-  ]
-}
-```
-
----
-
-#### 3. Aprovação Mérito
-**Arquivo**: `src/pages/aprovacaoMerito/AprovacaoMerito.tsx`  
-**Hook**: `src/hooks/useAcademicMerit.ts`
-
-**Endpoint Esperado:**
-- **GET** `/academic-merit/` - Listar aprovações de mérito
-- **PATCH** `/academic-merit/{id}/` - Atualizar status de aprovação
-
-**Dados Mockados Atuais:**
-- Lista de candidatos com status de mérito
-
-**Estrutura de Dados Esperada:**
-```json
-{
-  "results": [
-    {
-      "id": 1,
-      "candidate": {
-        "id": 1,
-        "name": "João Silva",
-        "cpf": "12345678901"
-      },
-      "status": "pending",
-      "score": 850.5,
-      "created_at": "2024-01-01T10:00:00Z"
-    }
-  ]
-}
-```
-
----
-
-#### 4. Resultado das Provas
-**Arquivo**: `src/pages/resultadoProvas/ResultadoProvas.tsx`  
-**Hook**: `src/hooks/useExams.ts`
-
-**Endpoint Esperado:**
-- **GET** `/exams/` - Listar resultados de provas
-
-**Dados Mockados Atuais:**
-- Lista de resultados com notas, status
-
-**Estrutura de Dados Esperada:**
-```json
-{
-  "results": [
-    {
-      "id": 1,
-      "student": {
-        "id": 1,
-        "name": "João Silva",
-        "registration": "2024001"
-      },
-      "exam": {
-        "id": 1,
-        "name": "Prova de Matemática"
-      },
-      "score": 85.5,
-      "status": "approved",
-      "exam_date": "2024-02-15"
-    }
-  ]
-}
-```
-
----
-
-#### 5. Resultados Mérito
-**Arquivo**: `src/pages/resultadosMerito/ResultadosMerito.tsx`  
-**Hook**: `src/hooks/useAcademicMerit.ts`
-
-**Endpoint Esperado:**
-- **GET** `/academic-merit/results/` - Listar resultados de mérito
-
-**Dados Mockados Atuais:**
-- Lista de resultados de mérito aprovados
-
-**Estrutura de Dados Esperada:**
-```json
-{
-  "results": [
-    {
-      "id": 1,
-      "candidate": {
-        "id": 1,
-        "name": "João Silva"
-      },
-      "score": 850.5,
-      "status": "approved",
-      "approved_at": "2024-01-15T10:00:00Z"
-    }
-  ]
-}
-```
-
----
-
-#### 6. Resultados ENEM
-**Arquivo**: `src/pages/resultadosEnem/ResultadosEnem.tsx`
-
-**Endpoint Esperado:**
-- **GET** `/enem-results/` - Listar resultados do ENEM
-- **PATCH** `/enem-results/{id}/` - Atualizar status
-
-**Dados Mockados Atuais:**
-- Lista de resultados ENEM com status
-
-**Estrutura de Dados Esperada:**
-```json
-{
-  "results": [
-    {
-      "id": 1,
-      "candidate": {
-        "id": 1,
-        "name": "João Silva",
-        "cpf": "12345678901"
-      },
-      "enem_score": 750.5,
-      "status": "pending",
-      "year": 2023
-    }
-  ]
-}
-```
-
----
-
-#### 7. Dados de Alunos
-**Arquivo**: `src/pages/dadosAlunos/DadosAlunos.tsx`
-
-**Endpoints Esperados:**
-- **GET** `/students/` - Listar alunos novos
-- **GET** `https://form.pdinfinita.com.br/enrolled` - Listar alunos antigos (API externa)
-  - Header: `api-key: Rm9ybUFwaUZlaXRhUGVsb0plYW5QaWVycmVQYXJhYURlc2Vudm9sdmU=`
-- **PATCH** `/students/{id}/` - Atualizar dados do aluno
-
-**Dados Mockados Atuais:**
-- Lista de alunos com dados completos
-- Integração parcial com API externa para dados antigos
-
-**Estrutura de Dados Esperada (Alunos Novos):**
-```json
-{
-  "results": [
-    {
-      "id": 1,
-      "registration": "2024001",
-      "corp_email": "aluno@example.com",
-      "status": "active",
-      "user_data": {
-        "id": 1,
-        "user": {
-          "id": 1,
-          "first_name": "João",
-          "last_name": "Silva",
-          "username": "joao.silva"
-        },
-        "cpf": "12345678901",
-        "birth_date": "2000-01-15"
-      }
-    }
-  ]
-}
-```
-
-**Estrutura de Dados Esperada (Alunos Antigos - API Externa):**
-```json
-[
-  {
-    "id": "1",
-    "nomeCompleto": "João Silva",
-    "registrationCode": "2023001",
-    "emailPd": "aluno@example.com",
-    "cpf": "12345678901",
-    "dataNasc": "15/01/2000",
-    "status": "Ativo",
-    "agenteDoSucesso": "maria.santos"
-  }
-]
-```
-
-**Payload para Atualizar Aluno:**
-```json
-{
-  "registration": "2024001",
-  "corp_email": "novoemail@example.com",
-  "status": "active"
-}
-```
-⚠️ **Importante**: O campo `monitor` não deve ser enviado no payload de atualização.
-
----
-
-#### 8. Cadastro de Alunos
-**Arquivo**: `src/pages/cadastroAlunos/CadastroAlunos.tsx`
-
-**Endpoints Esperados:**
-- **GET** `/users/` - Buscar usuário por CPF (para auto-preenchimento)
-- **POST** `/students/` - Criar novo aluno
-- **GET** `/user-profiles/` - Listar monitores/agentes de sucesso
-
-**Dados Mockados Atuais:**
-- Formulário de cadastro com validação
-- Auto-preenchimento baseado em CPF
-
-**Payload para Criar Aluno:**
-```json
-{
-  "user_data": 1,  // ID do usuário encontrado pelo CPF
-  "registration": "2024001",
-  "corp_email": "aluno@example.com",
-  "status": "active"
-}
-```
-
-**Response Esperada:**
-```json
-{
-  "id": 1,
-  "registration": "2024001",
-  "corp_email": "aluno@example.com",
-  "status": "active",
-  "user_data": {
-    "id": 1,
-    "user": {
-      "id": 1,
-      "first_name": "João",
-      "last_name": "Silva"
-    }
-  },
-  "created_at": "2024-01-01T10:00:00Z"
-}
-```
-
----
-
-#### 9. Retenção
-**Arquivo**: `src/pages/retencao/Retencao.tsx`
-
-**Endpoint Esperado:**
-- **GET** `/retention/` - Listar alunos em retenção
-
-**Dados Mockados Atuais:**
-- Lista de alunos com status de retenção
-
-**Estrutura de Dados Esperada:**
-```json
-{
-  "results": [
-    {
-      "id": 1,
-      "student": {
-        "id": 1,
-        "name": "João Silva",
-        "registration": "2024001"
-      },
-      "retention_reason": "Baixa frequência",
-      "status": "active",
-      "created_at": "2024-01-01T10:00:00Z"
-    }
-  ]
-}
-```
-
----
-
-### Cards de Admin
-
-#### 10. Cidades
-**Arquivo**: `src/pages/cidades/Cidades.tsx`  
-**Hook**: `src/hooks/useCities.ts`
-
-**Endpoints Esperados:**
-- **GET** `/cities/` - Listar cidades
-- **POST** `/cities/` - Criar cidade
-- **PATCH** `/cities/{id}/` - Atualizar cidade
-
-**Dados Mockados Atuais:**
-- CRUD completo de cidades
-
-**Payload para Criar/Atualizar Cidade:**
-```json
-{
-  "localidade": "São Paulo",
-  "uf": "SP",
-  "active": true,
-  "logo": "<File>",  // multipart/form-data
-  "edital": "<File>" // multipart/form-data (PDF)
-}
-```
-
-**Response Esperada:**
-```json
-{
-  "id": 1,
-  "localidade": "São Paulo",
-  "uf": "SP",
-  "active": true,
-  "logo": "https://api.example.com/media/cities/logo_sp.jpg",
-  "edital": "https://api.example.com/media/cities/edital_sp.pdf",
-  "created_at": "2024-01-01T10:00:00Z"
-}
-```
+| Parâmetro | Tipo | Obrigatório | Descrição |
+|-----------|------|-------------|-----------|
+| `page` | number | Não | Número da página (padrão: 1) |
+| `size` | número | Não | Itens por página (padrão: total de itens) |
+| `search` | string | Não | Termo de busca (opcional, dependendo do endpoint) |
 
 **Validações:**
-- Logo: apenas imagens (jpg, png, etc.)
-- Edital: apenas PDFs
+- `page` e `size` devem ser números inteiros positivos
+- `search` é automaticamente trimado pelo backend
 
----
+### Estrutura de Resposta Paginada
 
-#### 11. Contratos
-**Arquivo**: `src/pages/contratos/Contratos.tsx`  
-**Hook**: `src/hooks/useContracts.ts`
-
-**Endpoint Esperado:**
-- **GET** `/contracts/` - Listar contratos
-
-**Dados Mockados Atuais:**
-- Lista de contratos com status
-
-**Estrutura de Dados Esperada:**
-```json
-{
-  "results": [
-    {
-      "id": 1,
-      "user_data": {
-        "id": 1,
-        "cpf": "12345678901",
-        "user": {
-          "id": 1,
-          "first_name": "João",
-          "last_name": "Silva"
-        }
-      },
-      "status": "active",
-      "created_at": "2024-01-01T10:00:00Z"
-    }
-  ]
-}
-```
-
----
-
-#### 12. Visualização de Documentos
-**Arquivo**: `src/pages/documentos/Documentos.tsx`  
-**Hook**: `src/pages/documentos/useDocuments.ts`
-
-**Endpoints Esperados:**
-- **GET** `/documents/` - Listar documentos
-- **POST** `/documents/{id}/upload-id/` - Upload de identidade
-- **POST** `/documents/{id}/upload-address/` - Upload de comprovante de endereço
-- **POST** `/documents/{id}/upload-school-history/` - Upload de histórico escolar
-
-**Dados Mockados Atuais:**
-- Lista de documentos com status de upload
-
-**Estrutura de Dados Esperada:**
-```json
-{
-  "results": [
-    {
-      "id": 1,
-      "user": {
-        "id": 1,
-        "name": "João Silva",
-        "username": "joao.silva"
-      },
-      "identity_document": "https://api.example.com/media/documents/id_123.pdf",
-      "address_document": null,
-      "school_history": null,
-      "contract_document": "https://api.example.com/media/documents/contract_123.pdf",
-      "submitted_at": "2024-01-01T10:00:00Z"
-    }
-  ]
-}
-```
-
-**Upload de Documentos:**
-- Content-Type: `multipart/form-data`
-- Body: arquivo (PDF ou imagem)
-
----
-
-#### 13. Usuários
-**Arquivo**: `src/pages/usuarios/Usuarios.tsx`
-
-**Endpoint Esperado:**
-- **GET** `/user-profiles/` - Listar perfis de usuários
-
-**Dados Mockados Atuais:**
-- Lista de usuários com fotos de perfil
-
-**Estrutura de Dados Esperada:**
-```json
-{
-  "results": [
-    {
-      "id": 1,
-      "user_display": {
-        "id": 1,
-        "first_name": "João",
-        "last_name": "Silva",
-        "email": "joao@example.com",
-        "username": "joao.silva"
-      },
-      "profile_photo": "https://api.example.com/media/profiles/photo_123.jpg",
-      "cpf": "12345678901",
-      "occupation": "Agente de Sucesso"
-    }
-  ]
-}
-```
-
----
-
-#### 14. Meu Perfil
-**Arquivo**: `src/pages/meuPerfil/MeuPerfil.tsx`
-
-**Endpoints Esperados:**
-- **GET** `/user-profiles/me/` - Obter perfil do usuário logado
-- **PATCH** `/user-profiles/me/` - Atualizar perfil do usuário logado
-- **POST** `/user-profiles/me/upload-photo/` - Upload de foto de perfil
-
-**Dados Mockados Atuais:**
-- Visualização e edição do próprio perfil
-
-**Estrutura de Dados Esperada:**
-```json
-{
-  "id": 1,
-  "cpf": "12345678901",
-  "personal_email": "email@example.com",
-  "bio": "Biografia",
-  "birth_date": "1990-01-15",
-  "hire_date": "2024-01-01",
-  "occupation": "Agente de Sucesso",
-  "department": "Sucesso do Aluno",
-  "equipment_patrimony": "12345",
-  "work_location": "Rua Tome de Souza 810 - 5º andar",
-  "manager": "Mariana",
-  "profile_photo": "https://api.example.com/media/profiles/photo_123.jpg",
-  "user_display": {
-    "id": 1,
-    "first_name": "João",
-    "last_name": "Silva",
-    "email": "joao@example.com",
-    "username": "joao.silva"
-  },
-  "created_at": "2024-01-01T10:00:00Z"
-}
-```
-
-**Payload para Atualizar Perfil:**
-```json
-{
-  "personal_email": "novoemail@example.com",
-  "bio": "Nova biografia",
-  "birth_date": "1990-01-15",
-  "hire_date": "2024-01-01",
-  "occupation": "Gestor",
-  "department": "Administrativo",
-  "equipment_patrimony": "12345",
-  "work_location": "Remoto",
-  "manager": "Maycon"
-}
-```
-
----
-
-## 🚪 Logout
-
-### Localização
-- **Componente**: `src/components/ui/header/Header.tsx` (linha 131)
-- **Provider**: `src/app/providers/AuthProvider.tsx` (método `logout`)
-- **Hook**: `src/hooks/useAuth.ts` (método `logout`)
-
-### Funcionalidade Atual
-O botão "Sair" no menu do header atualmente apenas fecha o menu (`handleMenuClose`), mas não realiza logout. É necessário implementar a funcionalidade completa de logout.
-
-### Endpoint Esperado (Opcional)
-**POST** `/auth/logout/`
-
-**Request Headers:**
-```
-Authorization: Bearer {access_token}
-```
-
-**Response Esperada:**
-```json
-{
-  "detail": "Logout realizado com sucesso"
-}
-```
-
-**Nota**: Se o backend não implementar endpoint de logout, ainda é possível fazer logout apenas limpando os dados localmente.
-
-### Passos para Integração
-
-1. **Adicionar método de logout no `authService.ts`**:
 ```typescript
-// src/core/http/services/authService.ts
-export const authService = {
-  // ... outros métodos
-  logout: () =>
-    httpClient.post(API_URL, '/auth/logout/', {}),
+{
+  data: T[]; // Array de itens da página atual
+  currentPage: number; // Página atual
+  itemsPerPage: number; // Itens por página
+  totalItems: number; // Total de itens
+  totalPages: number; // Total de páginas
+}
+```
+
+**Exemplo:**
+```typescript
+{
+  data: [
+    {
+      id: "1",
+      name: "Item 1",
+      // ... outros campos
+    },
+    {
+      id: "2",
+      name: "Item 2",
+      // ... outros campos
+    }
+  ],
+  currentPage: 1,
+  itemsPerPage: 10,
+  totalItems: 25,
+  totalPages: 3
+}
+```
+
+**Exemplo de Requisição:**
+```typescript
+const response = await api.get('/admin/users', {
+  params: {
+    page: 1,
+    size: 10,
+    search: 'luke' // opcional
+  }
+});
+
+const { data, currentPage, itemsPerPage, totalItems, totalPages } = response.data;
+```
+
+---
+
+## ⚠️ Tratamento de Erros
+
+### Códigos de Status HTTP Comuns
+
+| Status | Significado | Ação Recomendada |
+|--------|-------------|------------------|
+| 200 | Sucesso | Processar dados normalmente |
+| 201 | Criado | Recurso criado com sucesso |
+| 400 | Bad Request | Erro de validação - verificar mensagem |
+| 401 | Unauthorized | Token inválido ou expirado - tentar refresh |
+| 403 | Forbidden | Sem permissão - verificar roles do usuário |
+| 404 | Not Found | Recurso não encontrado |
+| 500 | Internal Server Error | Erro do servidor - tentar novamente mais tarde |
+
+### Mensagens de Erro Comuns
+
+```typescript
+// Erros de validação (400)
+"credential é obrigatório"
+"credential deve ser uma string"
+"password é obrigatório"
+"{campo} é obrigatório"
+"{campo} deve ser uma string" // ou outro tipo conforme validação
+
+// Erros de autenticação (400, 403)
+"Credenciais inválidas."
+"A sua conta foi suspensa. Entre em contato com a administração para mais detalhes."
+"Acesso negado."
+
+// Erros de refresh token (400, 404)
+"refreshToken é obrigatório"
+"Refresh token inválido."
+"Refresh token expirado."
+"Usuário não encontrado."
+
+// Erros de recursos (404)
+"FAQ não encontrada na base de dados."
+"Documento de merito não encontrado na base de dados."
+"Persona não encontrada na base de dados."
+"Usuário não encontrado."
+
+// Erros de permissão (403)
+"Sem permissão para acessar este recurso."
+```
+
+### Exemplo de Tratamento de Erros
+
+```typescript
+try {
+  const response = await api.get('/admin/users');
+  return response.data;
+} catch (error) {
+  if (error.response) {
+    // Erro com resposta do servidor
+    const { status, data } = error.response;
+    
+    switch (status) {
+      case 400:
+        // Erro de validação
+        console.error('Erro de validação:', data.message);
+        // Mostrar mensagem para o usuário
+        break;
+      case 401:
+        // Não autenticado
+        console.error('Não autenticado');
+        // Redirecionar para login
+        break;
+      case 403:
+        // Sem permissão
+        console.error('Sem permissão:', data.message);
+        // Mostrar mensagem de acesso negado
+        break;
+      case 404:
+        // Recurso não encontrado
+        console.error('Recurso não encontrado:', data.message);
+        break;
+      case 500:
+        // Erro do servidor
+        console.error('Erro do servidor:', data.message);
+        // Mostrar mensagem genérica
+        break;
+      default:
+        console.error('Erro desconhecido:', data.message);
+    }
+  } else if (error.request) {
+    // Erro de rede
+    console.error('Erro de rede:', error.message);
+  } else {
+    // Erro ao configurar requisição
+    console.error('Erro:', error.message);
+  }
+  
+  throw error;
+}
+```
+
+---
+
+## 🛣️ Endpoints Principais
+
+### Autenticação
+
+| Método | Endpoint | Autenticação | Descrição |
+|--------|----------|--------------|-----------|
+| POST | `/auth/login` | Não | Login com credential e password |
+| POST | `/auth/refresh-token` | Não | Renovar access token |
+
+### Usuários
+
+| Método | Endpoint | Autenticação | Roles | Descrição |
+|--------|----------|--------------|-------|-----------|
+| GET | `/admin/users` | Sim | ADMIN, ADMIN_MASTER | Listar usuários (admin) |
+| GET | `/user/users` | Sim | Qualquer | Listar usuários (usuário) |
+
+### Perfis de Usuário
+
+| Método | Endpoint | Autenticação | Roles | Descrição |
+|--------|----------|--------------|-------|-----------|
+| GET | `/admin/user-profiles` | Sim | ADMIN, ADMIN_MASTER | Listar perfis de usuários |
+
+**⚠️ IMPORTANTE:** Não existe endpoint específico para obter o perfil do usuário atual (`/user/user-profiles/me`). Opções:
+1. Extrair o `user_id` do payload do JWT (campo `sub`)
+2. Buscar o perfil através de `GET /admin/user-profiles` filtrando pelo `user_id` no frontend
+3. Criar um novo endpoint no backend `GET /user/user-profiles/me` (recomendado)
+
+### Outros Endpoints
+
+A API possui muitos outros endpoints organizados por módulos. Consulte a documentação Swagger em `/swagger` para ver todos os endpoints disponíveis.
+
+**Principais módulos:**
+- `/admin/*` - Endpoints administrativos (requerem roles ADMIN ou ADMIN_MASTER)
+- `/user/*` - Endpoints de usuário (requerem autenticação)
+- `/auth/*` - Endpoints de autenticação (públicos)
+
+---
+
+## 📤 Uploads de Arquivos (Multipart)
+
+### Endpoints que Suportam Upload
+
+A API possui vários endpoints que aceitam upload de arquivos usando `multipart/form-data`:
+
+| Endpoint | Método | Campo do Arquivo | Outros Campos | Roles |
+|----------|--------|------------------|---------------|-------|
+| `/admin/user-profiles/upload-photo` | POST | `file` | `id` (string) | ADMIN, ADMIN_MASTER |
+| `/upload-file/single` | POST | `file` | - | Autenticação |
+| `/upload-file/array` | POST | `files` (array) | - | Autenticação |
+| `/user/candidate-documents/upload` | POST | `file` | Vários (ver Swagger) | Autenticação |
+| `/user/academic-merit-documents/upload` | POST | `file` | Vários (ver Swagger) | Autenticação |
+
+### Formato de Requisição
+
+**⚠️ IMPORTANTE:** Para uploads multipart, você **NÃO deve** definir `Content-Type: application/json`. O navegador/biblioteca HTTP deve definir automaticamente `Content-Type: multipart/form-data` com o boundary correto.
+
+**Exemplo com Axios:**
+```typescript
+const formData = new FormData();
+formData.append('file', file); // Arquivo File/Blob
+formData.append('id', profileId); // Outros campos se necessário
+
+const response = await api.post('/admin/user-profiles/upload-photo', formData, {
+  headers: {
+    // NÃO definir Content-Type manualmente!
+    // Axios/Fetch definem automaticamente com boundary
+  },
+});
+```
+
+**Exemplo com Fetch:**
+```typescript
+const formData = new FormData();
+formData.append('file', file);
+formData.append('id', profileId);
+
+const response = await fetch(`${API_BASE_URL}/admin/user-profiles/upload-photo`, {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${accessToken}`,
+    // NÃO definir Content-Type - o navegador define automaticamente
+  },
+  body: formData,
+});
+```
+
+### Upload de Foto de Perfil
+
+**Endpoint:** `POST /admin/user-profiles/upload-photo`
+
+**Payload:**
+- `file`: Arquivo de imagem (File/Blob)
+- `id`: ID do perfil (string) - **não é user_id!**
+
+**Resposta:**
+```typescript
+{
+  url: string; // URL da foto no S3
+  message: string; // "Foto de perfil atualizada com sucesso."
+}
+```
+
+**Exemplo Completo:**
+```typescript
+const uploadProfilePhoto = async (profileId: string, file: File) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('id', profileId);
+  
+  try {
+    const response = await api.post('/admin/user-profiles/upload-photo', formData);
+    return response.data.url; // URL da foto
+  } catch (error: any) {
+    if (error.response?.status === 400) {
+      throw new Error(error.response.data.message || 'Erro ao fazer upload');
+    }
+    throw error;
+  }
 };
 ```
 
-2. **Atualizar `Header.tsx`**:
-   - Importar `useAuth` e `useNavigate`
-   - Adicionar função `handleLogout` que:
-     - Chama o endpoint de logout (se implementado)
-     - Chama `logout()` do `AuthProvider` para limpar dados localmente
-     - Redireciona para página de login
-   - Conectar o botão "Sair" à função `handleLogout`
+### Validações de Arquivo
 
-**Código sugerido para `Header.tsx`**:
+A API valida:
+- **Tipo de arquivo:** Apenas tipos permitidos (imagens para foto de perfil)
+- **Tamanho:** Máximo 10MB (verificar mensagem de erro específica)
+- **Presença:** Arquivo é obrigatório
+
+**Tratamento de Erros:**
 ```typescript
-import { useAuth } from '../../../hooks/useAuth';
-import { useNavigate } from 'react-router';
-import { APP_ROUTES } from '../../../util/constants';
+try {
+  await uploadProfilePhoto(profileId, file);
+} catch (error: any) {
+  if (error.response?.status === 400) {
+    const message = error.response.data.message;
+    if (message.includes('Tamanho')) {
+      alert('Arquivo muito grande. Máximo 10MB.');
+    } else if (message.includes('Tipo')) {
+      alert('Tipo de arquivo inválido. Use apenas imagens.');
+    } else {
+      alert(message);
+    }
+  }
+}
+```
 
-// Dentro do componente:
-const { logout } = useAuth();
-const navigate = useNavigate();
+### Helper para Cliente HTTP
 
-const handleLogout = async () => {
-  handleMenuClose(); // Fecha o menu primeiro
+**Implementação recomendada no httpClient:**
+
+```typescript
+// httpClient.ts
+class HttpClient {
+  // ... outros métodos ...
+  
+  async postForm<T>(endpoint: string, formData: FormData): Promise<T> {
+    const token = localStorage.getItem('accessToken');
+    
+    const response = await fetch(`${this.baseURL}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': token ? `Bearer ${token}` : '',
+        // NÃO definir Content-Type - navegador define automaticamente
+      },
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({
+        message: 'Erro desconhecido',
+        statusCode: response.status,
+      }));
+      throw { response: { status: response.status, data: error } };
+    }
+    
+    return response.json();
+  }
+}
+```
+
+---
+
+## 💻 Exemplos de Código
+
+### Exemplo Completo de Login
+
+```typescript
+import api from './api'; // Seu cliente HTTP configurado
+
+interface LoginCredentials {
+  credential: string;
+  password: string;
+}
+
+interface LoginResponse {
+  accessToken: string;
+  refreshToken: string;
+}
+
+const login = async (credentials: LoginCredentials): Promise<void> => {
   try {
-    // Tentar fazer logout na API (opcional)
-    await authService.logout();
-  } catch (error) {
-    console.error('Erro ao fazer logout na API:', error);
-    // Continuar mesmo se falhar
-  } finally {
-    // Sempre limpar dados localmente
-    logout();
-    navigate(APP_ROUTES.LOGIN);
+    const response = await api.post<LoginResponse>('/auth/login', credentials);
+    
+    const { accessToken, refreshToken } = response.data;
+    
+    // Armazenar tokens
+    localStorage.setItem('accessToken', accessToken);
+    localStorage.setItem('refreshToken', refreshToken);
+    
+    // Decodificar JWT para obter informações do usuário
+    const payload = decodeJWT(accessToken);
+    
+    // Armazenar informações do usuário (opcional)
+    localStorage.setItem('userId', payload.sub.toString());
+    localStorage.setItem('userRoles', JSON.stringify(payload.roles));
+    localStorage.setItem('tenantCityId', payload.tenant_city_id);
+    
+    // Redirecionar para página inicial
+    window.location.href = '/dashboard';
+  } catch (error: any) {
+    if (error.response) {
+      const { status, data } = error.response;
+      
+      switch (status) {
+        case 400:
+          if (data.message === 'Credenciais inválidas.') {
+            alert('Email/CPF/Username ou senha incorretos');
+          } else {
+            alert(data.message);
+          }
+          break;
+        case 403:
+          alert(data.message);
+          break;
+        default:
+          alert('Erro ao fazer login. Tente novamente.');
+      }
+    } else {
+      alert('Erro de conexão. Verifique sua internet.');
+    }
+    throw error;
   }
 };
 
-// No MenuItem:
-<MenuItem onClick={handleLogout}>Sair</MenuItem>
+// Uso
+login({
+  credential: 'luke@pectecbh.com.br',
+  password: 'qweasd32'
+});
 ```
 
-3. **Verificar `AuthProvider.tsx`**:
-   - O método `logout` já deve estar implementado e limpar:
-     - Access token
-     - Refresh token
-     - Dados do usuário
-     - Estado de autenticação
+### Exemplo de Listagem com Paginação
 
-4. **Tratamento de Erros**:
-   - Se o logout falhar na API, ainda assim limpar os dados localmente
-   - Redirecionar para login mesmo em caso de erro
-   - Não bloquear o logout se a API estiver indisponível
-
-### Comportamento Esperado
-Após clicar em "Sair":
-1. Menu fecha
-2. Requisição de logout é enviada (se endpoint existir)
-3. Tokens são removidos do estado/localStorage
-4. Dados do usuário são limpos
-5. Usuário é redirecionado para `/login`
-
----
-
-## 📊 Estrutura de Dados
-
-### Autenticação
-- **Access Token**: JWT com informações do usuário
-- **Refresh Token**: Token para renovação do access token
-- **User**: Objeto com dados básicos do usuário (id, email, nome, role)
-
-### Perfil de Usuário
-- Campos obrigatórios: `cpf`, `personal_email`
-- Campos opcionais: `bio`, `birth_date`, `hire_date`, `occupation`, `department`, `equipment_patrimony`, `work_location`, `manager`
-
-### Paginação
-A maioria dos endpoints deve suportar paginação usando o padrão:
-```json
-{
-  "results": [...],
-  "count": 100,
-  "next": "https://api.example.com/endpoint/?page=2",
-  "previous": null
+```typescript
+interface PaginatedResponse<T> {
+  data: T[];
+  currentPage: number;
+  itemsPerPage: number;
+  totalItems: number;
+  totalPages: number;
 }
+
+interface User {
+  id: number;
+  username: string;
+  email: string;
+}
+
+const listUsers = async (
+  page: number = 1,
+  size: number = 10,
+  search?: string
+): Promise<PaginatedResponse<User>> => {
+  try {
+    const params: any = { page, size };
+    if (search) {
+      params.search = search;
+    }
+    
+    const response = await api.get<PaginatedResponse<User>>('/admin/users', {
+      params
+    });
+    
+    return response.data;
+  } catch (error: any) {
+    if (error.response?.status === 401) {
+      // Token expirado, o interceptor deve tratar
+      throw error;
+    }
+    if (error.response?.status === 403) {
+      alert('Você não tem permissão para acessar esta página');
+      throw error;
+    }
+    throw error;
+  }
+};
+
+// Uso
+const users = await listUsers(1, 10, 'luke');
+console.log(`Mostrando ${users.data.length} de ${users.totalItems} usuários`);
+console.log(`Página ${users.currentPage} de ${users.totalPages}`);
 ```
 
-### Filtros e Busca
-- Muitas páginas possuem funcionalidade de busca/filtro
-- Implementar query parameters para filtros (ex: `?search=termo&status=active`)
+### Exemplo de Hook React para Autenticação
 
----
+```typescript
+import { useState, useEffect } from 'react';
+import api from './api';
 
-## 🔧 Configurações Necessárias
+interface User {
+  id: number;
+  roles: string[];
+  tenantCityId: string;
+}
 
-### Variáveis de Ambiente
-Certifique-se de configurar:
-- `VITE_API_URL`: URL base da API
-- `VITE_API_KEY`: Chave da API (se necessário)
-
-### Headers Padrão
-Todas as requisições autenticadas devem incluir:
+export const useAuth = () => {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      try {
+        const payload = decodeJWT(token);
+        setUser({
+          id: payload.sub,
+          roles: payload.roles,
+          tenantCityId: payload.tenant_city_id,
+        });
+      } catch (error) {
+        console.error('Erro ao decodificar token:', error);
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+      }
+    }
+    setLoading(false);
+  }, []);
+  
+  const login = async (credential: string, password: string) => {
+    const response = await api.post('/auth/login', {
+      credential,
+      password,
+    });
+    
+    const { accessToken, refreshToken } = response.data;
+    localStorage.setItem('accessToken', accessToken);
+    localStorage.setItem('refreshToken', refreshToken);
+    
+    const payload = decodeJWT(accessToken);
+    setUser({
+      id: payload.sub,
+      roles: payload.roles,
+      tenantCityId: payload.tenant_city_id,
+    });
+  };
+  
+  const logout = () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    setUser(null);
+  };
+  
+  const hasRole = (role: string): boolean => {
+    return user?.roles.includes(role) ?? false;
+  };
+  
+  const isAdmin = (): boolean => {
+    return hasRole('ADMIN') || hasRole('ADMIN_MASTER');
+  };
+  
+  return {
+    user,
+    loading,
+    login,
+    logout,
+    hasRole,
+    isAdmin,
+    isAuthenticated: !!user,
+  };
+};
 ```
-Authorization: Bearer {access_token}
-Content-Type: application/json
+
+### Exemplo de Componente de Proteção de Rota
+
+```typescript
+import { Navigate } from 'react-router-dom';
+import { useAuth } from './useAuth';
+
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+  requiredRoles?: string[];
+}
+
+export const ProtectedRoute = ({ children, requiredRoles }: ProtectedRouteProps) => {
+  const { user, loading, hasRole } = useAuth();
+  
+  if (loading) {
+    return <div>Carregando...</div>;
+  }
+  
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  if (requiredRoles && !requiredRoles.some(role => hasRole(role))) {
+    return <Navigate to="/unauthorized" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
+// Uso
+<ProtectedRoute requiredRoles={['ADMIN', 'ADMIN_MASTER']}>
+  <AdminDashboard />
+</ProtectedRoute>
 ```
 
-Para uploads de arquivo:
-```
-Authorization: Bearer {access_token}
-Content-Type: multipart/form-data
-```
+---
+
+## ✅ Boas Práticas
+
+### 1. Armazenamento de Tokens
+
+- **Use `localStorage`** para desenvolvimento e testes
+- **Considere `httpOnly cookies`** para produção (mais seguro)
+- **Nunca** armazene tokens em variáveis globais ou estado não persistente
+- **Sempre** limpe os tokens ao fazer logout
+
+### 2. Renovação Automática de Token
+
+- Implemente interceptor para renovar token automaticamente quando receber 401
+- Use o refresh token antes de redirecionar para login
+- Atualize ambos os tokens após refresh bem-sucedido
+
+### 3. Tratamento de Erros
+
+- Sempre trate erros de forma adequada
+- Mostre mensagens amigáveis para o usuário
+- Faça log de erros para debugging
+- Não exponha informações sensíveis em mensagens de erro
+
+### 4. Validação no Frontend
+
+- Valide dados antes de enviar para a API
+- Use bibliotecas como `yup` ou `zod` para validação
+- Mostre erros de validação antes de fazer requisição
+
+### 5. Loading States
+
+- Mostre indicadores de carregamento durante requisições
+- Desabilite botões durante requisições para evitar duplo submit
+- Use estados de loading para melhorar UX
+
+### 6. Paginação
+
+- Implemente paginação no frontend para listas grandes
+- Mostre informações de paginação (página atual, total de páginas)
+- Permita navegação entre páginas
+- Considere implementar busca/filtros
+
+### 7. Roles e Permissões
+
+- Verifique roles no frontend para mostrar/ocultar elementos
+- **Sempre** valide permissões no backend também
+- Use guards/proteção de rotas baseada em roles
+
+### 8. TypeScript
+
+- Defina interfaces/tipos para todas as respostas da API
+- Use tipos para payloads de requisição
+- Mantenha tipos sincronizados com o backend quando possível
 
 ---
 
-## ✅ Checklist de Integração
+## 🔧 Troubleshooting
 
-### Fase 1: Autenticação
-- [ ] Descomentar/ativar sistema de login
-- [ ] Implementar endpoint de login
-- [ ] Implementar refresh token
-- [ ] Testar fluxo completo de autenticação
+### Problema: "Credenciais inválidas" mesmo com credenciais corretas
 
-### Fase 2: Perfil
-- [ ] Implementar verificação de perfil existente
-- [ ] Implementar criação de perfil
-- [ ] Implementar upload de foto de perfil
-- [ ] Testar modal de criação de perfil
+**Possíveis causas:**
+1. Usuário não existe no banco de dados
+2. Senha está incorreta
+3. Usuário está inativo (`is_active = false`)
+4. Usuário não possui roles associadas
 
-### Fase 3: Páginas Internas
-- [ ] Seletivo
-- [ ] Lista de Presença
-- [ ] Aprovação Mérito
-- [ ] Resultado das Provas
-- [ ] Resultados Mérito
-- [ ] Resultados ENEM
-- [ ] Dados de Alunos
-- [ ] Cadastro de Alunos
-- [ ] Retenção
-- [ ] Cidades
-- [ ] Contratos
-- [ ] Visualização de Documentos
-- [ ] Usuários
-- [ ] Meu Perfil
+**Solução:**
+- Verificar se o usuário existe e está ativo
+- Verificar se o usuário possui roles
+- Verificar se a senha está correta
+- Verificar se está usando o campo `credential` corretamente
 
-### Fase 4: Logout
-- [ ] Implementar endpoint de logout (opcional)
-- [ ] Implementar função de logout no front-end
-- [ ] Testar logout completo
+### Problema: Token expira muito rápido
 
----
+**Solução:**
+- Implementar renovação automática usando refresh token
+- Verificar configuração de `tokenExpireTime` no backend
+- Armazenar refresh token corretamente
 
-## 📝 Notas Importantes
+### Problema: "Refresh token inválido" ou "Refresh token expirado"
 
-1. **Dados Mockados**: Todos os dados atuais são mockados. Substitua gradualmente pelas chamadas reais à API.
+**Possíveis causas:**
+1. Refresh token foi usado mais de uma vez (não é permitido)
+2. Refresh token expirou
+3. Refresh token não existe no banco
 
-2. **Tratamento de Erros**: Implemente tratamento adequado de erros em todas as chamadas à API, exibindo mensagens amigáveis ao usuário.
+**Solução:**
+- Após usar refresh token, sempre atualize ambos os tokens
+- Implemente logout automático quando refresh falhar
+- Verifique se o refresh token está sendo armazenado corretamente
 
-3. **Loading States**: Mantenha os estados de loading já implementados no front-end durante as chamadas à API.
+### Problema: CORS errors
 
-4. **Validações**: O front-end já possui validações básicas. O backend deve validar todos os dados antes de processar.
+**Solução:**
+- Verificar se a API está configurada para aceitar requisições da origem do frontend
+- Verificar se o backend está rodando e acessível
+- Verificar configuração de CORS no backend
 
-5. **Segurança**: Sempre valide tokens e permissões no backend. Não confie apenas nas validações do front-end.
+### Problema: "Sem permissão para acessar este recurso"
 
-6. **Performance**: Considere implementar cache onde apropriado e paginação para listas grandes.
+**Possíveis causas:**
+1. Usuário não possui a role necessária
+2. Usuário está tentando acessar recurso de outro tenant
+3. Usuário não é o dono do recurso (quando aplicável)
 
----
+**Solução:**
+- Verificar roles do usuário no payload do JWT
+- Verificar se o endpoint requer role específica
+- Verificar políticas de acesso do recurso
 
-## 📞 Suporte
+### Problema: Paginação não funciona
 
-Em caso de dúvidas sobre a integração, consulte:
-- Código-fonte dos hooks em `src/hooks/`
-- Serviços HTTP em `src/core/http/services/`
-- Interfaces de dados em `src/interfaces/`
+**Possíveis causas:**
+1. Parâmetros `page` ou `size` não são números inteiros positivos
+2. Parâmetros não estão sendo enviados corretamente
 
----
-
-## 🧪 Testes e Validação
-
-### Ordem Recomendada de Testes
-
-1. **Teste de Autenticação**:
-   - Login com credenciais válidas
-   - Login com credenciais inválidas
-   - Verificação de tokens no localStorage
-   - Refresh token automático
-
-2. **Teste de Perfil**:
-   - Primeiro login (deve mostrar modal)
-   - Preenchimento completo do perfil
-   - Upload de foto
-   - Segundo login (não deve mostrar modal)
-
-3. **Teste de Páginas**:
-   - Acessar cada página após login
-   - Verificar carregamento de dados
-   - Testar funcionalidades CRUD
-   - Testar filtros e buscas
-
-4. **Teste de Logout**:
-   - Clicar em "Sair"
-   - Verificar limpeza de dados
-   - Verificar redirecionamento
-
-### Ferramentas Úteis
-
-- **Postman/Insomnia**: Para testar endpoints antes da integração
-- **DevTools do Navegador**: Para verificar requisições e respostas
-- **React DevTools**: Para debugar estado dos componentes
-
----
-
-## 💡 Dicas e Boas Práticas
-
-### 1. Tratamento de Erros
-- Sempre exiba mensagens de erro amigáveis ao usuário
-- Use Snackbars/Alerts do Material-UI para feedback
-- Log erros no console para debug (apenas em desenvolvimento)
-
-### 2. Estados de Loading
-- Mantenha os estados de loading já implementados
-- Use `CircularProgress` durante carregamentos
-- Desabilite botões durante requisições
-
-### 3. Validações
-- Valide dados no front-end para melhor UX
-- Mas sempre valide também no back-end para segurança
-- Use os padrões de validação já implementados
-
-### 4. Paginação
-- Implemente paginação para listas grandes
-- Use os componentes de paginação do DataGrid quando aplicável
-
-### 5. Cache
-- Considere cache para dados que não mudam frequentemente
-- Use React Query ou similar se necessário
-
-### 6. Segurança
-- Nunca exponha tokens ou dados sensíveis no código
-- Use variáveis de ambiente para URLs e chaves
-- Valide permissões no backend
+**Solução:**
+- Verificar se `page` e `size` são números inteiros positivos
+- Verificar se os parâmetros estão sendo enviados como query params
+- Verificar formato da resposta paginada
 
 ---
 
 ## 📚 Recursos Adicionais
 
-### Estrutura de Pastas
-```
-src/
-├── components/        # Componentes reutilizáveis
-├── pages/            # Páginas do sistema
-├── hooks/            # Custom hooks (lógica de dados)
-├── core/
-│   └── http/
-│       └── services/ # Serviços de API
-├── interfaces/        # Interfaces TypeScript
-└── util/             # Utilitários e constantes
-```
+### Documentação Swagger
+Acesse `http://186.248.135.172:31535/swagger` para ver a documentação completa e interativa da API.
 
-### Padrões de Código
-- Hooks customizados para lógica de dados (ex: `useAuth`, `useCities`)
-- Serviços HTTP separados por domínio
-- Interfaces TypeScript para tipagem
-- Componentes funcionais com hooks
+### Usuário de Teste
+- **Credential:** `luke@pectecbh.com.br`
+- **Password:** `qweasd32`
 
-### Convenções
-- Nomes de arquivos em PascalCase para componentes
-- Nomes de arquivos em camelCase para utilitários
-- Rotas definidas em `APP_ROUTES` em `constants.ts`
-- Endpoints definidos em `ENDPOINTS` em `constants.ts`
+**⚠️ IMPORTANTE:** Este é um usuário de teste. Em produção, use credenciais reais.
 
----
+### Estrutura de Roles
 
-## 🔄 Fluxo Completo do Sistema
+| Role | Descrição |
+|------|-----------|
+| `ADMIN` | Administrador padrão |
+| `ADMIN_MASTER` | Administrador master com todos os privilégios |
+| `LEADER` | Líder responsável por gerenciar equipes |
+| `AGENT_SUCCESS` | Agente de sucesso responsável pelo acompanhamento |
+| `MONITOR` | Monitor que auxilia no suporte e operação |
+| `STUDENT` | Usuário estudante |
 
-### 1. Primeiro Acesso
-```
-Usuário → Login → Verificação de Perfil → Modal de Criação → Dashboard
-```
+### Endpoints por Prefixo
 
-### 2. Acessos Subsequentes
-```
-Usuário → Login → Dashboard (ou página anterior)
-```
-
-### 3. Navegação Interna
-```
-Dashboard → Páginas Internas → Ações (CRUD) → Feedback → Atualização
-```
-
-### 4. Logout
-```
-Usuário → Clicar "Sair" → Limpar Dados → Redirecionar para Login
-```
+- `/auth/*` - Autenticação (público)
+- `/admin/*` - Endpoints administrativos (requerem ADMIN ou ADMIN_MASTER)
+- `/user/*` - Endpoints de usuário (requerem autenticação)
+- `/health` - Health check (público)
 
 ---
 
-## ⚠️ Pontos de Atenção
+## 📝 Checklist de Integração
 
-1. **API Externa de Alunos Antigos**: 
-   - A API `https://form.pdinfinita.com.br/enrolled` é externa
-   - Requer API key específica
-   - Pode ter estrutura de dados diferente
+- [ ] Configurar variável de ambiente com URL da API
+- [ ] Configurar cliente HTTP (Axios/Fetch) com baseURL
+- [ ] Implementar interceptor para adicionar token automaticamente
+- [ ] Implementar interceptor para renovar token automaticamente
+- [ ] Implementar função de login
+- [ ] Implementar função de logout
+- [ ] Implementar armazenamento seguro de tokens
+- [ ] Implementar decodificação de JWT para obter informações do usuário
+- [ ] Implementar tratamento de erros adequado
+- [ ] Implementar proteção de rotas baseada em autenticação
+- [ ] Implementar proteção de rotas baseada em roles
+- [ ] Implementar paginação em listas
+- [ ] Implementar loading states
+- [ ] Testar fluxo completo de autenticação
+- [ ] Testar renovação automática de token
+- [ ] Testar tratamento de erros
+- [ ] Testar acesso negado (403)
+- [ ] Testar token expirado (401)
 
-2. **Upload de Arquivos**:
-   - Sempre validar tipo e tamanho no front-end
-   - Backend deve validar novamente
-   - Limite de 1MB para fotos de perfil
+---
 
-3. **Tokens**:
-   - Access tokens têm tempo de expiração
-   - Implementar renovação automática com refresh token
-   - Tratar erros 401 (não autorizado)
+## 📞 Suporte
 
-4. **Permissões**:
-   - Algumas páginas são apenas para admin
-   - Verificar permissões antes de exibir conteúdo
-   - Backend deve validar permissões em todas as requisições
+Para dúvidas ou problemas:
+1. Consulte a documentação Swagger em `/swagger`
+2. Verifique os logs do backend
+3. Verifique os logs do frontend (console do navegador)
+4. Entre em contato com a equipe de desenvolvimento
 
 ---
 
-## 📞 Contato e Suporte
-
-Para dúvidas sobre:
-- **Front-end**: Consulte o código-fonte e comentários
-- **Estrutura de dados**: Veja os arquivos em `src/interfaces/`
-- **Endpoints**: Verifique `src/util/constants.ts` e `src/core/http/services/`
-
----
+**Última atualização:** 2024
 
