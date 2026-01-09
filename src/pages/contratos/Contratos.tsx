@@ -1,4 +1,4 @@
-import React, { useEffect, type MouseEvent, useState } from "react";
+import React, { useEffect, type MouseEvent, useState, useMemo } from "react";
 import {
   Box,
   Paper,
@@ -11,15 +11,23 @@ import {
   Alert,
   Chip,
   Fade,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TablePagination,
+  TextField,
+  InputAdornment,
 } from "@mui/material";
 import {
   MoreVert as MoreVertIcon,
   Refresh as RefreshIcon,
 } from "@mui/icons-material";
-import { DataGrid } from "@mui/x-data-grid";
+import SearchIcon from "@mui/icons-material/Search";
 import { useNavigate } from "react-router";
 import { useContracts } from "../../hooks/useContracts";
-import { getTableConfig } from "../../util/constants";
 import { APP_ROUTES } from "../../util/constants";
 import PageHeader from "../../components/ui/page/PageHeader";
 import {
@@ -27,6 +35,10 @@ import {
   paperStyles,
   iconButtonStyles,
   progressStyles,
+  tableHeadStyles,
+  tableRowHoverStyles,
+  tablePaginationStyles,
+  textFieldStyles,
 } from "../../styles/designSystem";
 
 const Contratos: React.FC = () => {
@@ -34,6 +46,9 @@ const Contratos: React.FC = () => {
   const { contracts, loading, error, fetchContracts } = useContracts();
 
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   useEffect(() => {
     fetchContracts();
@@ -60,68 +75,35 @@ const Contratos: React.FC = () => {
     }
   };
 
-  const columns: any[] = [
-    {
-      field: "cpf",
-      headerName: "CPF",
-      width: 150,
-      headerAlign: "center",
-      align: "center",
-    },
-    {
-      field: "name",
-      headerName: "Nome",
-      width: 250,
-      headerAlign: "center",
-      align: "left",
-    },
-    {
-      field: "status",
-      headerName: "Status",
-      width: 150,
-      headerAlign: "center",
-      align: "center",
-      renderCell: (params: any) => (
-        <Chip
-          label={params.value}
-          color={getStatusColor(params.value) as any}
-          size="small"
-        />
-      ),
-    },
-    {
-      field: "actions",
-      headerName: "Ações",
-      width: 100,
-      renderCell: () => (
-        <IconButton
-          size="small"
-          onClick={(e) => openMenu(e)}
-          sx={{
-            color: designSystem.colors.text.disabled,
-            padding: "4px",
-            "&:hover": {
-              backgroundColor: designSystem.colors.primary.lighter,
-              color: designSystem.colors.primary.main,
-            },
-          }}
-        >
-          <MoreVertIcon fontSize="small" />
-        </IconButton>
-      ),
-      align: "center",
-      headerAlign: "center",
-      sortable: false,
-      filterable: false,
-    },
-  ];
-
   const rows = contracts.map((contract) => ({
     id: contract.id,
     cpf: contract.user_data.cpf,
     name: `${contract.user_data.user.first_name} ${contract.user_data.user.last_name}`,
     status: contract.status,
   }));
+
+  const filteredRows = useMemo(() => {
+    return rows.filter(
+      (row) =>
+        row.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        row.cpf.includes(searchTerm) ||
+        row.status.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [rows, searchTerm]);
+
+  const paginatedRows = useMemo(() => {
+    const start = page * rowsPerPage;
+    return filteredRows.slice(start, start + rowsPerPage);
+  }, [filteredRows, page, rowsPerPage]);
+
+  const handleChangePage = (_event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   return (
     <Box
@@ -166,25 +148,29 @@ const Contratos: React.FC = () => {
                 sx={{
                   display: "flex",
                   justifyContent: "space-between",
+                  alignItems: "center",
                   gap: 2,
                   p: 3,
                   backgroundColor: designSystem.colors.background.primary,
                   borderBottom: `1px solid ${designSystem.colors.border.main}`,
                 }}
               >
-                <Typography
-                  variant="h6"
-                  sx={{
-                    fontWeight: 600,
-                    color: designSystem.colors.text.primary,
-                    fontSize: "1.1rem",
-                  }}
-                >
-                  Contratos Cadastrados
-                </Typography>
-                <IconButton onClick={fetchContracts} {...iconButtonStyles}>
-                  <RefreshIcon />
-                </IconButton>
+                <Box display="flex" alignItems="center" sx={{ flex: 1, minWidth: 240, maxWidth: 420 }}>
+                  <SearchIcon sx={{ mr: 1, color: designSystem.colors.text.disabled }} />
+                  <TextField
+                    placeholder="Pesquisar por CPF, nome, email..."
+                    variant="standard"
+                    fullWidth
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    {...textFieldStyles}
+                  />
+                </Box>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <IconButton onClick={fetchContracts} {...iconButtonStyles}>
+                    <RefreshIcon />
+                  </IconButton>
+                </Box>
               </Toolbar>
 
               {loading ? (
@@ -196,48 +182,75 @@ const Contratos: React.FC = () => {
                   <Alert severity="error">{error}</Alert>
                 </Box>
               ) : (
-                <Box sx={{ height: 500, width: "100%" }}>
-                  <DataGrid
-                    rows={rows}
-                    columns={columns}
-                    disableRowSelectionOnClick
-                    getRowClassName={(params) =>
-                      params.indexRelativeToCurrentPage % 2 === 0 ? "even" : "odd"
-                    }
-                    {...getTableConfig()}
-                    sx={{
-                      border: "none",
-                      "& .MuiDataGrid-columnHeaders": {
-                        backgroundColor: designSystem.colors.background.secondary,
-                        color: designSystem.colors.text.secondary,
-                        borderBottom: `2px solid ${designSystem.colors.border.main}`,
-                        "& .MuiDataGrid-columnHeaderTitle": {
-                          fontWeight: 600,
-                          fontSize: "0.875rem",
-                        },
-                      },
-                      "& .even": {
-                        backgroundColor: designSystem.colors.background.primary,
-                      },
-                      "& .odd": {
-                        backgroundColor: designSystem.colors.background.secondary,
-                      },
-                      "& .MuiDataGrid-row:hover": {
-                        backgroundColor: `${designSystem.colors.primary.lightest} !important`,
-                        cursor: "pointer",
-                      },
-                      "& .MuiDataGrid-cell": {
-                        borderBottom: `1px solid ${designSystem.colors.border.main}`,
-                        color: designSystem.colors.text.secondary,
-                        fontSize: "0.875rem",
-                      },
-                      "& .MuiDataGrid-footerContainer": {
-                        borderTop: `1px solid ${designSystem.colors.border.main}`,
-                        backgroundColor: designSystem.colors.background.secondary,
-                      },
-                    }}
+                <TableContainer sx={{ overflowX: "auto", width: "100%" }}>
+                  <Table stickyHeader size="small" sx={{ minWidth: 700 }}>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 150 }}>CPF</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 250 }}>Nome</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 150 }} align="center">Status</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 100 }} align="center">Ações</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {paginatedRows.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={4} align="center" sx={{ py: 3 }}>
+                            <Typography color="textSecondary">
+                              {searchTerm ? "Nenhum resultado encontrado" : "Nenhum contrato disponível"}
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        paginatedRows.map((row) => (
+                          <TableRow key={row.id} {...tableRowHoverStyles}>
+                            <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {row.cpf}
+                            </TableCell>
+                            <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {row.name}
+                            </TableCell>
+                            <TableCell align="center">
+                              <Chip
+                                label={row.status}
+                                color={getStatusColor(row.status) as any}
+                                size="small"
+                              />
+                            </TableCell>
+                            <TableCell align="center">
+                              <IconButton
+                                size="small"
+                                onClick={(e) => openMenu(e)}
+                                sx={{
+                                  color: designSystem.colors.text.disabled,
+                                  padding: "4px",
+                                  "&:hover": {
+                                    backgroundColor: designSystem.colors.primary.lighter,
+                                    color: designSystem.colors.primary.main,
+                                  },
+                                }}
+                              >
+                                <MoreVertIcon fontSize="small" />
+                              </IconButton>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                  <TablePagination
+                    component="div"
+                    count={filteredRows.length}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    rowsPerPage={rowsPerPage}
+                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    rowsPerPageOptions={[5, 10, 25, 50]}
+                    labelRowsPerPage="Linhas por página:"
+                    labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count !== -1 ? count : `mais de ${to}`}`}
+                    {...tablePaginationStyles}
                   />
-                </Box>
+                </TableContainer>
               )}
 
               <Menu

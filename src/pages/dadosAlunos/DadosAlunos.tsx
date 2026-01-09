@@ -43,6 +43,7 @@ import {
   textFieldStyles,
   primaryButtonStyles,
   progressStyles,
+  tablePaginationStyles,
 } from "../../styles/designSystem";
 import AgentModal from "../../components/modals/AgentModal";
 import PsychologistModal from "../../components/modals/PsychologistModal";
@@ -334,7 +335,7 @@ const DadosAlunos: React.FC = () => {
             <Paper {...paperStyles} sx={{ ...paperStyles.sx, overflow: "hidden" }}>
               <Toolbar {...toolbarStyles}>
                 <Box display="flex" alignItems="center" sx={{ flex: 1, minWidth: 240, maxWidth: 420 }}>
-                  <SearchIcon sx={{ mr: 1, color: designSystem.colors.primary.main }} />
+                  <SearchIcon sx={{ mr: 1, color: designSystem.colors.text.disabled }} />
                   <TextField
                     placeholder="Pesquisar por nome, matrícula ou CPF..."
                     variant="standard"
@@ -478,6 +479,7 @@ const DadosAlunos: React.FC = () => {
                     rowsPerPageOptions={[5, 10, 25, 50]}
                     labelRowsPerPage="Linhas por página:"
                     labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count !== -1 ? count : `mais de ${to}`}`}
+                    {...tablePaginationStyles}
                   />
                 </TableContainer>
               )}

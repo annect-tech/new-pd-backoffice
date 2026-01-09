@@ -186,3 +186,46 @@ export const progressStyles = {
     color: designSystem.colors.primary.main,
   },
 };
+
+// Estilos de TablePagination
+export const tablePaginationStyles = {
+  sx: {
+    borderTop: `1px solid ${designSystem.colors.border.main}`,
+    backgroundColor: designSystem.colors.background.secondary,
+  },
+};
+
+// Estilos padronizados para DataGrid (para usar em Contratos, Documentos, etc)
+export const dataGridStyles = {
+  border: "none",
+  "& .MuiDataGrid-columnHeaders": {
+    backgroundColor: designSystem.colors.background.secondary, // #F9FAFB - igual ao Seletivo
+    color: designSystem.colors.text.secondary, // #374151
+    borderBottom: `2px solid ${designSystem.colors.border.main}`,
+    "& .MuiDataGrid-columnHeaderTitle": {
+      fontWeight: 600,
+      fontSize: "0.875rem",
+    },
+  },
+  "& .MuiDataGrid-row": {
+    "&:nth-of-type(odd)": {
+      backgroundColor: designSystem.colors.background.primary, // #FFFFFF
+    },
+    "&:nth-of-type(even)": {
+      backgroundColor: designSystem.colors.background.secondary, // #F9FAFB
+    },
+    "&:hover": {
+      backgroundColor: `${designSystem.colors.primary.lightest} !important`, // #FAF5FF - hover roxo
+      cursor: "pointer",
+    },
+  },
+  "& .MuiDataGrid-cell": {
+    borderBottom: `1px solid ${designSystem.colors.border.main}`,
+    fontSize: "0.875rem",
+    color: designSystem.colors.text.secondary,
+  },
+  "& .MuiDataGrid-footerContainer": {
+    borderTop: `1px solid ${designSystem.colors.border.main}`,
+    backgroundColor: designSystem.colors.background.secondary, // #F9FAFB - footer cinza
+  },
+};

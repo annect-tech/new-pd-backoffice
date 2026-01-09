@@ -40,6 +40,7 @@ import {
   iconButtonStyles,
   textFieldStyles,
   progressStyles,
+  tablePaginationStyles,
 } from "../../styles/designSystem";
 
 const ResultadosMerito: React.FC = () => {
@@ -171,7 +172,7 @@ const ResultadosMerito: React.FC = () => {
             <Paper {...paperStyles}>
               <Toolbar {...toolbarStyles}>
                 <Box display="flex" alignItems="center" sx={{ flex: 1, maxWidth: 400 }}>
-                  <SearchIcon sx={{ mr: 1, color: designSystem.colors.primary.main }} />
+                  <SearchIcon sx={{ mr: 1, color: designSystem.colors.text.disabled }} />
                   <TextField
                     placeholder="Pesquisar por nome, ID..."
                     variant="standard"
@@ -319,6 +320,7 @@ const ResultadosMerito: React.FC = () => {
                     labelDisplayedRows={({ from, to, count }) =>
                       `${from}-${to} de ${count !== -1 ? count : `mais de ${to}`}`
                     }
+                    {...tablePaginationStyles}
                   />
                 </TableContainer>
               )}

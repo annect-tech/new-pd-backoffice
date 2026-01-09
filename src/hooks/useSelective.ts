@@ -130,7 +130,6 @@ export const useSelective = () => {
       // Simular delay da API
       await new Promise((resolve) => setTimeout(resolve, 500));
       setUsers(mockUsers);
-      showSnackbar("Dados carregados com sucesso", "success");
     } catch (error: any) {
       showSnackbar(
         error.message || "Erro ao carregar dados",

@@ -49,6 +49,7 @@ import {
   textFieldStyles,
   primaryButtonStyles,
   progressStyles,
+  tablePaginationStyles,
 } from "../../styles/designSystem";
 
 // Definindo tipos localmente para evitar problemas de importação
@@ -362,10 +363,7 @@ const Cidades: React.FC = () => {
                     labelDisplayedRows={({ from, to, count }) =>
                       `${from}-${to} de ${count !== -1 ? count : `mais de ${to}`}`
                     }
-                    sx={{
-                      borderTop: `1px solid ${designSystem.colors.border.main}`,
-                      backgroundColor: designSystem.colors.background.secondary,
-                    }}
+                    {...tablePaginationStyles}
                   />
                 </TableContainer>
               )}

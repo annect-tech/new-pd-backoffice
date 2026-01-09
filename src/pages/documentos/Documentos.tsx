@@ -8,11 +8,20 @@ import {
   Toolbar,
   Alert,
   Fade,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TablePagination,
+  TextField,
+  InputAdornment,
 } from "@mui/material";
-import { DataGrid } from "@mui/x-data-grid";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import SearchIcon from "@mui/icons-material/Search";
 import { useNavigate } from "react-router";
 import PageHeader from "../../components/ui/page/PageHeader";
 import {
@@ -20,17 +29,23 @@ import {
   paperStyles,
   iconButtonStyles,
   progressStyles,
+  tableHeadStyles,
+  tableRowHoverStyles,
+  tablePaginationStyles,
+  textFieldStyles,
 } from "../../styles/designSystem";
 import { useDocuments } from "./useDocuments";
 import PdfViewModa from "../../components/modals/PdfViewModa";
-import { getTableConfig, APP_ROUTES } from "../../util/constants";
+import { APP_ROUTES } from "../../util/constants";
 
 export default function DocumentsList() {
-  const navigate = useNavigate();
   const { docs, loading, error, uploadId, uploadAddress, uploadSchoolHistory } =
     useDocuments();
 
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const rows = docs.map((d) => ({
     id: d.id,
@@ -46,6 +61,26 @@ export default function DocumentsList() {
     contractDocStatus: d.contract_doc_status,
     createdAt: new Date(d.created_at).toLocaleString(),
   }));
+
+  const filteredRows = rows.filter(
+    (row) =>
+      row.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      row.userId.toString().includes(searchTerm)
+  );
+
+  const paginatedRows = filteredRows.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  const handleChangePage = (_event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   const handleFile = (
     e: ChangeEvent<HTMLInputElement>,
@@ -63,42 +98,44 @@ export default function DocumentsList() {
   const closeViewer = () => setViewerUrl(null);
 
   const renderDocCell = (
-    params: any,
+    row: any,
     type: "idDoc" | "addressDoc" | "schoolDoc" | "contractDoc"
   ) => {
-    const url = params.row[type] as string | null;
-    const userId = params.row.userId as number;
+    const url = row[type] as string | null;
+    const userId = row.userId as number;
 
     if (url) {
       return (
         <IconButton
           {...iconButtonStyles}
           size="small"
-          onClick={() => openViewer(url)}
+          onClick={(e) => {
+            e.stopPropagation();
+            openViewer(url);
+          }}
         >
           <VisibilityIcon />
         </IconButton>
       );
     } else {
-      // choose upload handler
       let inputId = "";
       let handlerType: "id" | "address" | "school";
       if (type === "idDoc") {
-        inputId = `id-upload-${params.id}`;
+        inputId = `id-upload-${row.id}`;
         handlerType = "id";
       }
       if (type === "addressDoc") {
-        inputId = `addr-upload-${params.id}`;
+        inputId = `addr-upload-${row.id}`;
         handlerType = "address";
       }
       if (type === "schoolDoc") {
-        inputId = `school-upload-${params.id}`;
+        inputId = `school-upload-${row.id}`;
         handlerType = "school";
       }
       if (type === "contractDoc") {
-        inputId = `contract-upload-${params.id}`;
+        inputId = `contract-upload-${row.id}`;
         handlerType = "school";
-      } // or new handler
+      }
       return (
         <>
           <input
@@ -109,7 +146,12 @@ export default function DocumentsList() {
             onChange={(e) => handleFile(e, userId, handlerType)}
           />
           <label htmlFor={inputId}>
-            <IconButton {...iconButtonStyles} component="span" size="small">
+            <IconButton
+              {...iconButtonStyles}
+              component="span"
+              size="small"
+              onClick={(e) => e.stopPropagation()}
+            >
               <UploadFileIcon />
             </IconButton>
           </label>
@@ -117,44 +159,6 @@ export default function DocumentsList() {
       );
     }
   };
-
-  const columns: any[] = [
-    { field: "userId", headerName: "ID", width: 80 },
-    { field: "userName", headerName: "Nome do Usuário", width: 200, flex: 1 },
-    {
-      field: "idDoc",
-      headerName: "Identidade",
-      width: 120,
-      renderCell: (params: any) => renderDocCell(params, "idDoc"),
-      align: "center",
-      headerAlign: "center",
-    },
-    {
-      field: "addressDoc",
-      headerName: "Endereço",
-      width: 120,
-      renderCell: (params: any) => renderDocCell(params, "addressDoc"),
-      align: "center",
-      headerAlign: "center",
-    },
-    {
-      field: "schoolDoc",
-      headerName: "Histórico",
-      width: 120,
-      renderCell: (params: any) => renderDocCell(params, "schoolDoc"),
-      align: "center",
-      headerAlign: "center",
-    },
-    {
-      field: "contractDoc",
-      headerName: "Contrato",
-      width: 120,
-      renderCell: (params: any) => renderDocCell(params, "contractDoc"),
-      align: "center",
-      headerAlign: "center",
-    },
-    { field: "createdAt", headerName: "Enviado em", width: 180 },
-  ];
 
   return (
     <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
@@ -175,21 +179,33 @@ export default function DocumentsList() {
                 sx={{
                   display: "flex",
                   justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 2,
                   p: 3,
                   backgroundColor: designSystem.colors.background.primary,
                   borderBottom: `1px solid ${designSystem.colors.border.main}`,
                 }}
               >
-                <Typography variant="h6" sx={{ color: designSystem.colors.text.primary, fontWeight: 600 }}>
-                  Documentos de Candidatos
-                </Typography>
-                <IconButton
-                  {...iconButtonStyles}
-                  onClick={() => window.location.reload()}
-                  title="Atualizar lista"
-                >
-                  <RefreshIcon />
-                </IconButton>
+                <Box display="flex" alignItems="center" sx={{ flex: 1, minWidth: 240, maxWidth: 420 }}>
+                  <SearchIcon sx={{ mr: 1, color: designSystem.colors.text.disabled }} />
+                  <TextField
+                    placeholder="Pesquisar por CPF, nome, email..."
+                    variant="standard"
+                    fullWidth
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    {...textFieldStyles}
+                  />
+                </Box>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <IconButton
+                    {...iconButtonStyles}
+                    onClick={() => window.location.reload()}
+                    title="Atualizar lista"
+                  >
+                    <RefreshIcon />
+                  </IconButton>
+                </Box>
               </Toolbar>
 
               {loading ? (
@@ -201,38 +217,70 @@ export default function DocumentsList() {
                   <Alert severity="error">{error}</Alert>
                 </Box>
               ) : (
-                <Box sx={{ height: 500, width: "100%" }}>
-                  <DataGrid
-                    rows={rows}
-                    columns={columns}
-                    disableRowSelectionOnClick
-                    getRowClassName={(params) =>
-                      params.indexRelativeToCurrentPage % 2 === 0 ? "even" : "odd"
-                    }
-                    {...getTableConfig()}
-                    sx={{
-                      "& .MuiDataGrid-columnHeaders": {
-                        backgroundColor: designSystem.colors.background.secondary,
-                        borderBottom: `2px solid ${designSystem.colors.border.main}`,
-                        "& .MuiDataGrid-columnHeaderTitle": {
-                          fontWeight: 600,
-                          color: designSystem.colors.text.secondary,
-                        },
-                      },
-                      "& .even": {
-                        backgroundColor: designSystem.colors.background.primary,
-                      },
-                      "& .odd": {
-                        backgroundColor: designSystem.colors.background.secondary,
-                      },
-                      "& .MuiDataGrid-row:hover": {
-                        backgroundColor: designSystem.colors.primary.lightest,
-                        cursor: "pointer",
-                      },
-                      border: "none",
-                    }}
+                <TableContainer sx={{ overflowX: "auto", width: "100%" }}>
+                  <Table stickyHeader size="small" sx={{ minWidth: 900 }}>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 80 }}>ID</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 200 }}>Nome do Usuário</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 120 }} align="center">Identidade</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 120 }} align="center">Endereço</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 120 }} align="center">Histórico</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 120 }} align="center">Contrato</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 180 }}>Enviado em</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {paginatedRows.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                            <Typography color="textSecondary">
+                              {searchTerm ? "Nenhum resultado encontrado" : "Nenhum documento disponível"}
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        paginatedRows.map((row) => (
+                          <TableRow key={row.id} {...tableRowHoverStyles}>
+                            <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {row.userId}
+                            </TableCell>
+                            <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {row.userName}
+                            </TableCell>
+                            <TableCell align="center">
+                              {renderDocCell(row, "idDoc")}
+                            </TableCell>
+                            <TableCell align="center">
+                              {renderDocCell(row, "addressDoc")}
+                            </TableCell>
+                            <TableCell align="center">
+                              {renderDocCell(row, "schoolDoc")}
+                            </TableCell>
+                            <TableCell align="center">
+                              {renderDocCell(row, "contractDoc")}
+                            </TableCell>
+                            <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {row.createdAt}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                  <TablePagination
+                    component="div"
+                    count={filteredRows.length}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    rowsPerPage={rowsPerPage}
+                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    rowsPerPageOptions={[5, 10, 25, 50]}
+                    labelRowsPerPage="Linhas por página:"
+                    labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count !== -1 ? count : `mais de ${to}`}`}
+                    {...tablePaginationStyles}
                   />
-                </Box>
+                </TableContainer>
               )}
             </Paper>
           </Fade>

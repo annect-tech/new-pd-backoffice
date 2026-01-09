@@ -41,6 +41,7 @@ import {
   iconButtonStyles,
   textFieldStyles,
   progressStyles,
+  tablePaginationStyles,
 } from "../../styles/designSystem";
 
 const ListaPresenca: React.FC = () => {
@@ -406,10 +407,7 @@ const ListaPresenca: React.FC = () => {
                     labelDisplayedRows={({ from, to, count }) =>
                       `${from}-${to} de ${count !== -1 ? count : `mais de ${to}`}`
                     }
-                    sx={{
-                      borderTop: `1px solid ${designSystem.colors.border.main}`,
-                      backgroundColor: designSystem.colors.background.secondary,
-                    }}
+                    {...tablePaginationStyles}
                   />
                 </TableContainer>
               )}

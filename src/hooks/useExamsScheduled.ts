@@ -150,7 +150,6 @@ export const useExamsScheduled = () => {
       // Simular delay da API
       await new Promise((resolve) => setTimeout(resolve, 500));
       setExams(mockExams);
-      showSnackbar("Dados carregados com sucesso", "success");
     } catch (err: any) {
       const errorMessage = err.message || "Erro ao carregar dados";
       setError(errorMessage);

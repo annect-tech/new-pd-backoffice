@@ -9,7 +9,6 @@ import {
 } from "@mui/material";
 import { NavigateNext as NavigateNextIcon } from "@mui/icons-material";
 import { useNavigate } from "react-router";
-import { APP_ROUTES } from "../../../util/constants";
 
 interface BreadcrumbItem {
   label: string;

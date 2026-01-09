@@ -23,8 +23,6 @@ import {
   TableHead,
   TableRow,
   TablePagination,
-  Breadcrumbs,
-  Link,
   Fade,
 } from "@mui/material";
 import {
@@ -36,16 +34,24 @@ import {
   Description as DescriptionIcon,
   Refresh as RefreshIcon,
   Search as SearchIcon,
-  NavigateNext as NavigateNextIcon,
 } from "@mui/icons-material";
-import { useNavigate } from "react-router";
 import { useSelective } from "../../hooks/useSelective";
 import type { UserProfile } from "../../interfaces/userProfile";
 import { APP_ROUTES } from "../../util/constants";
-import { designSystem, tableHeadStyles, tableRowHoverStyles, iconButtonStyles, textFieldStyles, progressStyles } from "../../styles/designSystem";
+import PageHeader from "../../components/ui/page/PageHeader";
+import {
+  designSystem,
+  paperStyles,
+  toolbarStyles,
+  tableHeadStyles,
+  tableRowHoverStyles,
+  iconButtonStyles,
+  textFieldStyles,
+  progressStyles,
+  tablePaginationStyles,
+} from "../../styles/designSystem";
 
 const Seletivo: React.FC = () => {
-  const navigate = useNavigate();
   const {
     users,
     loading,
@@ -183,146 +189,33 @@ const Seletivo: React.FC = () => {
             margin: "0 auto",
           }}
         >
-          {/* Breadcrumb */}
-          <Fade in timeout={600}>
-            <Breadcrumbs
-              aria-label="breadcrumb"
-              separator={<NavigateNextIcon fontSize="small" />}
-              sx={{ mb: 3 }}
-            >
-              <Link
-                component="button"
-                variant="body1"
-                onClick={() => navigate(APP_ROUTES.DASHBOARD)}
-                sx={{
-                  color: "#9333EA",
-                  textDecoration: "none",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  "&:hover": {
-                    color: "#A650F0",
-                  },
-                  transition: "color 0.2s ease",
-                }}
-              >
-                Dashboard
-              </Link>
-              <Typography color="#1F2937" fontWeight={500}>
-                Seletivo
-              </Typography>
-            </Breadcrumbs>
-          </Fade>
-
-          {/* Título e Texto Explicativo */}
-          <Fade in timeout={800}>
-            <Box sx={{ mb: 5 }}>
-              <Typography
-                variant="h4"
-                sx={{
-                  fontWeight: 600,
-                  color: "#1F2937",
-                  mb: 1,
-                  fontSize: { xs: "1.75rem", sm: "2rem", md: "2.25rem" },
-                }}
-              >
-                Seletivo
-              </Typography>
-              <Typography
-                variant="body1"
-                sx={{
-                  color: "#6B7280",
-                  fontSize: { xs: "0.95rem", sm: "1rem" },
-                  mb: 3,
-                }}
-              >
-                Gerencie e visualize todos os candidatos do processo seletivo.
-              </Typography>
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 3,
-                  backgroundColor: "#F9FAFB",
-                  borderRadius: 3,
-                  border: "1px solid #E5E7EB",
-                  position: "relative",
-                  overflow: "hidden",
-                  "&::before": {
-                    content: '""',
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: "3px",
-                    background: "linear-gradient(90deg, #A650F0 0%, #C084FC 100%)",
-                  },
-                }}
-              >
-                <Typography variant="body2" color="#4B5563" sx={{ lineHeight: 1.7 }}>
-                  Pesquise candidatos por CPF, nome ou email, filtre por status (ativos/inativos),
-                  exporte os dados em diferentes formatos (CSV, JSON, XLSX) e visualize informações detalhadas
-                  de cada candidato, incluindo dados de persona, endereços, guardiões e informações de registro.
-                </Typography>
-              </Paper>
-            </Box>
-          </Fade>
+          <PageHeader
+            title="Seletivo"
+            subtitle="Gerencie e visualize todos os candidatos do processo seletivo."
+            description="Pesquise candidatos por CPF, nome ou email, filtre por status (ativos/inativos), exporte os dados em diferentes formatos (CSV, JSON, XLSX) e visualize informações detalhadas de cada candidato, incluindo dados de persona, endereços, guardiões e informações de registro."
+            breadcrumbs={[
+              { label: "Dashboard", path: APP_ROUTES.DASHBOARD },
+              { label: "Seletivo" },
+            ]}
+          />
 
           {/* Tabela de Dados */}
           <Fade in timeout={1000}>
-            <Paper
-              elevation={0}
-              sx={{
-                borderRadius: 3,
-                overflow: "hidden",
-                border: "1px solid #E5E7EB",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-              }}
-            >
-              <Toolbar
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: 2,
-                  p: 3,
-                  backgroundColor: "#FFFFFF",
-                  borderBottom: "1px solid #E5E7EB",
-                }}
-              >
+            <Paper {...paperStyles}>
+              <Toolbar {...toolbarStyles}>
                 <Box display="flex" alignItems="center" sx={{ flex: 1, maxWidth: 500 }}>
-                  <SearchIcon sx={{ mr: 1, color: "#6B7280" }} />
+                  <SearchIcon sx={{ mr: 1, color: designSystem.colors.text.disabled }} />
                   <TextField
                     placeholder="Pesquisar por CPF, nome, email..."
                     variant="standard"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     fullWidth
-                    sx={{
-                      "& .MuiInput-underline:before": {
-                        borderBottomColor: "#D1D5DB",
-                      },
-                      "& .MuiInput-underline:hover:before": {
-                        borderBottomColor: "#9CA3AF",
-                      },
-                      "& .MuiInput-underline:after": {
-                        borderBottomColor: "#A650F0",
-                      },
-                      "& input": {
-                        color: "#1F2937",
-                      },
-                    }}
+                    {...textFieldStyles}
                   />
                 </Box>
                 <Box display="flex" gap={1}>
-                  <IconButton
-                    onClick={openFilterMenu}
-                    sx={{
-                      color: "#6B7280",
-                      "&:hover": {
-                        backgroundColor: "#FAF5FF",
-                        color: "#A650F0",
-                      },
-                    }}
-                  >
+                  <IconButton onClick={openFilterMenu} {...iconButtonStyles}>
                     <FilterListIcon />
                   </IconButton>
                   <Menu
@@ -348,16 +241,7 @@ const Seletivo: React.FC = () => {
                       Inativos ({users.filter((u) => !u.allowed_city.active).length})
                     </MenuItem>
                   </Menu>
-                  <IconButton
-                    onClick={openDownloadMenu}
-                    sx={{
-                      color: "#6B7280",
-                      "&:hover": {
-                        backgroundColor: "#FAF5FF",
-                        color: "#A650F0",
-                      },
-                    }}
-                  >
+                  <IconButton onClick={openDownloadMenu} {...iconButtonStyles}>
                     <DownloadIcon />
                   </IconButton>
                   <Menu
@@ -398,16 +282,7 @@ const Seletivo: React.FC = () => {
                       XLSX
                     </MenuItem>
                   </Menu>
-                  <IconButton
-                    onClick={fetchUsers}
-                    sx={{
-                      color: "#6B7280",
-                      "&:hover": {
-                        backgroundColor: "#FAF5FF",
-                        color: "#A650F0",
-                      },
-                    }}
-                  >
+                  <IconButton onClick={fetchUsers} {...iconButtonStyles}>
                     <RefreshIcon />
                   </IconButton>
                 </Box>
@@ -415,7 +290,7 @@ const Seletivo: React.FC = () => {
 
               {loading ? (
                 <Box display="flex" justifyContent="center" p={4}>
-                  <CircularProgress sx={{ color: "#A650F0" }} />
+                  <CircularProgress {...progressStyles} />
                 </Box>
               ) : (
                 <TableContainer sx={{ maxWidth: "100%" }}>
@@ -513,14 +388,8 @@ const Seletivo: React.FC = () => {
                               <IconButton
                                 size="small"
                                 onClick={() => openModal("persona", user)}
-                                sx={{
-                                  color: "#6B7280",
-                                  padding: "4px",
-                                  "&:hover": {
-                                    backgroundColor: "#F3E8FF",
-                                    color: "#A650F0",
-                                  },
-                                }}
+                                {...iconButtonStyles}
+                                sx={{ ...iconButtonStyles.sx, padding: "4px" }}
                               >
                                 <PersonIcon sx={{ fontSize: "1.1rem" }} />
                               </IconButton>
@@ -529,14 +398,8 @@ const Seletivo: React.FC = () => {
                               <IconButton
                                 size="small"
                                 onClick={() => openModal("addresses", user)}
-                                sx={{
-                                  color: "#6B7280",
-                                  padding: "4px",
-                                  "&:hover": {
-                                    backgroundColor: "#F3E8FF",
-                                    color: "#A650F0",
-                                  },
-                                }}
+                                {...iconButtonStyles}
+                                sx={{ ...iconButtonStyles.sx, padding: "4px" }}
                               >
                                 <HomeIcon sx={{ fontSize: "1.1rem" }} />
                               </IconButton>
@@ -545,14 +408,8 @@ const Seletivo: React.FC = () => {
                               <IconButton
                                 size="small"
                                 onClick={() => openModal("guardians", user)}
-                                sx={{
-                                  color: "#6B7280",
-                                  padding: "4px",
-                                  "&:hover": {
-                                    backgroundColor: "#F3E8FF",
-                                    color: "#A650F0",
-                                  },
-                                }}
+                                {...iconButtonStyles}
+                                sx={{ ...iconButtonStyles.sx, padding: "4px" }}
                               >
                                 <PeopleIcon sx={{ fontSize: "1.1rem" }} />
                               </IconButton>
@@ -561,14 +418,8 @@ const Seletivo: React.FC = () => {
                               <IconButton
                                 size="small"
                                 onClick={() => openModal("registration", user)}
-                                sx={{
-                                  color: "#6B7280",
-                                  padding: "4px",
-                                  "&:hover": {
-                                    backgroundColor: "#F3E8FF",
-                                    color: "#A650F0",
-                                  },
-                                }}
+                                {...iconButtonStyles}
+                                sx={{ ...iconButtonStyles.sx, padding: "4px" }}
                               >
                                 <DescriptionIcon sx={{ fontSize: "1.1rem" }} />
                               </IconButton>
@@ -590,10 +441,7 @@ const Seletivo: React.FC = () => {
                     labelDisplayedRows={({ from, to, count }) =>
                       `${from}-${to} de ${count !== -1 ? count : `mais de ${to}`}`
                     }
-                    sx={{
-                      borderTop: "1px solid #E5E7EB",
-                      backgroundColor: "#F9FAFB",
-                    }}
+                    {...tablePaginationStyles}
                   />
                 </TableContainer>
               )}

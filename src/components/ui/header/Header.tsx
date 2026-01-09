@@ -86,7 +86,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                 color: "#9CA3AF",
               }}
             >
-              {user?.first_name?.[0] || user?.email[0]}
+              {user?.first_name?.[0] || user?.email?.[0]}
             </Avatar>
           </IconButton>
           <Menu

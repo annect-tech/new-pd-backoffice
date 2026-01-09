@@ -7,6 +7,7 @@ import { ThemeProvider } from "@mui/material";
 import theme from "./assets/styles/theme";
 import { AuthProvider } from "./app/providers/AuthProvider";
 import { AppRoutes } from "./app/routes/routes";
+import ErrorBoundary from "./components/ErrorBoundary";
 import "@/assets/i18n/i18n";
 import "./index.css";
 import { PersistGate } from "redux-persist/integration/react";
@@ -18,9 +19,11 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <PersistGate loading={null} persistor={persistor}>
         <BrowserRouter>
           <ThemeProvider theme={theme("light")}>
-            <AuthProvider>
-              <AppRoutes />
-            </AuthProvider>
+            <ErrorBoundary>
+              <AuthProvider>
+                <AppRoutes />
+              </AuthProvider>
+            </ErrorBoundary>
           </ThemeProvider>
         </BrowserRouter>
       </PersistGate>

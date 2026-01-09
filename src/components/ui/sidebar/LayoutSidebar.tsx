@@ -6,19 +6,17 @@ import {
   ListItemIcon,
   ListItemText,
   Toolbar,
-  Avatar,
   Box,
   Typography,
-  Button,
   Divider,
   IconButton,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { Link, useNavigate } from "react-router";
-import { useAuth } from "../../../hooks/useAuth";
 import logoDesenvolve from "../../../assets/images/logo/LOGO DESENVOLVE.png";
 import logo2 from "../../../assets/images/logo/logo2.svg";
 import { APP_ROUTES } from "../../../util/constants";
+import { designSystem } from "../../../styles/designSystem";
 
 const drawerWidth = 240;
 const collapsedWidth = 60;
@@ -40,66 +38,7 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
-const UserBox: React.FC<{ collapsed: boolean }> = ({ collapsed }) => {
-  const { user, logout } = useAuth();
-  if (!user) return null;
-  return (
-    <Box
-      sx={{
-        width: "100%",
-        display: "flex",
-        flexDirection: collapsed ? "column" : "row",
-        alignItems: "center",
-        justifyContent: collapsed ? "center" : "flex-start",
-        p: collapsed ? 1.5 : 2,
-        borderTop: "1px solid rgba(0, 0, 0, 0.06)",
-        mt: "auto",
-        gap: 1.5,
-        background: "linear-gradient(to bottom, #FAFAFA, #FFFFFF)",
-        transition: "all 0.2s ease",
-      }}
-    >
-      <Avatar
-        sx={{
-          width: collapsed ? 36 : 40,
-          height: collapsed ? 36 : 40,
-          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-          fontWeight: 600,
-          fontSize: collapsed ? "0.875rem" : "0.9375rem",
-          color: "#FFFFFF",
-          boxShadow: "0 2px 8px rgba(102, 126, 234, 0.25)",
-          transition: "all 0.2s ease",
-        }}
-      >
-        {user.first_name?.[0]?.toUpperCase() || user.email[0]?.toUpperCase()}
-      </Avatar>
-      {!collapsed && (
-        <Box sx={{ ml: 0.5, flex: 1, minWidth: 0 }}>
-          <Typography
-            variant="subtitle2"
-            noWrap
-            sx={{
-              fontWeight: 600,
-              color: "#1F2937",
-              fontSize: "0.875rem",
-              mb: 0.25,
-            }}
-          >
-            {user.first_name} {user.last_name}
-          </Typography>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            noWrap
-            sx={{ fontSize: "0.75rem", color: "#6B7280" }}
-          >
-            {user.email}
-          </Typography>
-        </Box>
-      )}
-    </Box>
-  );
-};
+// UserBox removed: no bottom profile box should render in the sidebar (collapsed or expanded)
 
 const LayoutSidebar: React.FC<SidebarProps> = ({
   collapsed,
@@ -216,8 +155,8 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
               color: "#9CA3AF",
               transition: "all 0.2s ease",
               "&:hover": {
-                color: "#667eea",
-                backgroundColor: "rgba(102, 126, 234, 0.08)",
+                color: designSystem.colors.primary.main,
+                backgroundColor: "rgba(166, 80, 240, 0.08)",
                 transform: "rotate(90deg)",
               },
             }}
@@ -231,7 +170,7 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
       sx={{
         width: "100%",
         flex: 1,
-        overflowY: "auto",
+        overflowY: isExpanded ? "auto" : "hidden",
         overflowX: "hidden",
       }}
     >
@@ -289,28 +228,28 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
                     transform: "translateY(-50%)",
                     width: "3px",
                     height: 0,
-                    backgroundColor: "#667eea",
+                    backgroundColor: designSystem.colors.primary.main,
                     borderRadius: "0 4px 4px 0",
                     transition: "height 0.2s ease",
                   },
                   "&:hover": {
                     color: "#1F2937",
-                    backgroundColor: "rgba(102, 126, 234, 0.06)",
+                    backgroundColor: "rgba(166, 80, 240, 0.06)",
                     transform: "translateX(2px)",
                     "& .MuiListItemIcon-root": {
-                      color: "#667eea",
+                      color: designSystem.colors.primary.main,
                     },
                   },
                   "&.active": {
-                    backgroundColor: "rgba(102, 126, 234, 0.1)",
-                    color: "#667eea",
+                    backgroundColor: "rgba(166, 80, 240, 0.1)",
+                    color: designSystem.colors.primary.main,
                     fontWeight: 600,
-                    boxShadow: "0 2px 4px rgba(102, 126, 234, 0.08)",
+                    boxShadow: "0 2px 4px rgba(166, 80, 240, 0.08)",
                     "&::before": {
                       height: "70%",
                     },
                     "& .MuiListItemIcon-root": {
-                      color: "#667eea",
+                      color: designSystem.colors.primary.main,
                     },
                   },
                 }}
@@ -346,7 +285,7 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
         </React.Fragment>
       ))}
     </Box>
-    <UserBox collapsed={!isExpanded} />
+    
   </Drawer>
   );
 };

@@ -13,6 +13,12 @@ import {
   Typography,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
+import {
+  designSystem,
+  paperStyles,
+  tableHeadStyles,
+  tableRowHoverStyles,
+} from "../../../styles/designSystem";
 
 export interface Column {
   id: string;
@@ -58,7 +64,7 @@ const SearchableTable: React.FC<SearchableTableProps> = ({
           variant="h6"
           sx={{
             mb: 2,
-            color: "#A650F0",
+            color: designSystem.colors.primary.main,
             fontWeight: 600,
             fontSize: "1rem",
           }}
@@ -76,20 +82,20 @@ const SearchableTable: React.FC<SearchableTableProps> = ({
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon sx={{ color: "#A650F0" }} />
+                <SearchIcon sx={{ color: designSystem.colors.primary.main }} />
               </InputAdornment>
             ),
           }}
           sx={{
             "& .MuiOutlinedInput-root": {
               "& fieldset": {
-                borderColor: "#A650F0",
+                borderColor: designSystem.colors.primary.main,
               },
               "&:hover fieldset": {
-                borderColor: "#A650F0",
+                borderColor: designSystem.colors.primary.main,
               },
               "&.Mui-focused fieldset": {
-                borderColor: "#A650F0",
+                borderColor: designSystem.colors.primary.main,
               },
             },
           }}
@@ -97,10 +103,10 @@ const SearchableTable: React.FC<SearchableTableProps> = ({
       </Box>
       <TableContainer
         component={Paper}
+        {...paperStyles}
         sx={{
+          ...paperStyles.sx,
           maxHeight: 600,
-          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-          borderRadius: 2,
         }}
       >
         <Table stickyHeader aria-label="tabela pesquisável">
@@ -110,12 +116,10 @@ const SearchableTable: React.FC<SearchableTableProps> = ({
                 <TableCell
                   key={column.id}
                   align={column.align || "left"}
-                  style={{
+                  {...tableHeadStyles}
+                  sx={{
+                    ...tableHeadStyles.sx,
                     minWidth: column.minWidth,
-                    backgroundColor: "#A650F0",
-                    color: "#FFFFFF",
-                    fontWeight: 600,
-                    fontSize: "0.875rem",
                   }}
                 >
                   {column.label}
@@ -129,7 +133,7 @@ const SearchableTable: React.FC<SearchableTableProps> = ({
                 <TableCell
                   colSpan={columns.length}
                   align="center"
-                  sx={{ py: 3, color: "#666" }}
+                  sx={{ py: 3, color: designSystem.colors.text.disabled }}
                 >
                   {searchTerm
                     ? "Nenhum resultado encontrado"
@@ -138,18 +142,7 @@ const SearchableTable: React.FC<SearchableTableProps> = ({
               </TableRow>
             ) : (
               filteredRows.map((row, index) => (
-                <TableRow
-                  key={index}
-                  hover
-                  sx={{
-                    "&:nth-of-type(odd)": {
-                      backgroundColor: "#F9F9F9",
-                    },
-                    "&:hover": {
-                      backgroundColor: "#F3E5F5",
-                    },
-                  }}
-                >
+                <TableRow key={index} {...tableRowHoverStyles}>
                   {columns.map((column) => {
                     const value = row[column.id];
                     return (
@@ -158,7 +151,7 @@ const SearchableTable: React.FC<SearchableTableProps> = ({
                         align={column.align || "left"}
                         sx={{
                           fontSize: "0.875rem",
-                          color: "#333",
+                          color: designSystem.colors.text.secondary,
                         }}
                       >
                         {column.format ? column.format(value) : value}
@@ -177,7 +170,7 @@ const SearchableTable: React.FC<SearchableTableProps> = ({
           sx={{
             mt: 1,
             display: "block",
-            color: "#666",
+            color: designSystem.colors.text.disabled,
             textAlign: "right",
           }}
         >
