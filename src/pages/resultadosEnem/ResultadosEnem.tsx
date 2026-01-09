@@ -2,11 +2,10 @@ import React, { useMemo, useState } from "react";
 import {
   Alert,
   Box,
-  Breadcrumbs,
   Button,
   CircularProgress,
+  Fade,
   IconButton,
-  Link,
   Menu,
   MenuItem,
   Paper,
@@ -26,10 +25,20 @@ import {
   Refresh as RefreshIcon,
   Search as SearchIcon,
   FilterList as FilterListIcon,
-  NavigateNext as NavigateNextIcon,
   Download as DownloadIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router";
+import PageHeader from "../../components/ui/page/PageHeader";
+import {
+  designSystem,
+  paperStyles,
+  toolbarStyles,
+  tableHeadStyles,
+  tableRowHoverStyles,
+  iconButtonStyles,
+  textFieldStyles,
+  progressStyles,
+} from "../../styles/designSystem";
 import PdfViewModa from "../../components/modals/PdfViewModa";
 import EnemStatusUpdaterModal from "../../components/modals/EnemStatusUpdaterModal";
 import { APP_ROUTES } from "../../util/constants";
@@ -182,203 +191,166 @@ const ResultadosEnem: React.FC = () => {
   };
 
   return (
-    <Box p={2}>
-      <Breadcrumbs
-        aria-label="breadcrumb"
-        separator={<NavigateNextIcon fontSize="small" />}
-        sx={{ mb: 3 }}
-      >
-        <Link
-          component="button"
-          variant="body1"
-          onClick={() => navigate(APP_ROUTES.DASHBOARD)}
-          sx={{
-            color: "#A650F0",
-            textDecoration: "none",
-            cursor: "pointer",
-            "&:hover": { textDecoration: "underline" },
-          }}
-        >
-          Dashboard
-        </Link>
-        <Typography color="text.primary">Resultados ENEM</Typography>
-      </Breadcrumbs>
-
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" sx={{ color: "#A650F0", fontWeight: 600, mb: 2 }}>
-          Resultados ENEM
-        </Typography>
-        <Paper
-          elevation={1}
-          sx={{
-            p: 2,
-            backgroundColor: "#F3E5F5",
-            borderRadius: 2,
-            borderLeft: "4px solid #A650F0",
-          }}
-        >
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
-            <strong>Resultados ENEM</strong>
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Visualize e gerencie os boletins do ENEM. Pesquise por inscrição, nome ou CPF, filtre por status,
-            exporte em CSV, visualize os PDFs e atualize o status pelo modal dedicado.
-          </Typography>
-        </Paper>
-      </Box>
-
-      <Paper elevation={2} sx={{ borderRadius: 2, overflow: "hidden" }}>
-        <Toolbar sx={{ display: "flex", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}>
-          <Box display="flex" alignItems="center" sx={{ flex: 1, minWidth: 240, maxWidth: 420 }}>
-            <SearchIcon sx={{ mr: 1, color: "#A650F0" }} />
-            <TextField
-              placeholder="Pesquisar por inscrição, nome ou CPF..."
-              variant="standard"
-              fullWidth
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              sx={{
-                "& .MuiInput-underline:before": { borderBottomColor: "#A650F0" },
-                "& .MuiInput-underline:hover:before": { borderBottomColor: "#A650F0" },
-                "& .MuiInput-underline:after": { borderBottomColor: "#A650F0" },
-              }}
-            />
-          </Box>
-          <Box display="flex" alignItems="center" gap={1}>
-            <IconButton onClick={(e) => setStatusAnchor(e.currentTarget)}>
-              <FilterListIcon />
-            </IconButton>
-            <Menu anchorEl={statusAnchor} open={Boolean(statusAnchor)} onClose={() => setStatusAnchor(null)}>
-              <MenuItem onClick={() => { setStatusFilter("all"); setStatusAnchor(null); }}>
-                Todos ({items.length})
-              </MenuItem>
-              <MenuItem onClick={() => { setStatusFilter("aprovado"); setStatusAnchor(null); }}>
-                Aprovados ({items.filter((i) => i.status?.toLowerCase() === "aprovado").length})
-              </MenuItem>
-              <MenuItem onClick={() => { setStatusFilter("reprovado"); setStatusAnchor(null); }}>
-                Reprovados ({items.filter((i) => i.status?.toLowerCase() === "reprovado").length})
-              </MenuItem>
-              <MenuItem onClick={() => { setStatusFilter("pendente"); setStatusAnchor(null); }}>
-                Pendentes ({items.filter((i) => i.status?.toLowerCase() === "pendente").length})
-              </MenuItem>
-            </Menu>
-            <IconButton onClick={(e) => setDownloadAnchor(e.currentTarget)}>
-              <DownloadIcon />
-            </IconButton>
-            <Menu anchorEl={downloadAnchor} open={Boolean(downloadAnchor)} onClose={() => setDownloadAnchor(null)}>
-              <MenuItem
-                onClick={() => {
-                  handleExportCSV();
-                  setDownloadAnchor(null);
-                }}
-              >
-                CSV
-              </MenuItem>
-            </Menu>
-            <IconButton onClick={handleRefresh}>
-              <RefreshIcon />
-            </IconButton>
-            <Button variant="outlined" onClick={() => setModalOpen(true)}>
-              Atualizar Status ENEM
-            </Button>
-          </Box>
-        </Toolbar>
-
-        {loading ? (
-          <Box display="flex" justifyContent="center" alignItems="center" p={4}>
-            <CircularProgress />
-          </Box>
-        ) : error ? (
-          <Box p={2}>
-            <Alert severity="error">{error}</Alert>
-          </Box>
-        ) : (
-          <TableContainer>
-            <Table stickyHeader>
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ backgroundColor: "#A650F0", color: "#FFFFFF", fontWeight: 600, minWidth: 140 }}>
-                    Inscrição
-                  </TableCell>
-                  <TableCell sx={{ backgroundColor: "#A650F0", color: "#FFFFFF", fontWeight: 600, minWidth: 200 }}>
-                    Nome
-                  </TableCell>
-                  <TableCell sx={{ backgroundColor: "#A650F0", color: "#FFFFFF", fontWeight: 600, minWidth: 130 }}>
-                    CPF
-                  </TableCell>
-                  <TableCell sx={{ backgroundColor: "#A650F0", color: "#FFFFFF", fontWeight: 600, minWidth: 130 }}>
-                    Idioma
-                  </TableCell>
-                  <TableCell sx={{ backgroundColor: "#A650F0", color: "#FFFFFF", fontWeight: 600, minWidth: 140 }}>
-                    Status
-                  </TableCell>
-                  <TableCell sx={{ backgroundColor: "#A650F0", color: "#FFFFFF", fontWeight: 600, minWidth: 180 }}>
-                    Enviado em
-                  </TableCell>
-                  <TableCell sx={{ backgroundColor: "#A650F0", color: "#FFFFFF", fontWeight: 600, minWidth: 100 }}>
-                    PDF
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {paginatedData.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
-                      <Typography color="textSecondary">
-                        {searchTerm || statusFilter !== "all" ? "Nenhum resultado encontrado" : "Nenhum dado disponível"}
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  paginatedData.map((row) => (
-                    <TableRow
-                      key={row.id}
-                      hover
-                      sx={{
-                        "&:nth-of-type(even)": { backgroundColor: "#F9F9F9" },
-                        "&:hover": { backgroundColor: "#F3E5F5" },
+    <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      <Box sx={{ flex: 1, p: { xs: 2, sm: 3, md: 4 }, display: "flex", flexDirection: "column", overflow: "auto" }}>
+        <Box sx={{ maxWidth: 1400, width: "100%", margin: "0 auto" }}>
+          <PageHeader
+            title="Resultados ENEM"
+            subtitle="Gerenciamento de Notas do ENEM"
+            description="Esta página permite gerenciar e visualizar as NOTAS DO ENEM dos candidatos. Você pode pesquisar por CPF ou nome, atualizar notas e exportar os dados em diferentes formatos (CSV, JSON, XLSX)."
+            breadcrumbs={[
+              { label: "Dashboard", path: APP_ROUTES.DASHBOARD },
+              { label: "Resultados ENEM" },
+            ]}
+          />
+          <Fade in timeout={1000}>
+            <Paper {...paperStyles}>
+              <Toolbar {...toolbarStyles}>
+                <Box display="flex" alignItems="center" sx={{ flex: 1, minWidth: 240, maxWidth: 420 }}>
+                  <SearchIcon sx={{ mr: 1, color: designSystem.colors.primary.main }} />
+                  <TextField
+                    placeholder="Pesquisar por inscrição, nome ou CPF..."
+                    variant="standard"
+                    fullWidth
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    {...textFieldStyles}
+                  />
+                </Box>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <IconButton {...iconButtonStyles} onClick={(e) => setStatusAnchor(e.currentTarget)}>
+                    <FilterListIcon />
+                  </IconButton>
+                  <Menu anchorEl={statusAnchor} open={Boolean(statusAnchor)} onClose={() => setStatusAnchor(null)}>
+                    <MenuItem onClick={() => { setStatusFilter("all"); setStatusAnchor(null); }}>
+                      Todos ({items.length})
+                    </MenuItem>
+                    <MenuItem onClick={() => { setStatusFilter("aprovado"); setStatusAnchor(null); }}>
+                      Aprovados ({items.filter((i) => i.status?.toLowerCase() === "aprovado").length})
+                    </MenuItem>
+                    <MenuItem onClick={() => { setStatusFilter("reprovado"); setStatusAnchor(null); }}>
+                      Reprovados ({items.filter((i) => i.status?.toLowerCase() === "reprovado").length})
+                    </MenuItem>
+                    <MenuItem onClick={() => { setStatusFilter("pendente"); setStatusAnchor(null); }}>
+                      Pendentes ({items.filter((i) => i.status?.toLowerCase() === "pendente").length})
+                    </MenuItem>
+                  </Menu>
+                  <IconButton {...iconButtonStyles} onClick={(e) => setDownloadAnchor(e.currentTarget)}>
+                    <DownloadIcon />
+                  </IconButton>
+                  <Menu anchorEl={downloadAnchor} open={Boolean(downloadAnchor)} onClose={() => setDownloadAnchor(null)}>
+                    <MenuItem
+                      onClick={() => {
+                        handleExportCSV();
+                        setDownloadAnchor(null);
                       }}
                     >
-                      <TableCell>{row.inscription}</TableCell>
-                      <TableCell>{row.name}</TableCell>
-                      <TableCell>{row.cpf}</TableCell>
-                      <TableCell>{row.language}</TableCell>
-                      <TableCell>
-                        <Typography
-                          sx={{
-                            color: getStatusColor(row.status),
-                            fontWeight: 600,
-                            textTransform: "capitalize",
-                          }}
-                        >
-                          {row.status}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>{row.createdAt}</TableCell>
-                      <TableCell>
-                        <IconButton onClick={() => setViewerUrl(row.pdf)}>
-                          <VisibilityIcon />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-            <TablePagination
-              component="div"
-              count={filteredItems.length}
-              page={page}
-              onPageChange={handleChangePage}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              rowsPerPageOptions={[5, 10, 25, 50]}
-              labelRowsPerPage="Linhas por página:"
-              labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count !== -1 ? count : `mais de ${to}`}`}
-            />
-          </TableContainer>
-        )}
-      </Paper>
+                      CSV
+                    </MenuItem>
+                  </Menu>
+                  <IconButton {...iconButtonStyles} onClick={handleRefresh}>
+                    <RefreshIcon />
+                  </IconButton>
+                  <Button variant="outlined" onClick={() => setModalOpen(true)}>
+                    Atualizar Status ENEM
+                  </Button>
+                </Box>
+              </Toolbar>
+
+              {loading ? (
+                <Box display="flex" justifyContent="center" alignItems="center" p={4}>
+                  <CircularProgress {...progressStyles} />
+                </Box>
+              ) : error ? (
+                <Box p={2}>
+                  <Alert severity="error">{error}</Alert>
+                </Box>
+              ) : (
+                <TableContainer sx={{ maxWidth: "100%" }}>
+                  <Table stickyHeader size="small" sx={{ tableLayout: "fixed", width: "100%" }}>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 140 }}>
+                          Inscrição
+                        </TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 200 }}>
+                          Nome
+                        </TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 130 }}>
+                          CPF
+                        </TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 130 }}>
+                          Idioma
+                        </TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 140 }}>
+                          Status
+                        </TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 180 }}>
+                          Enviado em
+                        </TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 100 }}>
+                          PDF
+                        </TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {paginatedData.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                            <Typography color="textSecondary">
+                              {searchTerm || statusFilter !== "all" ? "Nenhum resultado encontrado" : "Nenhum dado disponível"}
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        paginatedData.map((row) => (
+                          <TableRow
+                            key={row.id}
+                            {...tableRowHoverStyles}
+                          >
+                            <TableCell>{row.inscription}</TableCell>
+                            <TableCell>{row.name}</TableCell>
+                            <TableCell>{row.cpf}</TableCell>
+                            <TableCell>{row.language}</TableCell>
+                            <TableCell>
+                              <Typography
+                                sx={{
+                                  color: getStatusColor(row.status),
+                                  fontWeight: 600,
+                                  textTransform: "capitalize",
+                                }}
+                              >
+                                {row.status}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>{row.createdAt}</TableCell>
+                            <TableCell>
+                              <IconButton {...iconButtonStyles} onClick={() => setViewerUrl(row.pdf)}>
+                                <VisibilityIcon />
+                              </IconButton>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                  <TablePagination
+                    component="div"
+                    count={filteredItems.length}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    rowsPerPage={rowsPerPage}
+                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    rowsPerPageOptions={[5, 10, 25, 50]}
+                    labelRowsPerPage="Linhas por página:"
+                    labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count !== -1 ? count : `mais de ${to}`}`}
+                  />
+                </TableContainer>
+              )}
+            </Paper>
+          </Fade>
+        </Box>
+      </Box>
 
       {viewerUrl && (
         <PdfViewModa open documentUrl={viewerUrl} onClose={() => setViewerUrl(null)} />

@@ -9,20 +9,25 @@ import {
   Typography,
   CircularProgress,
   Alert,
-  Breadcrumbs,
-  Link,
   Chip,
+  Fade,
 } from "@mui/material";
 import {
   MoreVert as MoreVertIcon,
   Refresh as RefreshIcon,
-  NavigateNext as NavigateNextIcon,
 } from "@mui/icons-material";
 import { DataGrid } from "@mui/x-data-grid";
 import { useNavigate } from "react-router";
 import { useContracts } from "../../hooks/useContracts";
 import { getTableConfig } from "../../util/constants";
 import { APP_ROUTES } from "../../util/constants";
+import PageHeader from "../../components/ui/page/PageHeader";
+import {
+  designSystem,
+  paperStyles,
+  iconButtonStyles,
+  progressStyles,
+} from "../../styles/designSystem";
 
 const Contratos: React.FC = () => {
   const navigate = useNavigate();
@@ -56,23 +61,23 @@ const Contratos: React.FC = () => {
   };
 
   const columns: any[] = [
-    { 
-      field: "cpf", 
-      headerName: "CPF", 
+    {
+      field: "cpf",
+      headerName: "CPF",
       width: 150,
       headerAlign: "center",
       align: "center",
     },
-    { 
-      field: "name", 
-      headerName: "Nome", 
+    {
+      field: "name",
+      headerName: "Nome",
       width: 250,
       headerAlign: "center",
       align: "left",
     },
-    { 
-      field: "status", 
-      headerName: "Status", 
+    {
+      field: "status",
+      headerName: "Status",
       width: 150,
       headerAlign: "center",
       align: "center",
@@ -89,10 +94,17 @@ const Contratos: React.FC = () => {
       headerName: "Ações",
       width: 100,
       renderCell: () => (
-        <IconButton 
-          size="small" 
+        <IconButton
+          size="small"
           onClick={(e) => openMenu(e)}
-          sx={{ color: "#A650F0" }}
+          sx={{
+            color: designSystem.colors.text.disabled,
+            padding: "4px",
+            "&:hover": {
+              backgroundColor: designSystem.colors.primary.lighter,
+              color: designSystem.colors.primary.main,
+            },
+          }}
         >
           <MoreVertIcon fontSize="small" />
         </IconButton>
@@ -112,133 +124,141 @@ const Contratos: React.FC = () => {
   }));
 
   return (
-    <Box p={2}>
-      {/* Breadcrumb */}
-      <Breadcrumbs
-        aria-label="breadcrumb"
-        separator={<NavigateNextIcon fontSize="small" />}
-        sx={{ mb: 3 }}
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {/* Conteúdo Principal */}
+      <Box
+        sx={{
+          flex: 1,
+          p: { xs: 2, sm: 3, md: 4 },
+          display: "flex",
+          flexDirection: "column",
+          overflow: "auto",
+        }}
       >
-        <Link
-          component="button"
-          variant="body1"
-          onClick={() => navigate(APP_ROUTES.DASHBOARD)}
+        <Box
           sx={{
-            color: "#A650F0",
-            textDecoration: "none",
-            cursor: "pointer",
-            "&:hover": {
-              textDecoration: "underline",
-            },
+            maxWidth: 1400,
+            width: "100%",
+            margin: "0 auto",
           }}
         >
-          Dashboard
-        </Link>
-        <Typography color="text.primary">Contratos</Typography>
-      </Breadcrumbs>
+          {/* Header da Página */}
+          <PageHeader
+            title="Contratos"
+            subtitle="Gerencie e visualize todos os contratos cadastrados."
+            description="Esta página permite gerenciar e visualizar todos os CONTRATOS cadastrados no sistema. Você pode visualizar informações sobre CPF, nome do contratante e status do contrato (ativo, pendente ou cancelado). Utilize o menu de ações para acessar funcionalidades específicas de cada contrato."
+            breadcrumbs={[
+              { label: "Dashboard", path: APP_ROUTES.DASHBOARD },
+              { label: "Contratos" },
+            ]}
+          />
 
-      {/* Título e Texto Explicativo */}
-      <Box sx={{ mb: 3 }}>
-        <Typography
-          variant="h4"
-          sx={{
-            color: "#A650F0",
-            fontWeight: 600,
-            mb: 2,
-          }}
-        >
-          Contratos Cadastrados
-        </Typography>
-        <Paper
-          elevation={1}
-          sx={{
-            p: 2,
-            backgroundColor: "#F3E5F5",
-            borderRadius: 2,
-            borderLeft: "4px solid #A650F0",
-          }}
-        >
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
-            <strong>Contratos Cadastrados</strong>
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Esta página permite gerenciar e visualizar todos os CONTRATOS cadastrados no sistema.
-            Você pode visualizar informações sobre CPF, nome do contratante e status do contrato (ativo, pendente ou cancelado).
-            Utilize o menu de ações para acessar funcionalidades específicas de cada contrato.
-          </Typography>
-        </Paper>
-      </Box>
-
-      <Paper elevation={2} sx={{ borderRadius: 2, overflow: "hidden" }}>
-        <Toolbar 
-          sx={{ 
-            display: "flex", 
-            justifyContent: "space-between",
-            backgroundColor: "#A650F0",
-            color: "white",
-          }}
-        >
-          <Typography variant="h6" sx={{ color: "white" }}>
-            Contratos Cadastrados
-          </Typography>
-          <IconButton 
-            onClick={fetchContracts}
-            sx={{ color: "white" }}
-            title="Atualizar lista"
-          >
-            <RefreshIcon />
-          </IconButton>
-        </Toolbar>
-
-        {loading ? (
-          <Box display="flex" justifyContent="center" p={4}>
-            <CircularProgress />
-          </Box>
-        ) : error ? (
-          <Box p={2}>
-            <Alert severity="error">{error}</Alert>
-          </Box>
-        ) : (
-          <Box sx={{ height: 500, width: "100%" }}>
-            <DataGrid
-              rows={rows}
-              columns={columns}
-              disableRowSelectionOnClick
-              getRowClassName={(params) =>
-                params.indexRelativeToCurrentPage % 2 === 0 ? "even" : "odd"
-              }
-              {...getTableConfig()}
-              sx={{
-                "& .MuiDataGrid-columnHeaders": {
-                  backgroundColor: "#A650F0",
-                  color: "white",
-                  "& .MuiDataGrid-columnHeaderTitle": {
+          {/* Tabela de Dados */}
+          <Fade in timeout={1000}>
+            <Paper {...paperStyles}>
+              <Toolbar
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 2,
+                  p: 3,
+                  backgroundColor: designSystem.colors.background.primary,
+                  borderBottom: `1px solid ${designSystem.colors.border.main}`,
+                }}
+              >
+                <Typography
+                  variant="h6"
+                  sx={{
                     fontWeight: 600,
-                  },
-                },
-                "& .even": {
-                  backgroundColor: "#F5F5F5",
-                },
-                "& .odd": {
-                  backgroundColor: "white",
-                },
-                "& .MuiDataGrid-row:hover": {
-                  backgroundColor: "#E1BEE7",
-                  cursor: "pointer",
-                },
-              }}
-            />
-          </Box>
-        )}
+                    color: designSystem.colors.text.primary,
+                    fontSize: "1.1rem",
+                  }}
+                >
+                  Contratos Cadastrados
+                </Typography>
+                <IconButton onClick={fetchContracts} {...iconButtonStyles}>
+                  <RefreshIcon />
+                </IconButton>
+              </Toolbar>
 
-        <Menu
-          anchorEl={menuAnchor}
-          open={Boolean(menuAnchor)}
-          onClose={closeMenu}
-        >
-          <MenuItem onClick={closeMenu}>Fechar</MenuItem>
-        </Menu>
-      </Paper>
+              {loading ? (
+                <Box display="flex" justifyContent="center" p={4}>
+                  <CircularProgress {...progressStyles} />
+                </Box>
+              ) : error ? (
+                <Box p={2}>
+                  <Alert severity="error">{error}</Alert>
+                </Box>
+              ) : (
+                <Box sx={{ height: 500, width: "100%" }}>
+                  <DataGrid
+                    rows={rows}
+                    columns={columns}
+                    disableRowSelectionOnClick
+                    getRowClassName={(params) =>
+                      params.indexRelativeToCurrentPage % 2 === 0 ? "even" : "odd"
+                    }
+                    {...getTableConfig()}
+                    sx={{
+                      border: "none",
+                      "& .MuiDataGrid-columnHeaders": {
+                        backgroundColor: designSystem.colors.background.secondary,
+                        color: designSystem.colors.text.secondary,
+                        borderBottom: `2px solid ${designSystem.colors.border.main}`,
+                        "& .MuiDataGrid-columnHeaderTitle": {
+                          fontWeight: 600,
+                          fontSize: "0.875rem",
+                        },
+                      },
+                      "& .even": {
+                        backgroundColor: designSystem.colors.background.primary,
+                      },
+                      "& .odd": {
+                        backgroundColor: designSystem.colors.background.secondary,
+                      },
+                      "& .MuiDataGrid-row:hover": {
+                        backgroundColor: `${designSystem.colors.primary.lightest} !important`,
+                        cursor: "pointer",
+                      },
+                      "& .MuiDataGrid-cell": {
+                        borderBottom: `1px solid ${designSystem.colors.border.main}`,
+                        color: designSystem.colors.text.secondary,
+                        fontSize: "0.875rem",
+                      },
+                      "& .MuiDataGrid-footerContainer": {
+                        borderTop: `1px solid ${designSystem.colors.border.main}`,
+                        backgroundColor: designSystem.colors.background.secondary,
+                      },
+                    }}
+                  />
+                </Box>
+              )}
+
+              <Menu
+                anchorEl={menuAnchor}
+                open={Boolean(menuAnchor)}
+                onClose={closeMenu}
+                slotProps={{
+                  paper: {
+                    sx: {
+                      borderRadius: 2,
+                      boxShadow: designSystem.shadows.medium,
+                    },
+                  },
+                }}
+              >
+                <MenuItem onClick={closeMenu}>Fechar</MenuItem>
+              </Menu>
+            </Paper>
+          </Fade>
+        </Box>
+      </Box>
     </Box>
   );
 };

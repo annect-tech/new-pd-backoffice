@@ -23,9 +23,8 @@ import {
   TableHead,
   TableRow,
   TablePagination,
-  Breadcrumbs,
-  Link,
   Chip,
+  Fade,
 } from "@mui/material";
 import {
   Search as SearchIcon,
@@ -33,13 +32,24 @@ import {
   Edit as EditIcon,
   Close as CloseIcon,
   Refresh as RefreshIcon,
-  NavigateNext as NavigateNextIcon,
   Image as ImageIcon,
   PictureAsPdf as PictureAsPdfIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router";
 import { useCities } from "../../hooks/useCities";
 import { APP_ROUTES } from "../../util/constants";
+import PageHeader from "../../components/ui/page/PageHeader";
+import {
+  designSystem,
+  paperStyles,
+  toolbarStyles,
+  tableHeadStyles,
+  tableRowHoverStyles,
+  iconButtonStyles,
+  textFieldStyles,
+  primaryButtonStyles,
+  progressStyles,
+} from "../../styles/designSystem";
 
 // Definindo tipos localmente para evitar problemas de importação
 interface CityDataPayload {
@@ -203,248 +213,199 @@ const Cidades: React.FC = () => {
   };
 
   return (
-    <Box p={2}>
-      {/* Breadcrumb */}
-      <Breadcrumbs
-        aria-label="breadcrumb"
-        separator={<NavigateNextIcon fontSize="small" />}
-        sx={{ mb: 3 }}
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {/* Conteúdo Principal */}
+      <Box
+        sx={{
+          flex: 1,
+          p: { xs: 2, sm: 3, md: 4 },
+          display: "flex",
+          flexDirection: "column",
+          overflow: "auto",
+        }}
       >
-        <Link
-          component="button"
-          variant="body1"
-          onClick={() => navigate(APP_ROUTES.DASHBOARD)}
+        <Box
           sx={{
-            color: "#A650F0",
-            textDecoration: "none",
-            cursor: "pointer",
-            "&:hover": {
-              textDecoration: "underline",
-            },
+            maxWidth: 1400,
+            width: "100%",
+            margin: "0 auto",
           }}
         >
-          Dashboard
-        </Link>
-        <Typography color="text.primary">Cidades</Typography>
-      </Breadcrumbs>
+          {/* Header da Página */}
+          <PageHeader
+            title="Cidades"
+            subtitle="Gerencie as cidades disponíveis no sistema."
+            description="Esta página permite gerenciar as cidades disponíveis no sistema. Você pode criar novas cidades, editar informações existentes, ativar ou desativar cidades, e pesquisar por nome ou UF. Utilize a barra de pesquisa para filtrar cidades e os botões de ação para gerenciar cada registro."
+            breadcrumbs={[
+              { label: "Dashboard", path: APP_ROUTES.DASHBOARD },
+              { label: "Cidades" },
+            ]}
+          />
 
-      {/* Título e Texto Explicativo */}
-      <Box sx={{ mb: 3 }}>
-        <Typography
-          variant="h4"
-          sx={{
-            color: "#A650F0",
-            fontWeight: 600,
-            mb: 2,
-          }}
-        >
-          Gerenciamento de Cidades
-        </Typography>
-        <Paper
-          elevation={1}
-          sx={{
-            p: 2,
-            backgroundColor: "#F3E5F5",
-            borderRadius: 2,
-            borderLeft: "4px solid #A650F0",
-          }}
-        >
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
-            <strong>Gerenciamento de Cidades</strong>
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Esta página permite gerenciar as cidades disponíveis no sistema. Você pode criar novas cidades,
-            editar informações existentes, ativar ou desativar cidades, e pesquisar por nome ou UF.
-            Utilize a barra de pesquisa para filtrar cidades e os botões de ação para gerenciar cada registro.
-          </Typography>
-        </Paper>
+          {/* Tabela de Dados */}
+          <Fade in timeout={1000}>
+            <Paper {...paperStyles}>
+              <Toolbar {...toolbarStyles}>
+                <Box display="flex" alignItems="center" sx={{ flex: 1, maxWidth: 500 }}>
+                  <SearchIcon sx={{ mr: 1, color: designSystem.colors.text.disabled }} />
+                  <TextField
+                    placeholder="Pesquisar por cidade ou UF..."
+                    variant="standard"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    fullWidth
+                    {...textFieldStyles}
+                  />
+                </Box>
+                <Box display="flex" gap={1}>
+                  <IconButton
+                    onClick={fetchCities}
+                    {...iconButtonStyles}
+                  >
+                    <RefreshIcon />
+                  </IconButton>
+                  <Button
+                    startIcon={<AddIcon />}
+                    onClick={() => handleOpen("create")}
+                    {...primaryButtonStyles}
+                  >
+                    Adicionar
+                  </Button>
+                </Box>
+              </Toolbar>
+
+              {loading ? (
+                <Box display="flex" justifyContent="center" p={4}>
+                  <CircularProgress {...progressStyles} />
+                </Box>
+              ) : (
+                <TableContainer sx={{ maxWidth: "100%" }}>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell {...tableHeadStyles}>ID</TableCell>
+                        <TableCell {...tableHeadStyles}>Cidade</TableCell>
+                        <TableCell {...tableHeadStyles}>UF</TableCell>
+                        <TableCell {...tableHeadStyles}>Status</TableCell>
+                        <TableCell {...tableHeadStyles}>Ações</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {paginatedData.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
+                            <Typography color={designSystem.colors.text.disabled} fontSize="0.95rem">
+                              {searchTerm
+                                ? "Nenhum resultado encontrado"
+                                : "Nenhuma cidade disponível"}
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        paginatedData.map((city) => (
+                          <TableRow
+                            key={city.id}
+                            {...tableRowHoverStyles}
+                          >
+                            <TableCell sx={{ color: designSystem.colors.text.secondary, fontSize: "0.875rem", py: 1.5 }}>
+                              {city.id}
+                            </TableCell>
+                            <TableCell sx={{ color: designSystem.colors.text.primary, fontWeight: 500, fontSize: "0.875rem", py: 1.5 }}>
+                              {city.localidade}
+                            </TableCell>
+                            <TableCell sx={{ color: designSystem.colors.text.secondary, fontSize: "0.875rem", py: 1.5 }}>
+                              {city.uf}
+                            </TableCell>
+                            <TableCell sx={{ py: 1.5 }}>
+                              <Chip
+                                label={city.active ? "Ativo" : "Inativo"}
+                                color={city.active ? "success" : "default"}
+                                size="small"
+                              />
+                            </TableCell>
+                            <TableCell align="center" sx={{ py: 1.5 }}>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleOpen("edit", city)}
+                                sx={{
+                                  color: designSystem.colors.text.disabled,
+                                  padding: "4px",
+                                  "&:hover": {
+                                    backgroundColor: designSystem.colors.primary.lighter,
+                                    color: designSystem.colors.primary.main,
+                                  },
+                                }}
+                              >
+                                <EditIcon sx={{ fontSize: "1.1rem" }} />
+                              </IconButton>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                  <TablePagination
+                    component="div"
+                    count={filtered.length}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    rowsPerPage={rowsPerPage}
+                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    rowsPerPageOptions={[5, 10, 25]}
+                    labelRowsPerPage="Linhas por página:"
+                    labelDisplayedRows={({ from, to, count }) =>
+                      `${from}-${to} de ${count !== -1 ? count : `mais de ${to}`}`
+                    }
+                    sx={{
+                      borderTop: `1px solid ${designSystem.colors.border.main}`,
+                      backgroundColor: designSystem.colors.background.secondary,
+                    }}
+                  />
+                </TableContainer>
+              )}
+            </Paper>
+          </Fade>
+        </Box>
       </Box>
 
-      <Paper elevation={2} sx={{ borderRadius: 2, overflow: "hidden" }}>
-        <Toolbar sx={{ display: "flex", justifyContent: "space-between", gap: 2 }}>
-          <Box display="flex" alignItems="center" sx={{ flex: 1, maxWidth: 400 }}>
-            <SearchIcon sx={{ mr: 1, color: "#A650F0" }} />
-            <TextField
-              placeholder="Pesquisar por cidade ou UF..."
-              variant="standard"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              fullWidth
-              sx={{
-                "& .MuiInput-underline:before": {
-                  borderBottomColor: "#A650F0",
-                },
-                "& .MuiInput-underline:hover:before": {
-                  borderBottomColor: "#A650F0",
-                },
-                "& .MuiInput-underline:after": {
-                  borderBottomColor: "#A650F0",
-                },
-              }}
-            />
-          </Box>
-          <Box>
-            <IconButton onClick={fetchCities} title="Atualizar lista">
-              <RefreshIcon />
-            </IconButton>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => handleOpen("create")}
-              sx={{
-                backgroundColor: "#A650F0",
-                "&:hover": { backgroundColor: "#8B3DD9" },
-              }}
-            >
-              Adicionar
-            </Button>
-          </Box>
-        </Toolbar>
-
-        {loading ? (
-          <Box display="flex" justifyContent="center" p={4}>
-            <CircularProgress />
-          </Box>
-        ) : (
-          <>
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell
-                      sx={{
-                        backgroundColor: "#A650F0",
-                        color: "white",
-                        fontWeight: 600,
-                      }}
-                    >
-                      ID
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        backgroundColor: "#A650F0",
-                        color: "white",
-                        fontWeight: 600,
-                      }}
-                    >
-                      Cidade
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        backgroundColor: "#A650F0",
-                        color: "white",
-                        fontWeight: 600,
-                      }}
-                    >
-                      UF
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        backgroundColor: "#A650F0",
-                        color: "white",
-                        fontWeight: 600,
-                      }}
-                    >
-                      Status
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        backgroundColor: "#A650F0",
-                        color: "white",
-                        fontWeight: 600,
-                      }}
-                    >
-                      Ações
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {paginatedData.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
-                        <Typography color="text.secondary">
-                          Nenhuma cidade encontrada
-                        </Typography>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    paginatedData.map((city, index) => (
-                      <TableRow
-                        key={city.id}
-                        sx={{
-                          backgroundColor:
-                            index % 2 === 0 ? "#F5F5F5" : "white",
-                          "&:hover": {
-                            backgroundColor: "#E1BEE7",
-                            cursor: "pointer",
-                          },
-                        }}
-                      >
-                        <TableCell>{city.id}</TableCell>
-                        <TableCell>{city.localidade}</TableCell>
-                        <TableCell>{city.uf}</TableCell>
-                        <TableCell>
-                          <Chip
-                            label={city.active ? "Ativo" : "Inativo"}
-                            color={city.active ? "success" : "default"}
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <IconButton
-                            size="small"
-                            onClick={() => handleOpen("edit", city)}
-                            sx={{ color: "#A650F0" }}
-                          >
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
-            <TablePagination
-              component="div"
-              count={filtered.length}
-              page={page}
-              onPageChange={handleChangePage}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              rowsPerPageOptions={[5, 10, 25]}
-              labelRowsPerPage="Linhas por página:"
-              labelDisplayedRows={({ from, to, count }) =>
-                `${from}-${to} de ${count}`
-              }
-            />
-          </>
-        )}
-      </Paper>
-
       {/* Modal */}
-      <Dialog 
-        open={open} 
-        onClose={handleClose} 
-        fullWidth 
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        fullWidth
         maxWidth="sm"
-        PaperProps={{
-          sx: {
-            borderRadius: 3,
-            overflow: "hidden",
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: 3,
+            },
           },
         }}
       >
-        <DialogTitle sx={{ m: 0, p: 2, backgroundColor: "#A650F0", color: "white" }}>
+        <DialogTitle sx={{
+          fontWeight: 600,
+          color: designSystem.colors.text.primary,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center"
+        }}>
           {mode === "create" ? "Criar Cidade" : "Editar Cidade"}
           <IconButton
             aria-label="close"
             onClick={handleClose}
+            size="small"
             sx={{
-              position: "absolute",
-              right: 8,
-              top: 8,
-              color: "white",
+              color: designSystem.colors.text.disabled,
+              "&:hover": {
+                backgroundColor: designSystem.colors.primary.lightest,
+                color: designSystem.colors.primary.main,
+              },
             }}
           >
             <CloseIcon />
@@ -463,14 +424,14 @@ const Cidades: React.FC = () => {
               mb: 2,
               "& .MuiOutlinedInput-root": {
                 "&:hover fieldset": {
-                  borderColor: "#A650F0",
+                  borderColor: designSystem.colors.primary.main,
                 },
                 "&.Mui-focused fieldset": {
-                  borderColor: "#A650F0",
+                  borderColor: designSystem.colors.primary.main,
                 },
               },
               "& .MuiInputLabel-root.Mui-focused": {
-                color: "#A650F0",
+                color: designSystem.colors.primary.main,
               },
             }}
           />
@@ -482,19 +443,21 @@ const Cidades: React.FC = () => {
             onChange={(e) =>
               setForm((f) => ({ ...f, uf: e.target.value.toUpperCase() }))
             }
-            inputProps={{ maxLength: 2 }}
+            slotProps={{
+              htmlInput: { maxLength: 2 },
+            }}
             sx={{
               mb: 2,
               "& .MuiOutlinedInput-root": {
                 "&:hover fieldset": {
-                  borderColor: "#A650F0",
+                  borderColor: designSystem.colors.primary.main,
                 },
                 "&.Mui-focused fieldset": {
-                  borderColor: "#A650F0",
+                  borderColor: designSystem.colors.primary.main,
                 },
               },
               "& .MuiInputLabel-root.Mui-focused": {
-                color: "#A650F0",
+                color: designSystem.colors.primary.main,
               },
             }}
           />
@@ -507,10 +470,10 @@ const Cidades: React.FC = () => {
                 }
                 sx={{
                   "& .MuiSwitch-switchBase.Mui-checked": {
-                    color: "#A650F0",
+                    color: designSystem.colors.primary.main,
                   },
                   "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                    backgroundColor: "#A650F0",
+                    backgroundColor: designSystem.colors.primary.main,
                   },
                 }}
               />
@@ -524,7 +487,7 @@ const Cidades: React.FC = () => {
               <Box sx={{ mt: 3 }}>
                 <Typography
                   variant="h6"
-                  sx={{ mb: 2, color: "#A650F0", fontWeight: 600 }}
+                  sx={{ mb: 2, color: designSystem.colors.primary.main, fontWeight: 600 }}
                 >
                   Partes WhiteLabel's do Seletivo:
                 </Typography>
@@ -532,7 +495,7 @@ const Cidades: React.FC = () => {
               <Box sx={{ mb: 2 }}>
                 <Typography
                   variant="subtitle2"
-                  sx={{ mb: 1, color: "#A650F0", fontWeight: 600 }}
+                  sx={{ mb: 1, color: designSystem.colors.primary.main, fontWeight: 600 }}
                 >
                   Logo da Cidade
                 </Typography>
@@ -550,11 +513,11 @@ const Cidades: React.FC = () => {
                     startIcon={<ImageIcon />}
                     fullWidth
                     sx={{
-                      borderColor: "#A650F0",
-                      color: "#A650F0",
+                      borderColor: designSystem.colors.primary.main,
+                      color: designSystem.colors.primary.main,
                       "&:hover": {
-                        borderColor: "#8B3DD9",
-                        backgroundColor: "#F3E5F5",
+                        borderColor: designSystem.colors.primary.darker,
+                        backgroundColor: designSystem.colors.primary.lighter,
                       },
                       py: 1.5,
                     }}
@@ -583,7 +546,7 @@ const Cidades: React.FC = () => {
               <Box sx={{ mb: 2 }}>
                 <Typography
                   variant="subtitle2"
-                  sx={{ mb: 1, color: "#A650F0", fontWeight: 600 }}
+                  sx={{ mb: 1, color: designSystem.colors.primary.main, fontWeight: 600 }}
                 >
                   Edital
                 </Typography>
@@ -601,11 +564,11 @@ const Cidades: React.FC = () => {
                     startIcon={<PictureAsPdfIcon />}
                     fullWidth
                     sx={{
-                      borderColor: "#A650F0",
-                      color: "#A650F0",
+                      borderColor: designSystem.colors.primary.main,
+                      color: designSystem.colors.primary.main,
                       "&:hover": {
-                        borderColor: "#8B3DD9",
-                        backgroundColor: "#F3E5F5",
+                        borderColor: designSystem.colors.primary.darker,
+                        backgroundColor: designSystem.colors.primary.lighter,
                       },
                       py: 1.5,
                     }}
@@ -637,28 +600,25 @@ const Cidades: React.FC = () => {
           <Button
             onClick={handleClose}
             sx={{
-              color: "#A650F0",
+              color: designSystem.colors.primary.main,
+              fontWeight: 600,
               "&:hover": {
-                backgroundColor: "#F3E5F5",
+                backgroundColor: designSystem.colors.primary.lightest,
               },
             }}
           >
             Cancelar
           </Button>
           <Button
-            variant="contained"
             onClick={handleSave}
-            sx={{
-              backgroundColor: "#A650F0",
-              "&:hover": { backgroundColor: "#8B3DD9" },
-            }}
+            {...primaryButtonStyles}
           >
             Salvar
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Feedback */}
+      {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}

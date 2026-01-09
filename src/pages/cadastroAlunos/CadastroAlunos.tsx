@@ -11,16 +11,14 @@ import {
   Select,
   Tooltip,
   Typography,
-  Breadcrumbs,
-  Link,
   Alert,
   Snackbar,
   Divider,
   Card,
   CardContent,
+  Fade,
 } from "@mui/material";
 import {
-  NavigateNext as NavigateNextIcon,
   Person as PersonIcon,
   Email as EmailIcon,
   Badge as BadgeIcon,
@@ -30,6 +28,8 @@ import {
 } from "@mui/icons-material";
 import { useNavigate } from "react-router";
 import { APP_ROUTES } from "../../util/constants";
+import PageHeader from "../../components/ui/page/PageHeader";
+import { designSystem, primaryButtonStyles, progressStyles } from "../../styles/designSystem";
 
 // Funções utilitárias para CPF
 const formatCPF = (value: string): string => {
@@ -121,6 +121,20 @@ const validateForm = (values: FormValues): Record<string, string> => {
 
 const CadastroAlunos: React.FC = () => {
   const navigate = useNavigate();
+  // shared input focus styles to follow design system
+  const inputFocusSx = {
+    "& .MuiOutlinedInput-root": {
+      "&:hover fieldset": {
+        borderColor: designSystem.colors.primary.main,
+      },
+      "&.Mui-focused fieldset": {
+        borderColor: designSystem.colors.primary.main,
+      },
+    },
+    "& .MuiInputLabel-root.Mui-focused": {
+      color: designSystem.colors.primary.main,
+    },
+  };
   const [isFetching, setIsFetching] = useState(false);
   const [cpfFetchError, setCpfFetchError] = useState<string | null>(null);
   const [cpfDisplay, setCpfDisplay] = useState("");
@@ -292,101 +306,80 @@ const CadastroAlunos: React.FC = () => {
   };
 
   return (
-    <Box p={2}>
-      <Breadcrumbs
-        aria-label="breadcrumb"
-        separator={<NavigateNextIcon fontSize="small" />}
-        sx={{ mb: 3 }}
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {/* Conteúdo Principal */}
+      <Box
+        sx={{
+          flex: 1,
+          p: { xs: 2, sm: 3, md: 4 },
+          display: "flex",
+          flexDirection: "column",
+          overflow: "auto",
+        }}
       >
-        <Link
-          component="button"
-          variant="body1"
-          onClick={() => navigate(APP_ROUTES.DASHBOARD)}
+        <Box
           sx={{
-            color: "#A650F0",
-            textDecoration: "none",
-            cursor: "pointer",
-            "&:hover": { textDecoration: "underline" },
+            maxWidth: 1400,
+            width: "100%",
+            margin: "0 auto",
           }}
         >
-          Dashboard
-        </Link>
-        <Link
-          component="button"
-          variant="body1"
-          onClick={() => navigate(APP_ROUTES.STUDENTS)}
-          sx={{
-            color: "#A650F0",
-            textDecoration: "none",
-            cursor: "pointer",
-            "&:hover": { textDecoration: "underline" },
-          }}
-        >
-          Dados de Alunos
-        </Link>
-        <Typography color="text.primary">Cadastro de Alunos</Typography>
-      </Breadcrumbs>
+          {/* Header da Página */}
+          <PageHeader
+            title="Cadastro de Alunos"
+            subtitle="Cadastre um novo aluno no sistema."
+            description="Cadastre um novo aluno no sistema baseando-se em um candidato pré existente. Informe o CPF de um candidato já aprovado em algum método para cadastrá-lo como aluno. O sistema buscará automaticamente os dados do candidato e preencherá os campos de matrícula e e-mail corporativo."
+            breadcrumbs={[
+              { label: "Dashboard", path: APP_ROUTES.DASHBOARD },
+              { label: "Dados de Alunos", path: APP_ROUTES.STUDENTS },
+              { label: "Cadastro de Alunos" },
+            ]}
+          />
 
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" sx={{ color: "#A650F0", fontWeight: 600, mb: 2 }}>
-          Cadastro de Alunos
-        </Typography>
-        <Paper
-          elevation={1}
-          sx={{
-            p: 2,
-            backgroundColor: "#F3E5F5",
-            borderRadius: 2,
-            borderLeft: "4px solid #A650F0",
-          }}
-        >
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
-            <strong>Cadastro de Alunos</strong>
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Cadastre um novo aluno no sistema baseando-se em um candidato pré existente. Informe o CPF de um candidato já aprovado em algum método
-            para cadastrá-lo como aluno. O sistema buscará automaticamente os dados do candidato e preencherá
-            os campos de matrícula e e-mail corporativo.
-          </Typography>
-        </Paper>
-      </Box>
+          <Fade in timeout={1000}>
+            <Box sx={{ maxWidth: 900, mx: "auto" }}>
+              {formError && (
+                <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+                  {formError}
+                </Alert>
+              )}
 
-      <Box sx={{ maxWidth: 900, mx: "auto" }}>
-        {formError && (
-          <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
-            {formError}
-          </Alert>
-        )}
-
-        <Paper
-          elevation={3}
-          sx={{
-            borderRadius: 3,
-            overflow: "hidden",
-            background: "linear-gradient(135deg, #ffffff 0%, #f8f5ff 100%)",
-            border: "1px solid #E1BEE7",
-          }}
-        >
-          {/* Header do Formulário */}
-          <Box
-            sx={{
-              background: "linear-gradient(135deg, #A650F0 0%, #8B3DD9 100%)",
-              p: 3,
-              color: "white",
-            }}
-          >
-            <Box display="flex" alignItems="center" gap={2}>
-              <PersonIcon sx={{ fontSize: 40 }} />
-              <Box>
-                <Typography variant="h5" fontWeight={700}>
-                  Novo Cadastro de Aluno
-                </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
-                  Preencha os dados abaixo para cadastrar um novo aluno
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
+              <Paper
+                elevation={0}
+                sx={{
+                  borderRadius: 3,
+                  overflow: "hidden",
+                  background: "linear-gradient(135deg, #ffffff 0%, #f8f5ff 100%)",
+                  border: `1px solid ${designSystem.colors.border.main}`,
+                  boxShadow: designSystem.shadows.small,
+                }}
+              >
+                {/* Header do Formulário */}
+                <Box
+                  sx={{
+                    background: designSystem.gradients.primary,
+                    p: 3,
+                    color: "white",
+                  }}
+                >
+                  <Box display="flex" alignItems="center" gap={2}>
+                    <PersonIcon sx={{ fontSize: 40 }} />
+                    <Box>
+                      <Typography variant="h5" fontWeight={700}>
+                        Novo Cadastro de Aluno
+                      </Typography>
+                      <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
+                        Preencha os dados abaixo para cadastrar um novo aluno
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Box>
 
           <Box component="form" onSubmit={onSubmit} noValidate sx={{ p: 4 }}>
             {/* Seção: Dados do Candidato */}
@@ -394,15 +387,15 @@ const CadastroAlunos: React.FC = () => {
               elevation={0}
               sx={{
                 mb: 3,
-                border: "1px solid #E1BEE7",
+                border: `1px solid ${designSystem.colors.border.main}`,
                 borderRadius: 2,
-                backgroundColor: "#FAFAFA",
+                backgroundColor: designSystem.colors.background.secondary,
               }}
             >
               <CardContent>
                 <Box display="flex" alignItems="center" gap={1} mb={3}>
-                  <InfoIcon sx={{ color: "#A650F0", fontSize: 24 }} />
-                  <Typography variant="h6" fontWeight={600} sx={{ color: "#A650F0" }}>
+                  <InfoIcon sx={{ color: designSystem.colors.primary.main, fontSize: 24 }} />
+                  <Typography variant="h6" fontWeight={600} sx={{ color: designSystem.colors.primary.main }}>
                     Dados do Candidato
                   </Typography>
                 </Box>
@@ -430,19 +423,7 @@ const CadastroAlunos: React.FC = () => {
                         ),
                         endAdornment: isFetching ? <CircularProgress size={20} /> : null,
                       }}
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          "&:hover fieldset": {
-                            borderColor: "#A650F0",
-                          },
-                          "&.Mui-focused fieldset": {
-                            borderColor: "#A650F0",
-                          },
-                        },
-                        "& .MuiInputLabel-root.Mui-focused": {
-                          color: "#A650F0",
-                        },
-                      }}
+                      sx={inputFocusSx}
                     />
                   </Tooltip>
                 </Box>
@@ -454,15 +435,15 @@ const CadastroAlunos: React.FC = () => {
               elevation={0}
               sx={{
                 mb: 3,
-                border: "1px solid #E1BEE7",
+                border: `1px solid ${designSystem.colors.border.main}`,
                 borderRadius: 2,
-                backgroundColor: "#FAFAFA",
+                backgroundColor: designSystem.colors.background.secondary,
               }}
             >
               <CardContent>
                 <Box display="flex" alignItems="center" gap={1} mb={3}>
-                  <SchoolIcon sx={{ color: "#A650F0", fontSize: 24 }} />
-                  <Typography variant="h6" fontWeight={600} sx={{ color: "#A650F0" }}>
+                  <SchoolIcon sx={{ color: designSystem.colors.primary.main, fontSize: 24 }} />
+                  <Typography variant="h6" fontWeight={600} sx={{ color: designSystem.colors.primary.main }}>
                     Informações Acadêmicas
                   </Typography>
                 </Box>
@@ -483,19 +464,7 @@ const CadastroAlunos: React.FC = () => {
                           </Box>
                         ),
                       }}
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          "&:hover fieldset": {
-                            borderColor: "#A650F0",
-                          },
-                          "&.Mui-focused fieldset": {
-                            borderColor: "#A650F0",
-                          },
-                        },
-                        "& .MuiInputLabel-root.Mui-focused": {
-                          color: "#A650F0",
-                        },
-                      }}
+                      sx={inputFocusSx}
                     />
                   </Box>
 
@@ -515,19 +484,7 @@ const CadastroAlunos: React.FC = () => {
                           </Box>
                         ),
                       }}
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          "&:hover fieldset": {
-                            borderColor: "#A650F0",
-                          },
-                          "&.Mui-focused fieldset": {
-                            borderColor: "#A650F0",
-                          },
-                        },
-                        "& .MuiInputLabel-root.Mui-focused": {
-                          color: "#A650F0",
-                        },
-                      }}
+                      sx={inputFocusSx}
                     />
                   </Box>
                 </Box>
@@ -539,15 +496,15 @@ const CadastroAlunos: React.FC = () => {
               elevation={0}
               sx={{
                 mb: 3,
-                border: "1px solid #E1BEE7",
+                border: `1px solid ${designSystem.colors.border.main}`,
                 borderRadius: 2,
-                backgroundColor: "#FAFAFA",
+                backgroundColor: designSystem.colors.background.secondary,
               }}
             >
               <CardContent>
                 <Box display="flex" alignItems="center" gap={1} mb={3}>
-                  <PersonIcon sx={{ color: "#A650F0", fontSize: 24 }} />
-                  <Typography variant="h6" fontWeight={600} sx={{ color: "#A650F0" }}>
+                  <PersonIcon sx={{ color: designSystem.colors.primary.main, fontSize: 24 }} />
+                  <Typography variant="h6" fontWeight={600} sx={{ color: designSystem.colors.primary.main }}>
                     Configurações do Aluno
                   </Typography>
                 </Box>
@@ -651,19 +608,7 @@ const CadastroAlunos: React.FC = () => {
                         onChange={handleMonitorOtherChange}
                         error={!!errors.monitor}
                         helperText={errors.monitor}
-                        sx={{
-                          "& .MuiOutlinedInput-root": {
-                            "&:hover fieldset": {
-                              borderColor: "#A650F0",
-                            },
-                            "&.Mui-focused fieldset": {
-                              borderColor: "#A650F0",
-                            },
-                          },
-                          "& .MuiInputLabel-root.Mui-focused": {
-                            color: "#A650F0",
-                          },
-                        }}
+                        sx={inputFocusSx}
                       />
                     </Box>
                   )}
@@ -677,19 +622,7 @@ const CadastroAlunos: React.FC = () => {
                         onChange={handleStatusOtherChange}
                         error={!!errors.status}
                         helperText={errors.status}
-                        sx={{
-                          "& .MuiOutlinedInput-root": {
-                            "&:hover fieldset": {
-                              borderColor: "#A650F0",
-                            },
-                            "&.Mui-focused fieldset": {
-                              borderColor: "#A650F0",
-                            },
-                          },
-                          "& .MuiInputLabel-root.Mui-focused": {
-                            color: "#A650F0",
-                          },
-                        }}
+                        sx={inputFocusSx}
                       />
                     </Box>
                   )}
@@ -705,13 +638,14 @@ const CadastroAlunos: React.FC = () => {
                 variant="outlined"
                 onClick={() => navigate(APP_ROUTES.STUDENTS)}
                 sx={{
-                  color: "#A650F0",
-                  borderColor: "#A650F0",
+                  color: designSystem.colors.primary.main,
+                  borderColor: designSystem.colors.primary.main,
                   px: 4,
                   py: 1.5,
+                  fontWeight: 600,
                   "&:hover": {
-                    borderColor: "#8B3DD9",
-                    backgroundColor: "#F3E5F5",
+                    borderColor: designSystem.colors.primary.darker,
+                    backgroundColor: designSystem.colors.primary.lightest,
                   },
                 }}
               >
@@ -719,16 +653,15 @@ const CadastroAlunos: React.FC = () => {
               </Button>
               <Button
                 type="submit"
-                variant="contained"
                 disabled={isFetching}
+                {...primaryButtonStyles}
                 sx={{
-                  backgroundColor: "#A650F0",
+                  ...primaryButtonStyles.sx,
                   px: 4,
                   py: 1.5,
-                  fontWeight: 600,
                   boxShadow: "0 4px 12px rgba(166, 80, 240, 0.3)",
                   "&:hover": {
-                    backgroundColor: "#8B3DD9",
+                    backgroundColor: designSystem.colors.primary.darker,
                     boxShadow: "0 6px 16px rgba(166, 80, 240, 0.4)",
                   },
                   "&:disabled": {
@@ -748,6 +681,9 @@ const CadastroAlunos: React.FC = () => {
             </Box>
           </Box>
         </Paper>
+      </Box>
+    </Fade>
+        </Box>
       </Box>
 
       <Snackbar

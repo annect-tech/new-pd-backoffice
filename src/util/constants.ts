@@ -44,64 +44,19 @@ export const APP_ROUTES = {
 
 export const ENDPOINTS = {
   AUTH: {
-    LOGIN: "/auth/login",
-    REGISTER: "/auth/register",
-    REFRESH_TOKEN: "/auth/refresh-token",
-    LOGOUT: "/auth/logout",
+    LOGIN: "/auth/login/",
+    OTP_VERIFY: "/auth/otp-verify/",
+    RECOVERY: "/auth/recovery/",
+    REGISTER: "/auth/register/",
+    RESET_PASSWORD: "/auth/reset-password/",
+    REFRESH_TOKEN: "/auth/refresh/",
   },
-
-  // Admin endpoints
-  ADMIN: {
-    USERS: "/admin/users",
-    USER_PROFILES: "/admin/user-profiles",
-    TENANT_CITIES: "/admin/tenant-cities",
-    ACADEMIC_MERIT: "/admin/academic-merit-documents",
-    ENEM_RESULTS: "/admin/enem-results",
-    ADDRESSES: "/admin/addresses",
-    EXAM_LOCAL: "/admin/exam",
-    EXAM_DATES: "/admin/exam/dates",
-    EXAM_HOURS: "/admin/exam/hours",
-    STUDENT_EXAMS: "/admin/student-exams",
-    CONTRACTS: "/admin/contract",
-    CANDIDATE_DOCUMENTS: "/admin/candidate-documents",
-    USER_DATA: "/admin/user-data",
-    ALLOWED_CITIES: "/admin/allowed-cities",
-    GUARDIANS: "/admin/guardians",
-    REGISTRATION_DATA: "/admin/registration-data",
-    STUDENT_DATA: "/admin/student-data",
+  CRM: {
+    CLIENTS: "/crm/clientes/",
+    DOCUMENTS: "/crm/documentos/",
+    ACCESS: "/crm/acessos/",
   },
-
-  // User endpoints
-  USER: {
-    USERS: "/user/users",
-    USER_PROFILES: "/user/user-profiles",
-    TENANT_CITIES: "/user/tenant-cities",
-    ACADEMIC_MERIT: "/user/academic-merit-documents",
-    ENEM_RESULTS: "/user/enem-results",
-    ADDRESSES: "/user/addresses",
-    EXAM_LOCAL: "/user/exam",
-    EXAM_DATES: "/user/exam/dates",
-    EXAM_HOURS: "/user/exam/hours",
-    STUDENT_EXAMS: "/user/student-exams",
-    CONTRACTS: "/user/contract",
-    CANDIDATE_DOCUMENTS: "/user/candidate-documents",
-    USER_DATA: "/user/user-data",
-  },
-
-  // Endpoints compartilhados
-  EMAIL_VERIFICATION: {
-    CODE: "/email-verification/code",
-    VERIFY: "/email-verification/verify",
-    SEND_CODE: "/email-verification/send-code",
-    RESEND: "/email-verification/resend",
-  },
-
-  UPLOAD: {
-    SINGLE: "/upload-file/single",
-    ARRAY: "/upload-file/array",
-  },
-
-  HEALTH: "/health",
+  LICENSE: "/license/",
 };
 
 export const getTableConfig = () => ({

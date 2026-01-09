@@ -7,15 +7,20 @@ import {
   Paper,
   Toolbar,
   Alert,
-  Breadcrumbs,
-  Link,
+  Fade,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import { useNavigate } from "react-router";
+import PageHeader from "../../components/ui/page/PageHeader";
+import {
+  designSystem,
+  paperStyles,
+  iconButtonStyles,
+  progressStyles,
+} from "../../styles/designSystem";
 import { useDocuments } from "./useDocuments";
 import PdfViewModa from "../../components/modals/PdfViewModa";
 import { getTableConfig, APP_ROUTES } from "../../util/constants";
@@ -67,9 +72,9 @@ export default function DocumentsList() {
     if (url) {
       return (
         <IconButton
+          {...iconButtonStyles}
           size="small"
           onClick={() => openViewer(url)}
-          sx={{ color: "gray" }}
         >
           <VisibilityIcon />
         </IconButton>
@@ -104,7 +109,7 @@ export default function DocumentsList() {
             onChange={(e) => handleFile(e, userId, handlerType)}
           />
           <label htmlFor={inputId}>
-            <IconButton component="span" size="small" sx={{ color: "gray" }}>
+            <IconButton {...iconButtonStyles} component="span" size="small">
               <UploadFileIcon />
             </IconButton>
           </label>
@@ -152,123 +157,87 @@ export default function DocumentsList() {
   ];
 
   return (
-    <Box p={2}>
-      {/* Breadcrumb */}
-      <Breadcrumbs
-        aria-label="breadcrumb"
-        separator={<NavigateNextIcon fontSize="small" />}
-        sx={{ mb: 3 }}
-      >
-        <Link
-          component="button"
-          variant="body1"
-          onClick={() => navigate(APP_ROUTES.DASHBOARD)}
-          sx={{
-            color: "#A650F0",
-            textDecoration: "none",
-            cursor: "pointer",
-            "&:hover": {
-              textDecoration: "underline",
-            },
-          }}
-        >
-          Dashboard
-        </Link>
-        <Typography color="text.primary">Visualização de Documentos</Typography>
-      </Breadcrumbs>
+    <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      <Box sx={{ flex: 1, p: { xs: 2, sm: 3, md: 4 }, display: "flex", flexDirection: "column", overflow: "auto" }}>
+        <Box sx={{ maxWidth: 1400, width: "100%", margin: "0 auto" }}>
+          <PageHeader
+            title="Documentos"
+            subtitle="Visualize e gerencie documentos."
+            description="Esta página permite visualizar e gerenciar documentos dos candidatos e alunos. Utilize os filtros e a busca para encontrar documentos específicos."
+            breadcrumbs={[
+              { label: "Dashboard", path: APP_ROUTES.DASHBOARD },
+              { label: "Documentos" },
+            ]}
+          />
+          <Fade in timeout={1000}>
+            <Paper {...paperStyles}>
+              <Toolbar
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  p: 3,
+                  backgroundColor: designSystem.colors.background.primary,
+                  borderBottom: `1px solid ${designSystem.colors.border.main}`,
+                }}
+              >
+                <Typography variant="h6" sx={{ color: designSystem.colors.text.primary, fontWeight: 600 }}>
+                  Documentos de Candidatos
+                </Typography>
+                <IconButton
+                  {...iconButtonStyles}
+                  onClick={() => window.location.reload()}
+                  title="Atualizar lista"
+                >
+                  <RefreshIcon />
+                </IconButton>
+              </Toolbar>
 
-      {/* Título e Texto Explicativo */}
-      <Box sx={{ mb: 3 }}>
-        <Typography
-          variant="h4"
-          sx={{
-            color: "#A650F0",
-            fontWeight: 600,
-            mb: 2,
-          }}
-        >
-          Visualização de Documentos
-        </Typography>
-        <Paper
-          elevation={1}
-          sx={{
-            p: 2,
-            backgroundColor: "#F3E5F5",
-            borderRadius: 2,
-            borderLeft: "4px solid #A650F0",
-          }}
-        >
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
-            <strong>Documentos de Candidatos</strong>
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Esta página permite visualizar e gerenciar os documentos dos candidatos. Você pode visualizar documentos de identidade, endereço, histórico escolar e contratos. Clique no ícone de visualização para abrir o documento ou no ícone de upload para enviar um novo documento.
-          </Typography>
-        </Paper>
+              {loading ? (
+                <Box display="flex" justifyContent="center" alignItems="center" p={4}>
+                  <CircularProgress {...progressStyles} />
+                </Box>
+              ) : error ? (
+                <Box p={2}>
+                  <Alert severity="error">{error}</Alert>
+                </Box>
+              ) : (
+                <Box sx={{ height: 500, width: "100%" }}>
+                  <DataGrid
+                    rows={rows}
+                    columns={columns}
+                    disableRowSelectionOnClick
+                    getRowClassName={(params) =>
+                      params.indexRelativeToCurrentPage % 2 === 0 ? "even" : "odd"
+                    }
+                    {...getTableConfig()}
+                    sx={{
+                      "& .MuiDataGrid-columnHeaders": {
+                        backgroundColor: designSystem.colors.background.secondary,
+                        borderBottom: `2px solid ${designSystem.colors.border.main}`,
+                        "& .MuiDataGrid-columnHeaderTitle": {
+                          fontWeight: 600,
+                          color: designSystem.colors.text.secondary,
+                        },
+                      },
+                      "& .even": {
+                        backgroundColor: designSystem.colors.background.primary,
+                      },
+                      "& .odd": {
+                        backgroundColor: designSystem.colors.background.secondary,
+                      },
+                      "& .MuiDataGrid-row:hover": {
+                        backgroundColor: designSystem.colors.primary.lightest,
+                        cursor: "pointer",
+                      },
+                      border: "none",
+                    }}
+                  />
+                </Box>
+              )}
+            </Paper>
+          </Fade>
+        </Box>
       </Box>
-
-      <Paper elevation={2} sx={{ borderRadius: 2, overflow: "hidden" }}>
-        <Toolbar
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            backgroundColor: "#A650F0",
-            color: "white",
-          }}
-        >
-          <Typography variant="h6" sx={{ color: "white" }}>
-            Documentos de Candidatos
-          </Typography>
-          <IconButton
-            onClick={() => window.location.reload()}
-            sx={{ color: "white" }}
-            title="Atualizar lista"
-          >
-            <RefreshIcon />
-          </IconButton>
-        </Toolbar>
-
-        {loading ? (
-          <Box display="flex" justifyContent="center" alignItems="center" p={4}>
-            <CircularProgress />
-          </Box>
-        ) : error ? (
-          <Box p={2}>
-            <Alert severity="error">{error}</Alert>
-          </Box>
-        ) : (
-          <Box sx={{ height: 500, width: "100%" }}>
-            <DataGrid
-              rows={rows}
-              columns={columns}
-              disableRowSelectionOnClick
-              getRowClassName={(params) =>
-                params.indexRelativeToCurrentPage % 2 === 0 ? "even" : "odd"
-              }
-              {...getTableConfig()}
-              sx={{
-                "& .MuiDataGrid-columnHeaders": {
-                  backgroundColor: "#A650F0",
-                  "& .MuiDataGrid-columnHeaderTitle": {
-                    fontWeight: 600,
-                    color: "gray",
-                  },
-                },
-                "& .even": {
-                  backgroundColor: "#F5F5F5",
-                },
-                "& .odd": {
-                  backgroundColor: "white",
-                },
-                "& .MuiDataGrid-row:hover": {
-                  backgroundColor: "#E1BEE7",
-                  cursor: "pointer",
-                },
-              }}
-            />
-          </Box>
-        )}
-      </Paper>
 
       {viewerUrl && (
         <PdfViewModa

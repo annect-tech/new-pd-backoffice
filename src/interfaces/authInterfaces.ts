@@ -17,7 +17,6 @@ export interface User {
   last_name: string;
   email: string;
   role: string;
-  profile_photo?: string;
 }
 
 export interface AuthTokens {
@@ -48,12 +47,4 @@ export interface RefreshTokenPayload {
 export interface RefreshTokenResponse {
   access: string;
   refresh: string;
-}
-
-export interface LogoutPayload {
-  refresh: string;
-}
-
-export interface LogoutResponse {
-  message: string;
 }

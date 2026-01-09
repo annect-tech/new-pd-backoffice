@@ -159,7 +159,7 @@ const Dashboard: React.FC = () => {
                   fontSize: { xs: "0.95rem", sm: "1rem" },
                 }}
               >
-                Bem-vindo ao painel de controle. Selecione uma opção abaixo para começar.
+                Bem-vindo ao painel de controle do Backoffice. Selecione uma opção abaixo para começar.
               </Typography>
             </Box>
           </Fade>

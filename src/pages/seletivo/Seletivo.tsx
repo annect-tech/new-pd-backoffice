@@ -42,6 +42,7 @@ import { useNavigate } from "react-router";
 import { useSelective } from "../../hooks/useSelective";
 import type { UserProfile } from "../../interfaces/userProfile";
 import { APP_ROUTES } from "../../util/constants";
+import { designSystem, tableHeadStyles, tableRowHoverStyles, iconButtonStyles, textFieldStyles, progressStyles } from "../../styles/designSystem";
 
 const Seletivo: React.FC = () => {
   const navigate = useNavigate();
@@ -421,154 +422,18 @@ const Seletivo: React.FC = () => {
                   <Table size="small" sx={{ tableLayout: "fixed", width: "100%" }}>
                     <TableHead>
                       <TableRow>
-                        <TableCell
-                          sx={{
-                            backgroundColor: "#F9FAFB",
-                            color: "#374151",
-                            fontWeight: 600,
-                            width: "40px",
-                            borderBottom: "2px solid #E5E7EB",
-                            fontSize: "0.875rem",
-                          }}
-                        >
-                          ID
-                        </TableCell>
-                        <TableCell
-                          sx={{
-                            backgroundColor: "#F9FAFB",
-                            color: "#374151",
-                            fontWeight: 600,
-                            width: "110px",
-                            borderBottom: "2px solid #E5E7EB",
-                            fontSize: "0.875rem",
-                          }}
-                        >
-                          CPF
-                        </TableCell>
-                        <TableCell
-                          sx={{
-                            backgroundColor: "#F9FAFB",
-                            color: "#374151",
-                            fontWeight: 600,
-                            width: "150px",
-                            borderBottom: "2px solid #E5E7EB",
-                            fontSize: "0.875rem",
-                          }}
-                        >
-                          Nome
-                        </TableCell>
-                        <TableCell
-                          sx={{
-                            backgroundColor: "#F9FAFB",
-                            color: "#374151",
-                            fontWeight: 600,
-                            width: "90px",
-                            borderBottom: "2px solid #E5E7EB",
-                            fontSize: "0.875rem",
-                          }}
-                        >
-                          Data Nasc.
-                        </TableCell>
-                        <TableCell
-                          sx={{
-                            backgroundColor: "#F9FAFB",
-                            color: "#374151",
-                            fontWeight: 600,
-                            width: "110px",
-                            borderBottom: "2px solid #E5E7EB",
-                            fontSize: "0.875rem",
-                          }}
-                        >
-                          Celular
-                        </TableCell>
-                        <TableCell
-                          sx={{
-                            backgroundColor: "#F9FAFB",
-                            color: "#374151",
-                            fontWeight: 600,
-                            width: "180px",
-                            borderBottom: "2px solid #E5E7EB",
-                            fontSize: "0.875rem",
-                          }}
-                        >
-                          Email
-                        </TableCell>
-                        <TableCell
-                          sx={{
-                            backgroundColor: "#F9FAFB",
-                            color: "#374151",
-                            fontWeight: 600,
-                            width: "100px",
-                            borderBottom: "2px solid #E5E7EB",
-                            fontSize: "0.875rem",
-                          }}
-                        >
-                          Cidade
-                        </TableCell>
-                        <TableCell
-                          sx={{
-                            backgroundColor: "#F9FAFB",
-                            color: "#374151",
-                            fontWeight: 600,
-                            width: "40px",
-                            borderBottom: "2px solid #E5E7EB",
-                            fontSize: "0.875rem",
-                          }}
-                        >
-                          UF
-                        </TableCell>
-                        <TableCell
-                          align="center"
-                          sx={{
-                            backgroundColor: "#F9FAFB",
-                            color: "#374151",
-                            fontWeight: 600,
-                            width: "50px",
-                            borderBottom: "2px solid #E5E7EB",
-                            fontSize: "0.875rem",
-                          }}
-                        >
-                          <PersonIcon fontSize="small" sx={{ fontSize: "1rem" }} />
-                        </TableCell>
-                        <TableCell
-                          align="center"
-                          sx={{
-                            backgroundColor: "#F9FAFB",
-                            color: "#374151",
-                            fontWeight: 600,
-                            width: "50px",
-                            borderBottom: "2px solid #E5E7EB",
-                            fontSize: "0.875rem",
-                          }}
-                        >
-                          <HomeIcon fontSize="small" sx={{ fontSize: "1rem" }} />
-                        </TableCell>
-                        <TableCell
-                          align="center"
-                          sx={{
-                            backgroundColor: "#F9FAFB",
-                            color: "#374151",
-                            fontWeight: 600,
-                            width: "50px",
-                            borderBottom: "2px solid #E5E7EB",
-                            fontSize: "0.875rem",
-                          }}
-                        >
-                          <PeopleIcon fontSize="small" sx={{ fontSize: "1rem" }} />
-                        </TableCell>
-                        <TableCell
-                          align="center"
-                          sx={{
-                            backgroundColor: "#F9FAFB",
-                            color: "#374151",
-                            fontWeight: 600,
-                            width: "50px",
-                            borderBottom: "2px solid #E5E7EB",
-                            fontSize: "0.875rem",
-                          }}
-                        >
-                          <DescriptionIcon fontSize="small" sx={{ fontSize: "1rem" }} />
-                        </TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 40 }}>ID</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 110 }}>CPF</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 150 }}>Nome</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 90 }}>Data Nasc.</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 110 }}>Celular</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 180 }}>Email</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 100 }}>Cidade</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 40 }}>UF</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 50 }} align="center"><PersonIcon fontSize="small" sx={{ fontSize: "1rem" }} /></TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 50 }} align="center"><HomeIcon fontSize="small" sx={{ fontSize: "1rem" }} /></TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 50 }} align="center"><PeopleIcon fontSize="small" sx={{ fontSize: "1rem" }} /></TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 50 }} align="center"><DescriptionIcon fontSize="small" sx={{ fontSize: "1rem" }} /></TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -585,21 +450,13 @@ const Seletivo: React.FC = () => {
                       ) : (
                         paginatedData.map((user) => (
                           <TableRow
-                            key={user.id}
-                            hover
-                            sx={{
-                              "&:nth-of-type(odd)": {
-                                backgroundColor: "#FFFFFF",
-                              },
-                              "&:nth-of-type(even)": {
-                                backgroundColor: "#F9FAFB",
-                              },
-                              "&:hover": {
-                                backgroundColor: "#FAF5FF !important",
-                              },
-                              transition: "background-color 0.2s ease",
-                            }}
-                          >
+                              key={user.id}
+                              {...tableRowHoverStyles}
+                              sx={{
+                                ...tableRowHoverStyles.sx,
+                                cursor: "pointer",
+                              }}
+                            >
                             <TableCell sx={{ color: "#374151", fontSize: "0.875rem", py: 1.5 }}>
                               {user.id}
                             </TableCell>
