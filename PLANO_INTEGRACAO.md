@@ -1,560 +1,89 @@
-# Plano de Integração - Backend API
+# Plano de Integração Backend - Status Atual
 
-## 📋 Índice
+## 📊 Estado Atual do Projeto
 
-1. [Análise da Situação Atual](#análise-da-situação-atual)
-2. [Discrepâncias Identificadas](#discrepâncias-identificadas)
-3. [Plano de Correções](#plano-de-correções)
-4. [Ordem de Implementação](#ordem-de-implementação)
-5. [Checklist de Implementação](#checklist-de-implementação)
-
----
-
-## 🔍 Análise da Situação Atual
-
-### Backend API (Online)
-- **URL Base:** `http://186.248.135.172:31535`
-- **Swagger:** `http://186.248.135.172:31535/swagger`
-- **Status:** ✅ Online e funcional
-- **Contrato:** Documentado em `api-documentation.json` e `CORRECOES_CONTRATO_API.md`
-
-### Frontend (Atual)
-- **Framework:** React + TypeScript + Vite
-- **State Management:** Redux Toolkit + Redux Persist
-- **HTTP Client:** Vanilla Fetch API (customizado)
-- **Autenticação:** JWT (access + refresh tokens)
-- **Storage:** localStorage com criptografia
-- **Status dos Dados:** 🔴 **TODOS MOCKADOS**
+- ✅ **Sprint 1 CONCLUÍDA** - Autenticação funcional e compatível com backend
+- 🔒 **Sprint 2 PENDENTE** - Proteção de rotas e autorização
+- 👤 **Sprint 3 PENDENTE** - Gestão de perfil de usuário
+- 📊 **Sprint 4 PENDENTE** - Integração de dados (substituir mocks)
+- 🧪 **Sprint 5 PENDENTE** - Robustez e tratamento de erros
 
 ---
 
-## ⚠️ Discrepâncias Identificadas
+## ✅ Sprint 1 — Autenticação Funcional (CONCLUÍDA)
 
-### 1. **Formato de Resposta do Login**
+### Resultado
 
-#### Frontend Espera:
-```typescript
-interface LoginResponse {
-  access: string;
-  refresh: string;
-  user: User;  // ❌ Backend NÃO retorna user
-}
-```
+O frontend agora está **100% compatível com o backend de autenticação**, sem dependência de mocks.
 
-#### Backend Retorna:
-```typescript
-{
-  accessToken: string;  // ⚠️ Nome diferente
-  refreshToken: string; // ⚠️ Nome diferente
-  // ❌ NÃO retorna objeto user
-}
-```
+### O que foi entregue
 
-**Impacto:** 🔴 CRÍTICO - Login não funcionará
+- ✅ Login funcional via `credential` (aceita email, CPF ou username)
+- ✅ Tokens alinhados ao contrato (`accessToken` / `refreshToken`)
+- ✅ Usuário derivado do JWT (`sub`, `roles[]`, `tenant_city_id`)
+- ✅ Refresh token automático no interceptor
+- ✅ Registro desabilitado (não existe no backend)
+- ✅ Tipagem consistente em todas as interfaces
+- ✅ UX ajustada (labels, erros, redirecionamento)
 
----
+### Status
 
-### 2. **Campo de Login**
+🟢 **Estável**
+🟢 **Testado manualmente**
+🟢 **Pronto para produção** (do ponto de vista de autenticação)
 
-#### Frontend Usa:
-```typescript
-// authService.ts - linha ~12
-login: (payload: { email: string, password: string })
-```
-
-#### Backend Espera:
-```typescript
-{
-  credential: string, // ⚠️ Aceita email, CPF ou username
-  password: string
-}
-```
-
-**Impacto:** 🟡 MODERADO - Pode funcionar se backend aceitar "email", mas não está seguindo contrato
+⛔ **Nenhuma pendência nesta sprint**
 
 ---
 
-### 3. **Endpoints de Autenticação**
+## 🔴 Sprint 2 — Proteção de Rotas (PRÓXIMA)
 
-#### Frontend Implementa:
-```typescript
-POST /auth/login/      // ⚠️ Barra final
-POST /auth/register/   // ❌ Não existe no backend
-POST /auth/refresh/    // ⚠️ Nome diferente
-```
+### Objetivo
 
-#### Backend Possui:
-```typescript
-POST /auth/login              // Sem barra final
-POST /auth/refresh-token      // ⚠️ Nome diferente
-// ❌ Registro não existe - apenas admin pode criar usuários
-```
-
-**Impacto:** 🔴 CRÍTICO - Nenhuma chamada funcionará
+Garantir **segurança real da aplicação**, bloqueando acesso não autenticado e acesso sem permissão.
 
 ---
 
-### 4. **Refresh Token**
+### Entregas Planejadas
 
-#### Frontend Envia:
+#### 1. Ativar AuthMiddleware
+
+**Arquivo:** [`src/app/routes/routes.tsx`](src/app/routes/routes.tsx)
+
+- Envolver todas as rotas privadas com `<AuthMiddleware>`
+- Bloquear acesso direto por URL
+- Redirecionar para `/login` quando não autenticado
+
+**Implementação:**
 ```typescript
-{
-  refresh: string  // ⚠️ Nome do campo
-}
-```
-
-#### Backend Espera:
-```typescript
-{
-  refreshToken: string  // ⚠️ Nome diferente
-}
-```
-
-**Impacto:** 🔴 CRÍTICO - Refresh não funcionará
-
----
-
-### 5. **Perfil do Usuário**
-
-#### Frontend Implementa:
-- Armazena perfil em `localStorage` (mock)
-- Cria perfil em modal ao primeiro login
-- Edita perfil em `/meu-perfil`
-
-#### Backend:
-- ❌ **NÃO existe** `GET /user/user-profiles/me`
-- ✅ Existe `GET /admin/user-profiles` (requer role ADMIN)
-- ✅ Existe `POST /admin/user-profiles` (requer role ADMIN)
-- ✅ Existe `POST /admin/user-profiles/upload-photo` (requer role ADMIN)
-
-**Impacto:** 🔴 CRÍTICO - Usuários comuns não podem criar/editar perfil
-
----
-
-### 6. **Logout**
-
-#### Frontend Implementa:
-```typescript
-// useAuth.ts - Apenas limpa localStorage e Redux
-logout()
-```
-
-#### Backend:
-- ❌ **NÃO existe endpoint de logout**
-- ✅ Implementação do frontend está correta
-
-**Impacto:** ✅ OK - Nenhuma mudança necessária
-
----
-
-### 7. **Estrutura do JWT**
-
-#### Frontend Espera (User interface):
-```typescript
-{
-  id: number;
-  first_name: string;
-  last_name: string;
-  email: string;
-  role: string;  // ⚠️ String simples
-}
-```
-
-#### Backend Retorna (JWT payload):
-```typescript
-{
-  sub: number;              // user_id
-  roles: string[];          // ⚠️ Array de roles
-  tenant_city_id: string;
-}
-```
-
-**Impacto:** 🟡 MODERADO - Estrutura incompatível, precisa adaptar
-
----
-
-### 8. **Proteção de Rotas**
-
-#### Frontend:
-- ✅ `AuthMiddleware` existe
-- ❌ **NÃO está sendo usado** nas rotas
-- ❌ Todas as rotas estão desprotegidas
-
-#### Backend:
-- ✅ Endpoints protegidos requerem Bearer token
-- ✅ Alguns endpoints requerem roles específicas
-
-**Impacto:** 🔴 CRÍTICO - Aplicação está insegura
-
----
-
-### 9. **Variável de Ambiente**
-
-#### Frontend Configurado:
-```env
-VITE_API_URL=http://186.248.135.172:31535
-```
-
-#### Usado no Código:
-```typescript
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
-```
-
-**Impacto:** ✅ OK - Já configurado corretamente
-
----
-
-## 🔧 Plano de Correções
-
-### **Fase 1: Correções Críticas de Autenticação** (Prioridade: 🔴 ALTA)
-
-#### 1.1. Atualizar Interfaces de Autenticação
-
-**Arquivo:** `src/interfaces/authInterfaces.ts`
-
-**Mudanças:**
-```typescript
-// ❌ REMOVER User da resposta de login
-export interface LoginResponse {
-  access: string;
-  refresh: string;
-  user: User;  // REMOVER
-}
-
-// ✅ NOVA interface
-export interface LoginResponse {
-  accessToken: string;  // Renomeado
-  refreshToken: string; // Renomeado
-}
-
-// ✅ ATUALIZAR User interface para JWT payload
-export interface User {
-  id: number;           // Mapeado de sub
-  roles: string[];      // Array agora
-  tenant_city_id: string;
-  // Dados adicionais virão do perfil
-  first_name?: string;
-  last_name?: string;
-  email?: string;
-}
-
-// ✅ ATUALIZAR LoginPayload
-export interface LoginPayload {
-  credential: string;  // Renomeado de email
-  password: string;
-}
-
-// ✅ ATUALIZAR RefreshTokenPayload
-export interface RefreshTokenPayload {
-  refreshToken: string;  // Renomeado de refresh
-}
-
-// ✅ ATUALIZAR RefreshTokenResponse
-export interface RefreshTokenResponse {
-  accessToken: string;   // Renomeado de access
-  refreshToken: string;  // Renomeado de refresh
-}
-```
-
----
-
-#### 1.2. Atualizar authService
-
-**Arquivo:** `src/core/http/services/authService.ts`
-
-**Mudanças:**
-```typescript
-export const authService = {
-  // ✅ Atualizar endpoint (remover barra final)
-  login: (payload: LoginPayload) =>
-    httpClient.post<LoginResponse>(
-      API_URL,
-      "/auth/login",  // SEM barra final
-      payload
-    ),
-
-  // ❌ REMOVER registro (não existe no backend)
-  // register: (payload: RegisterPayload) => ...
-
-  // ✅ Atualizar endpoint e nome do campo
-  refreshToken: (payload: RefreshTokenPayload) =>
-    httpClient.post<RefreshTokenResponse>(
-      API_URL,
-      "/auth/refresh-token",  // Nome correto
-      payload
-    )
-};
-```
-
----
-
-#### 1.3. Atualizar useAuth Hook
-
-**Arquivo:** `src/hooks/useAuth.ts`
-
-**Mudanças:**
-```typescript
-const login = async (credential: string, password: string) => {
-  setIsLoading(true);
-  setError("");
-
-  try {
-    // ✅ Usar campo 'credential'
-    const res = await authService.login({ credential, password });
-
-    if (res.status === 200 && res.data) {
-      const { accessToken, refreshToken } = res.data;
-
-      // ✅ Decodificar JWT para obter user
-      const user = decodeJWT(accessToken);
-
-      // ✅ Armazenar credenciais
-      dispatch(
-        setCredentials({
-          accessToken,
-          refreshToken,
-          user: {
-            id: user.sub,
-            roles: user.roles,
-            tenant_city_id: user.tenant_city_id,
-          },
-        })
-      );
-
-      // ✅ Configurar token no httpClient
-      httpClient.setAuthToken(accessToken);
-
-      return { success: true };
-    }
-  } catch (err: any) {
-    // Tratamento de erros...
+<Route
+  element={
+    <AuthMiddleware>
+      <AppLayout />
+    </AuthMiddleware>
   }
-};
-
-// ✅ Adicionar função para decodificar JWT
-const decodeJWT = (token: string) => {
-  const base64Url = token.split('.')[1];
-  const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-  const jsonPayload = decodeURIComponent(
-    atob(base64)
-      .split('')
-      .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-      .join('')
-  );
-  return JSON.parse(jsonPayload);
-};
-
-// ❌ REMOVER register (não existe no backend)
+>
+  {/* Todas as rotas internas aqui */}
+</Route>
 ```
 
 ---
 
-#### 1.4. Atualizar Refresh Token no Store
+#### 2. Criar RoleGuard
 
-**Arquivo:** `src/core/store/index.ts`
+**Novo arquivo:** [`src/core/middleware/RoleGuard.tsx`](src/core/middleware/RoleGuard.tsx)
 
-**Mudanças:**
+- Proteção baseada em `roles[]` do JWT
+- Suporte a múltiplas roles (ex: `['ADMIN', 'ADMIN_MASTER']`)
+- Redirecionamento para rota de erro quando sem permissão
+
+**Exemplo de uso:**
 ```typescript
-httpClient.setOnUnauthorized(async () => {
-  const { refreshToken } = store.getState().auth;
-
-  if (!refreshToken) {
-    return store.dispatch(clearCredentials());
-  }
-
-  try {
-    // ✅ Usar novo formato
-    const res = await authService.refreshToken({ refreshToken });
-
-    if (res.status === 200 && res.data) {
-      // ✅ Usar accessToken (não access)
-      store.dispatch(setAccessToken(res.data.accessToken));
-    } else {
-      store.dispatch(clearCredentials());
-    }
-  } catch (err) {
-    store.dispatch(clearCredentials());
-  }
-});
-```
-
----
-
-#### 1.5. Atualizar Login Component
-
-**Arquivo:** `src/pages/authPages/Login.tsx`
-
-**Mudanças:**
-```typescript
-const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
-  const data = new FormData(e.currentTarget);
-
-  // ✅ Pode ser email, CPF ou username
-  const credential = data.get("email") as string;
-  const password = data.get("password") as string;
-
-  // ✅ Usar novo método
-  const result = await login(credential, password);
-
-  if (result?.success) {
-    navigate(APP_ROUTES.DASHBOARD);
-  }
-};
-
-// ✅ Atualizar label do campo
-<TextField
-  label="Email, CPF ou Username"  // Texto atualizado
-  name="email"
-  // ...
-/>
-```
-
----
-
-#### 1.6. Remover Página de Registro
-
-**Arquivos a modificar:**
-- `src/pages/authPages/Register.tsx` - ❌ REMOVER ou DESABILITAR
-- `src/app/routes/routes.tsx` - ❌ REMOVER rota de registro
-- `src/util/constants.ts` - ❌ REMOVER `APP_ROUTES.REGISTER`
-
-**Razão:** Backend não possui endpoint público de registro
-
----
-
-### **Fase 2: Proteção de Rotas** (Prioridade: 🔴 ALTA)
-
-#### 2.1. Ativar AuthMiddleware
-
-**Arquivo:** `src/app/routes/routes.tsx`
-
-**Mudanças:**
-```typescript
-import { AuthMiddleware } from "@/core/middleware/AuthMiddleware";
-
-export default function AppRoutes() {
-  return (
-    <Routes>
-      {/* Rotas públicas */}
-      <Route path={APP_ROUTES.LOGIN} element={<Login />} />
-
-      {/* ✅ Envolver rotas protegidas com AuthMiddleware */}
-      <Route
-        element={
-          <AuthMiddleware>
-            <AppLayout />
-          </AuthMiddleware>
-        }
-      >
-        <Route path={APP_ROUTES.DASHBOARD} element={<Dashboard />} />
-        <Route path={APP_ROUTES.SELETIVO} element={<Seletivo />} />
-        {/* ... todas as outras rotas internas */}
-      </Route>
-    </Routes>
-  );
-}
-```
-
----
-
-#### 2.2. Criar RoleGuard para Proteção por Roles
-
-**Novo arquivo:** `src/core/middleware/RoleGuard.tsx`
-
-```typescript
-import { useEffect } from "react";
-import { useNavigate } from "react-router";
-import { useAppSelector } from "../store/hooks";
-import { APP_ROUTES } from "@/util/constants";
-
-interface RoleGuardProps {
-  children: React.ReactNode;
-  allowedRoles: string[];
-}
-
-export const RoleGuard = ({ children, allowedRoles }: RoleGuardProps) => {
-  const user = useAppSelector((state) => state.auth.user);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!user) {
-      navigate(APP_ROUTES.LOGIN);
-      return;
-    }
-
-    // Verificar se usuário tem alguma das roles permitidas
-    const hasPermission = user.roles.some((role) =>
-      allowedRoles.includes(role)
-    );
-
-    if (!hasPermission) {
-      // Redirecionar para página de acesso negado
-      navigate(APP_ROUTES.UNAUTHORIZED);
-    }
-  }, [user, allowedRoles, navigate]);
-
-  return <>{children}</>;
-};
-```
-
----
-
-#### 2.3. Adicionar Rota de Não Autorizado
-
-**Arquivo:** `src/util/constants.ts`
-
-```typescript
-export const APP_ROUTES = {
-  // ... rotas existentes
-  UNAUTHORIZED: "/nao-autorizado",
-};
-```
-
-**Novo arquivo:** `src/pages/Unauthorized.tsx`
-
-```typescript
-import { Button, Container, Typography } from "@mui/material";
-import { useNavigate } from "react-router";
-import { APP_ROUTES } from "@/util/constants";
-
-export default function Unauthorized() {
-  const navigate = useNavigate();
-
-  return (
-    <Container maxWidth="sm" sx={{ mt: 8, textAlign: "center" }}>
-      <Typography variant="h3" gutterBottom>
-        Acesso Negado
-      </Typography>
-      <Typography variant="body1" color="text.secondary" paragraph>
-        Você não tem permissão para acessar esta página.
-      </Typography>
-      <Button
-        variant="contained"
-        onClick={() => navigate(APP_ROUTES.DASHBOARD)}
-      >
-        Voltar ao Dashboard
-      </Button>
-    </Container>
-  );
-}
-```
-
----
-
-#### 2.4. Proteger Rotas Administrativas
-
-**Arquivo:** `src/app/routes/routes.tsx`
-
-```typescript
-import { RoleGuard } from "@/core/middleware/RoleGuard";
-
-// Dentro das rotas protegidas
 <Route
   path="/admin/*"
   element={
     <RoleGuard allowedRoles={["ADMIN", "ADMIN_MASTER"]}>
-      {/* Rotas administrativas */}
+      <AdminPanel />
     </RoleGuard>
   }
 />
@@ -562,620 +91,341 @@ import { RoleGuard } from "@/core/middleware/RoleGuard";
 
 ---
 
-### **Fase 3: Gestão de Perfil** (Prioridade: 🟡 MÉDIA)
+#### 3. Página de Não Autorizado
 
-#### 3.1. Criar userProfileService
+**Novo arquivo:** [`src/pages/Unauthorized.tsx`](src/pages/Unauthorized.tsx)
 
-**Novo arquivo:** `src/core/http/services/userProfileService.ts`
+- Rota: `/nao-autorizado`
+- Feedback claro ao usuário
+- CTA de retorno ao dashboard
 
-```typescript
-import httpClient from "../httpClient";
+---
 
-const API_URL = import.meta.env.VITE_API_URL;
+#### 4. Proteger Rotas Administrativas
 
-export interface UserProfile {
-  id: string;
-  user_id: number;
-  cpf: string;
-  personal_email: string;
-  bio: string;
-  occupation: string;
-  department: string;
-  equipment_patrimony: string;
-  work_location: string;
-  manager: string;
-  profile_photo?: string;
-  birth_date?: string;
-  hire_date?: string;
-}
+Exemplos:
+- `/admin/*` → Requer `ADMIN` ou `ADMIN_MASTER`
+- `/gestao-usuarios` → Requer `ADMIN_MASTER`
+- Baseado em `roles` do token JWT
 
-export interface CreateUserProfilePayload {
-  user_id: number;
-  cpf: string;
-  personal_email: string;
-  bio: string;
-  occupation: string;
-  department: string;
-  equipment_patrimony: string;
-  work_location: string;
-  manager: string;
-  profile_photo?: string;
-  birth_date?: string;
-  hire_date?: string;
-}
+---
 
-export interface PaginatedResponse<T> {
-  data: T[];
-  meta: {
-    page: number;
-    size: number;
-    total: number;
-    totalPages: number;
-  };
-}
+### Checklist — Sprint 2
 
-export const userProfileService = {
-  // Listar perfis (ADMIN apenas)
-  list: (page: number = 1, size: number = 10) =>
-    httpClient.get<PaginatedResponse<UserProfile>>(
-      API_URL,
-      `/admin/user-profiles?page=${page}&size=${size}`
-    ),
+- [ ] Criar `RoleGuard.tsx`
+- [ ] Criar `Unauthorized.tsx`
+- [ ] Adicionar constante `APP_ROUTES.UNAUTHORIZED`
+- [ ] Ativar `AuthMiddleware` nas rotas internas
+- [ ] Separar rotas públicas (login) de privadas
+- [ ] Proteger rotas admin com `RoleGuard`
+- [ ] Testar:
+  - [ ] Usuário não logado (deve redirecionar para login)
+  - [ ] Usuário logado sem role (deve mostrar "não autorizado")
+  - [ ] Usuário admin (deve acessar rotas admin)
+  - [ ] Usuário comum (não deve acessar rotas admin)
 
-  // Criar perfil (ADMIN apenas)
-  create: (payload: CreateUserProfilePayload) =>
-    httpClient.post<{ id: string; message: string }>(
-      API_URL,
-      "/admin/user-profiles",
-      payload
-    ),
+---
 
-  // Upload foto (ADMIN apenas)
-  uploadPhoto: async (profileId: string, file: File) => {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("id", profileId);
+## 🟡 Sprint 3 — Gestão de Perfil
 
-    const token = localStorage.getItem("accessToken");
+### Objetivo
 
-    const response = await fetch(
-      `${API_URL}/admin/user-profiles/upload-photo`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: token ? `Bearer ${token}` : "",
-        },
-        body: formData,
-      }
-    );
+Integrar **perfil real do usuário** com o backend, eliminando mocks e `localStorage`.
 
-    if (!response.ok) {
-      throw new Error("Erro ao fazer upload da foto");
-    }
+---
 
-    return response.json();
-  },
+### Contexto Atual
 
-  // WORKAROUND: Obter perfil do usuário atual
-  getMyProfile: async (userId: number) => {
-    const response = await httpClient.get<PaginatedResponse<UserProfile>>(
-      API_URL,
-      `/admin/user-profiles?page=1&size=1000`
-    );
+- ❌ **Não existe** endpoint `/user/user-profiles/me`
+- ✅ Apenas endpoints **admin** disponíveis:
+  - `GET /admin/user-profiles`
+  - `POST /admin/user-profiles`
+  - `POST /admin/user-profiles/upload-photo`
 
-    if (response.status === 200 && response.data) {
-      const profile = response.data.data.find((p) => p.user_id === userId);
-      return profile;
-    }
+---
 
-    return null;
-  },
-};
+### Estratégia
+
+**Workaround temporário:**
+- Buscar lista de perfis via admin e filtrar por `user_id`
+- Funciona, mas não é ideal (requer role ADMIN)
+
+**Solução ideal (solicitar ao backend):**
+```
+GET    /user/user-profiles/me
+POST   /user/user-profiles
+PATCH  /user/user-profiles/me
+POST   /user/user-profiles/me/upload-photo
 ```
 
 ---
 
-#### 3.2. Atualizar CreateProfileModal
+### Entregas Planejadas
 
-**Arquivo:** `src/components/layout/AppLayout.tsx`
+#### 1. Criar userProfileService
 
-**Mudanças:**
-```typescript
-import { userProfileService } from "@/core/http/services/userProfileService";
-import { useAppSelector } from "@/core/store/hooks";
+**Novo arquivo:** [`src/core/http/services/userProfileService.ts`](src/core/http/services/userProfileService.ts)
 
-// Dentro do componente
-const user = useAppSelector((state) => state.auth.user);
-
-const handleCreateProfile = async (profileData: any) => {
-  try {
-    // ✅ Usar API real
-    const result = await userProfileService.create({
-      user_id: user!.id,
-      ...profileData,
-    });
-
-    if (result.status === 201) {
-      // Sucesso
-      setOpenProfileModal(false);
-      // Mostrar mensagem de sucesso
-    }
-  } catch (err) {
-    // Tratar erro
-    console.error("Erro ao criar perfil:", err);
-  }
-};
-
-// ❌ REMOVER armazenamento em localStorage
-```
+Métodos:
+- `list(page, size)` - Listar perfis (admin)
+- `create(payload)` - Criar perfil (admin)
+- `uploadPhoto(profileId, file)` - Upload de foto (admin)
+- `getMyProfile(userId)` - **Workaround:** busca e filtra por user_id
 
 ---
 
-#### 3.3. Atualizar MeuPerfil Page
+#### 2. Criar Hook useUserProfile
 
-**Arquivo:** `src/pages/meuPerfil/MeuPerfil.tsx`
+**Novo arquivo:** [`src/hooks/useUserProfile.ts`](src/hooks/useUserProfile.ts)
 
-**Mudanças:**
-```typescript
-import { userProfileService } from "@/core/http/services/userProfileService";
-import { useAppSelector } from "@/core/store/hooks";
-
-const MeuPerfil = () => {
-  const user = useAppSelector((state) => state.auth.user);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        // ✅ Buscar perfil da API
-        const profileData = await userProfileService.getMyProfile(user!.id);
-        setProfile(profileData);
-      } catch (err) {
-        console.error("Erro ao buscar perfil:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (user) {
-      fetchProfile();
-    }
-  }, [user]);
-
-  // ❌ REMOVER mock data e localStorage
-};
-```
+Funcionalidades:
+- `profile` - Perfil atual
+- `loading` - Estado de carregamento
+- `error` - Mensagem de erro
+- `createProfile(data)` - Criar perfil
+- `uploadPhoto(file)` - Upload de foto
+- `refetch()` - Recarregar perfil
 
 ---
 
-#### 3.4. Adicionar Hook useUserProfile
+#### 3. Atualizar UI
 
-**Novo arquivo:** `src/hooks/useUserProfile.ts`
-
-```typescript
-import { useState, useEffect } from "react";
-import { userProfileService, UserProfile } from "@/core/http/services/userProfileService";
-import { useAppSelector } from "@/core/store/hooks";
-
-export const useUserProfile = () => {
-  const user = useAppSelector((state) => state.auth.user);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string>("");
-
-  const fetchProfile = async () => {
-    if (!user) return;
-
-    setLoading(true);
-    setError("");
-
-    try {
-      const profileData = await userProfileService.getMyProfile(user.id);
-      setProfile(profileData);
-    } catch (err: any) {
-      setError(err.message || "Erro ao buscar perfil");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchProfile();
-  }, [user]);
-
-  const createProfile = async (data: any) => {
-    try {
-      const result = await userProfileService.create({
-        user_id: user!.id,
-        ...data,
-      });
-
-      if (result.status === 201) {
-        await fetchProfile(); // Recarregar perfil
-        return { success: true };
-      }
-    } catch (err: any) {
-      setError(err.message || "Erro ao criar perfil");
-      return { success: false, error: err.message };
-    }
-  };
-
-  const uploadPhoto = async (file: File) => {
-    if (!profile) {
-      throw new Error("Perfil não encontrado");
-    }
-
-    try {
-      const result = await userProfileService.uploadPhoto(profile.id, file);
-      await fetchProfile(); // Recarregar perfil com nova foto
-      return result;
-    } catch (err: any) {
-      setError(err.message || "Erro ao fazer upload da foto");
-      throw err;
-    }
-  };
-
-  return {
-    profile,
-    loading,
-    error,
-    createProfile,
-    uploadPhoto,
-    refetch: fetchProfile,
-  };
-};
-```
+**Arquivos a modificar:**
+- `src/components/layout/AppLayout.tsx` - Modal de criação → API real
+- `src/pages/meuPerfil/MeuPerfil.tsx` - Página Meu Perfil → API real
+- Remover todos os mocks e uso de `localStorage`
 
 ---
 
-### **Fase 4: Substituir Hooks Mockados** (Prioridade: 🟢 BAIXA)
+### Checklist — Sprint 3
 
-#### 4.1. Atualizar useCities
-
-**Arquivo:** `src/hooks/useCities.ts`
-
-**Mudanças:**
-```typescript
-// ❌ REMOVER mock data
-const mockCities = [...];
-
-// ✅ ADICIONAR service
-import { citiesService } from "@/core/http/services/citiesService";
-
-export const useCities = () => {
-  const [cities, setCities] = useState<City[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const fetchCities = async () => {
-      setLoading(true);
-      try {
-        const response = await citiesService.list();
-        if (response.status === 200 && response.data) {
-          setCities(response.data.data);
-        }
-      } catch (err) {
-        console.error("Erro ao buscar cidades:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCities();
-  }, []);
-
-  return { cities, loading };
-};
-```
-
----
-
-#### 4.2. Criar citiesService
-
-**Novo arquivo:** `src/core/http/services/citiesService.ts`
-
-```typescript
-import httpClient from "../httpClient";
-
-const API_URL = import.meta.env.VITE_API_URL;
-
-export interface City {
-  id: string;
-  name: string;
-  state: string;
-  // Adicionar outros campos conforme API
-}
-
-export const citiesService = {
-  list: (page: number = 1, size: number = 100) =>
-    httpClient.get<{ data: City[] }>(
-      API_URL,
-      `/admin/cities?page=${page}&size=${size}`
-    ),
-
-  // Adicionar outros métodos conforme necessário
-};
-```
-
----
-
-#### 4.3. Outros Hooks
-
-**Aplicar o mesmo padrão para:**
-- `useExams` → criar `examsService`
-- `useEnemResults` → criar `enemResultsService`
-- `useExamsScheduled` → criar `examsScheduledService`
-- `useContracts` → criar `contractsService`
-- `useSelective` → criar `selectiveService`
-- `useAcademicMerit` → criar `academicMeritService`
-
-**Nota:** Consultar Swagger em `http://186.248.135.172:31535/swagger` para endpoints exatos
-
----
-
-### **Fase 5: Tratamento de Erros Aprimorado** (Prioridade: 🟢 BAIXA)
-
-#### 5.1. Criar Hook useApiError
-
-**Novo arquivo:** `src/hooks/useApiError.ts`
-
-```typescript
-import { useState } from "react";
-
-interface ApiError {
-  message: string;
-  statusCode: number;
-}
-
-export const useApiError = () => {
-  const [error, setError] = useState<ApiError | null>(null);
-
-  const handleError = (err: any) => {
-    if (err.response) {
-      setError({
-        message: err.response.data?.message || "Erro desconhecido",
-        statusCode: err.response.status,
-      });
-    } else {
-      setError({
-        message: "Erro de conexão",
-        statusCode: 0,
-      });
-    }
-  };
-
-  const clearError = () => setError(null);
-
-  return { error, handleError, clearError };
-};
-```
-
----
-
-#### 5.2. Adicionar ErrorBoundary
-
-**Novo arquivo:** `src/components/ErrorBoundary.tsx`
-
-```typescript
-import React, { Component, ErrorInfo, ReactNode } from "react";
-import { Container, Typography, Button } from "@mui/material";
-
-interface Props {
-  children: ReactNode;
-}
-
-interface State {
-  hasError: boolean;
-  error?: Error;
-}
-
-export class ErrorBoundary extends Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("ErrorBoundary caught:", error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <Container maxWidth="sm" sx={{ mt: 8, textAlign: "center" }}>
-          <Typography variant="h4" gutterBottom>
-            Algo deu errado
-          </Typography>
-          <Typography variant="body1" color="text.secondary" paragraph>
-            {this.state.error?.message || "Erro desconhecido"}
-          </Typography>
-          <Button
-            variant="contained"
-            onClick={() => window.location.reload()}
-          >
-            Recarregar Página
-          </Button>
-        </Container>
-      );
-    }
-
-    return this.props.children;
-  }
-}
-```
-
----
-
-## 📅 Ordem de Implementação
-
-### Sprint 1: Autenticação Funcional (1-2 dias)
-1. ✅ Atualizar interfaces (`authInterfaces.ts`)
-2. ✅ Atualizar `authService.ts`
-3. ✅ Atualizar `useAuth.ts` hook
-4. ✅ Adicionar função `decodeJWT`
-5. ✅ Atualizar refresh token no store
-6. ✅ Atualizar componente Login
-7. ✅ Remover/desabilitar registro
-8. ✅ **TESTAR LOGIN COMPLETO**
-
-### Sprint 2: Segurança (1 dia)
-1. ✅ Ativar `AuthMiddleware` nas rotas
-2. ✅ Criar `RoleGuard`
-3. ✅ Criar página Unauthorized
-4. ✅ Proteger rotas administrativas
-5. ✅ **TESTAR PROTEÇÃO DE ROTAS**
-
-### Sprint 3: Gestão de Perfil (2-3 dias)
-1. ✅ Criar `userProfileService`
-2. ✅ Criar hook `useUserProfile`
-3. ✅ Atualizar `CreateProfileModal`
-4. ✅ Atualizar página `MeuPerfil`
-5. ✅ Implementar upload de foto
-6. ✅ **TESTAR CRIAÇÃO/EDIÇÃO DE PERFIL**
-
-### Sprint 4: Integração de Dados (3-5 dias)
-1. ✅ Criar services para cada módulo
-2. ✅ Atualizar hooks mockados
-3. ✅ Integrar componentes com APIs reais
-4. ✅ **TESTAR CADA MÓDULO**
-
-### Sprint 5: Tratamento de Erros e Polimento (1-2 dias)
-1. ✅ Implementar `useApiError`
-2. ✅ Adicionar `ErrorBoundary`
-3. ✅ Melhorar mensagens de erro
-4. ✅ Adicionar loading states
-5. ✅ **TESTAR FLUXOS DE ERRO**
-
----
-
-## ✅ Checklist de Implementação
-
-### Autenticação
-- [ ] Atualizar `LoginPayload` para usar `credential`
-- [ ] Atualizar `LoginResponse` para usar `accessToken` e `refreshToken`
-- [ ] Remover `user` da resposta de login
-- [ ] Adicionar função `decodeJWT` para extrair dados do usuário
-- [ ] Atualizar endpoint de login (remover barra final)
-- [ ] Atualizar endpoint de refresh token (`/auth/refresh-token`)
-- [ ] Atualizar campo de refresh token (`refreshToken`)
-- [ ] Atualizar interface `User` para incluir `roles` como array
-- [ ] Remover/desabilitar página de registro
-- [ ] Remover rota de registro
-- [ ] Testar login com usuário de teste (`luke@pectecbh.com.br` / `qweasd32`)
-- [ ] Testar refresh token automático
-- [ ] Testar logout
-
-### Proteção de Rotas
-- [ ] Envolver rotas protegidas com `AuthMiddleware`
-- [ ] Criar componente `RoleGuard`
-- [ ] Criar página Unauthorized
-- [ ] Adicionar rota `/nao-autorizado`
-- [ ] Proteger rotas administrativas com roles
-- [ ] Testar acesso sem autenticação (deve redirecionar para login)
-- [ ] Testar acesso sem permissão (deve redirecionar para Unauthorized)
-
-### Gestão de Perfil
-- [ ] Criar `userProfileService` com métodos:
-  - [ ] `list()`
-  - [ ] `create()`
-  - [ ] `uploadPhoto()`
-  - [ ] `getMyProfile()` (workaround)
-- [ ] Criar hook `useUserProfile`
+- [ ] Criar `userProfileService.ts`
+- [ ] Criar `useUserProfile.ts`
 - [ ] Atualizar `CreateProfileModal` para usar API
 - [ ] Atualizar `MeuPerfil` para buscar dados da API
-- [ ] Implementar upload de foto com FormData
-- [ ] Remover armazenamento em localStorage
-- [ ] Testar criação de perfil
-- [ ] Testar edição de perfil
-- [ ] Testar upload de foto
-
-### Outros Módulos
-- [ ] Criar `citiesService` e atualizar `useCities`
-- [ ] Criar `examsService` e atualizar `useExams`
-- [ ] Criar `enemResultsService` e atualizar `useEnemResults`
-- [ ] Criar `examsScheduledService` e atualizar `useExamsScheduled`
-- [ ] Criar `contractsService` e atualizar `useContracts`
-- [ ] Criar `selectiveService` e atualizar `useSelective`
-- [ ] Criar `academicMeritService` e atualizar `useAcademicMerit`
-
-### Tratamento de Erros
-- [ ] Criar hook `useApiError`
-- [ ] Adicionar `ErrorBoundary` na raiz da aplicação
-- [ ] Melhorar mensagens de erro em formulários
-- [ ] Adicionar loading states em todas as requisições
-- [ ] Adicionar toasts/snackbars para feedback de ações
-
-### Testes
-- [ ] Testar login com credenciais válidas
-- [ ] Testar login com credenciais inválidas
-- [ ] Testar conta suspensa
-- [ ] Testar conta sem roles
-- [ ] Testar refresh token automático (deixar token expirar)
-- [ ] Testar logout
-- [ ] Testar acesso a rotas protegidas sem autenticação
-- [ ] Testar acesso a rotas administrativas sem permissão
-- [ ] Testar criação de perfil
-- [ ] Testar edição de perfil
-- [ ] Testar upload de foto
-- [ ] Testar listagem de dados (cidades, exames, etc.)
-- [ ] Testar paginação
-- [ ] Testar busca/filtros
-- [ ] Testar tratamento de erros de rede
+- [ ] Implementar upload de foto com `FormData`
+- [ ] Remover mocks de perfil
+- [ ] Remover armazenamento em `localStorage`
+- [ ] Testar:
+  - [ ] Criação de perfil
+  - [ ] Edição de perfil
+  - [ ] Upload de foto
+  - [ ] Visualização de perfil
 
 ---
 
-## 🚨 Problemas Conhecidos e Limitações
+## 🟢 Sprint 4 — Integração de Dados
+
+### Objetivo
+
+Substituir **todos os hooks mockados** por dados reais da API.
+
+---
+
+### Escopo
+
+Criar services e integrar hooks para:
+
+| Hook | Service | Endpoint Base | Status |
+|------|---------|---------------|--------|
+| `useCities` | `citiesService` | `/admin/cities` | 🔴 Mock |
+| `useExams` | `examsService` | `/admin/exams` | 🔴 Mock |
+| `useEnemResults` | `enemResultsService` | `/admin/enem-results` | 🔴 Mock |
+| `useExamsScheduled` | `examsScheduledService` | `/admin/exams-scheduled` | 🔴 Mock |
+| `useContracts` | `contractsService` | `/admin/contracts` | 🔴 Mock |
+| `useSelective` | `selectiveService` | `/admin/selective` | 🔴 Mock |
+| `useAcademicMerit` | `academicMeritService` | `/admin/academic-merit` | 🔴 Mock |
+
+📌 **Fonte única de verdade:** [Swagger](http://186.248.135.172:31535/swagger)
+
+---
+
+### Padrão de Implementação
+
+**Para cada módulo:**
+
+1. Criar service em `src/core/http/services/{nome}Service.ts`
+2. Atualizar hook em `src/hooks/use{Nome}.ts`
+3. Remover dados mockados
+4. Adicionar:
+   - Paginação (`page`, `size`)
+   - Loading states
+   - Error handling
+   - Tipos/interfaces
+
+---
+
+### Checklist — Sprint 4
+
+#### Cities
+- [ ] Criar `citiesService.ts`
+- [ ] Atualizar `useCities.ts`
+- [ ] Remover mock data
+- [ ] Testar listagem
+
+#### Exams
+- [ ] Criar `examsService.ts`
+- [ ] Atualizar `useExams.ts`
+- [ ] Remover mock data
+- [ ] Testar listagem e paginação
+
+#### ENEM Results
+- [ ] Criar `enemResultsService.ts`
+- [ ] Atualizar `useEnemResults.ts`
+- [ ] Remover mock data
+- [ ] Testar listagem
+
+#### Exams Scheduled
+- [ ] Criar `examsScheduledService.ts`
+- [ ] Atualizar `useExamsScheduled.ts`
+- [ ] Remover mock data
+- [ ] Testar listagem
+
+#### Contracts
+- [ ] Criar `contractsService.ts`
+- [ ] Atualizar `useContracts.ts`
+- [ ] Remover mock data
+- [ ] Testar listagem
+
+#### Selective
+- [ ] Criar `selectiveService.ts`
+- [ ] Atualizar `useSelective.ts`
+- [ ] Remover mock data
+- [ ] Testar listagem
+
+#### Academic Merit
+- [ ] Criar `academicMeritService.ts`
+- [ ] Atualizar `useAcademicMerit.ts`
+- [ ] Remover mock data
+- [ ] Testar listagem
+
+---
+
+## 🟢 Sprint 5 — Robustez & Polimento
+
+### Objetivo
+
+Melhorar **resiliência, UX e previsibilidade** da aplicação.
+
+---
+
+### Entregas Planejadas
+
+#### 1. Hook useApiError
+
+**Novo arquivo:** [`src/hooks/useApiError.ts`](src/hooks/useApiError.ts)
+
+Funcionalidades:
+- Padronizar tratamento de erros HTTP
+- Mapear status codes para mensagens amigáveis
+- Integrar com sistema de notificações
+
+---
+
+#### 2. ErrorBoundary Global
+
+**Novo arquivo:** [`src/components/ErrorBoundary.tsx`](src/components/ErrorBoundary.tsx)
+
+- Capturar erros não tratados
+- Exibir página de erro amigável
+- Opção de recarregar aplicação
+
+---
+
+#### 3. Mensagens Padronizadas
+
+- Erros de validação (400)
+- Erros de autenticação (401)
+- Erros de autorização (403)
+- Erros de recurso não encontrado (404)
+- Erros de servidor (500)
+
+---
+
+#### 4. Loadings Consistentes
+
+- Skeleton loaders para listas
+- Progress bars para uploads
+- Spinners para ações
+- Desabilitar botões durante requisições
+
+---
+
+#### 5. Feedback Visual
+
+- Toast/Snackbar para sucesso/erro
+- Confirmações para ações destrutivas
+- Estados vazios (empty states)
+
+---
+
+### Checklist — Sprint 5
+
+- [ ] Criar `useApiError.ts`
+- [ ] Criar `ErrorBoundary.tsx`
+- [ ] Adicionar ErrorBoundary na raiz (`App.tsx`)
+- [ ] Padronizar mensagens de erro HTTP
+- [ ] Adicionar toasts para ações
+- [ ] Adicionar loadings em todos os hooks
+- [ ] Adicionar confirmações para delete/update
+- [ ] Criar empty states
+- [ ] Testar:
+  - [ ] Erro de rede (desligar internet)
+  - [ ] Erro 401 (token expirado)
+  - [ ] Erro 403 (sem permissão)
+  - [ ] Erro 500 (erro de servidor)
+  - [ ] Validações de formulário
+
+---
+
+## 🚨 Limitações Conhecidas
 
 ### 1. Perfil de Usuário
-**Problema:** Backend não possui endpoint `/user/user-profiles/me` para usuários comuns obterem seu próprio perfil.
 
-**Soluções:**
-- **Temporária:** Usar workaround com `getMyProfile()` que busca todos os perfis e filtra pelo `user_id`
-- **Ideal:** Solicitar ao backend a criação de endpoints:
-  - `GET /user/user-profiles/me`
-  - `POST /user/user-profiles`
-  - `PATCH /user/user-profiles/me`
-  - `POST /user/user-profiles/me/upload-photo`
+❌ Backend **não oferece endpoints para usuário comum**
 
-### 2. Registro de Usuários
-**Problema:** Backend não possui endpoint público de registro.
-
-**Solução:** Apenas administradores podem criar usuários através de `POST /admin/users`
-
-### 3. Multipart Upload
-**Problema:** Upload de foto requer `multipart/form-data` e não pode usar JSON.
-
-**Solução:** Usar `FormData` e **NÃO definir** `Content-Type` manualmente (navegador define automaticamente)
-
-### 4. Paginação
-**Observação:** Backend retorna estrutura de paginação diferente em alguns endpoints:
-```typescript
-// Alguns endpoints
-{ data: [], meta: { page, size, total, totalPages } }
-
-// Outros endpoints
-{ data: [], currentPage, itemsPerPage, totalItems, totalPages }
+**Endpoints ideais (solicitar ao backend):**
+```
+GET    /user/user-profiles/me
+POST   /user/user-profiles
+PATCH  /user/user-profiles/me
+POST   /user/user-profiles/me/upload-photo
 ```
 
-**Solução:** Adaptar cada service conforme a estrutura retornada
+**Workaround atual:**
+- Buscar via `/admin/user-profiles` e filtrar por `user_id`
+- Requer que usuário tenha role `ADMIN`
 
 ---
 
-## 📚 Recursos Adicionais
+### 2. Registro de Usuários
+
+❌ Backend **não possui endpoint público de registro**
+
+**Solução:**
+- Apenas administradores podem criar usuários
+- Via endpoint: `POST /admin/users`
+
+---
+
+### 3. Logout no Backend
+
+❌ Backend **não possui endpoint de logout**
+
+**Solução:**
+- Logout apenas no frontend (limpar tokens)
+- Refresh token fica "órfão" no banco até expirar
+
+---
+
+## 📌 Recursos
 
 ### Documentação
 - **Swagger:** http://186.248.135.172:31535/swagger
-- **API Base URL:** http://186.248.135.172:31535
-- **Contrato API:** `api-documentation.json`
-- **Correções:** `CORRECOES_CONTRATO_API.md`
-- **Guia de Integração:** `INTEGRACAO_BACKEND.md`
+- **API Base:** http://186.248.135.172:31535
+- **Guia Técnico:** [INTEGRACAO_BACKEND.md](INTEGRACAO_BACKEND.md)
 
-### Usuário de Teste
+### Credenciais de Teste
 - **Email:** `luke@pectecbh.com.br`
 - **Senha:** `qweasd32`
 
@@ -1189,15 +439,13 @@ export class ErrorBoundary extends Component<Props, State> {
 
 ---
 
-## 🎯 Próximos Passos
+## 🎯 Próximos Passos Imediatos
 
-1. **Revisar este plano** com a equipe
-2. **Priorizar sprints** conforme necessidade do negócio
-3. **Começar pela Sprint 1** (Autenticação Funcional)
-4. **Testar cada fase** antes de prosseguir
-5. **Documentar problemas** encontrados durante a implementação
-6. **Solicitar ajustes no backend** se necessário (especialmente endpoints de perfil)
+1. **Iniciar Sprint 2** → Proteção de rotas
+2. **Testar autenticação** em ambiente de produção
+3. **Solicitar ao backend** endpoints de perfil para usuário comum
+4. **Planejar Sprint 3** com equipe de backend
 
 ---
 
-**Última atualização:** 2026-01-08
+**Última atualização:** 2026-01-09

@@ -61,6 +61,9 @@ const ListaPresenca: React.FC = () => {
 
   // Transform exams to rows
   const rows = useMemo(() => {
+    if (!Array.isArray(exams)) {
+      return [];
+    }
     return exams.map((exam) => ({
       id: exam.id,
       cpf: exam.user_data.cpf,

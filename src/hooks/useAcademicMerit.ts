@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo } from "react";
 import type { AcademicMerit } from "../interfaces/academicMerit";
+import { academicMeritService } from "../core/http/services/academicMeritService";
 
 export const useAcademicMerit = () => {
   const [merits, setMerits] = useState<AcademicMerit[]>([]);
@@ -9,136 +10,56 @@ export const useAcademicMerit = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const fetchMerits = useCallback(async () => {
+  const [page, setPage] = useState(1);
+  const [size, setSize] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+
+  const fetchMerits = useCallback(async (pOrEvent?: any, s: number = size) => {
+    const p = typeof pOrEvent === "number" ? pOrEvent : page;
     setLoading(true);
     setError(null);
     try {
-      // TODO: Substituir pelo endpoint real da API
-      // const response = await httpClient.get<AcademicMerit[]>(API_URL, "/academic-merit/pending/");
-      
-      // Dados mockados para demonstração
-      // Usando um PDF de exemplo público mais confiável
-      const mockMerits: AcademicMerit[] = [
-        {
-          id: 1,
-          document: "https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf",
-          created_at: "2024-03-10T10:00:00Z",
-          updated_at: "2024-03-10T10:00:00Z",
-          status: "aprovado",
-          user_data_display: {
-            user: {
-              first_name: "João",
-              last_name: "Silva",
-            },
-          },
-        },
-        {
-          id: 2,
-          document: "https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf",
-          created_at: "2024-03-11T14:30:00Z",
-          updated_at: "2024-03-11T14:30:00Z",
-          status: "aprovado",
-          user_data_display: {
-            user: {
-              first_name: "Maria",
-              last_name: "Santos",
-            },
-          },
-        },
-        {
-          id: 3,
-          document: "https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf",
-          created_at: "2024-03-12T09:15:00Z",
-          updated_at: "2024-03-12T09:15:00Z",
-          status: "reprovado",
-          user_data_display: {
-            user: {
-              first_name: "Pedro",
-              last_name: "Oliveira",
-            },
-          },
-        },
-      ];
+      // Use paginated list filtered by pending status
+      const response = await academicMeritService.list(p, s, "pending");
 
-      // Simular delay da API
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      setMerits(mockMerits);
-      setAllMerits(mockMerits);
-      setCurrentIndex(0);
+      if (response.status >= 200 && response.status < 300 && response.data) {
+        const meritData = Array.isArray(response.data.data) ? response.data.data : [];
+        setMerits(meritData);
+        setPage(response.data.currentPage || p);
+        setSize(response.data.itemsPerPage || s);
+        setTotalItems(response.data.totalItems || 0);
+        setTotalPages(response.data.totalPages || 0);
+        setCurrentIndex(0);
+        return;
+      }
+
+      setMerits([]);
+      setError(response.message || "Erro ao carregar documentos");
     } catch (err: any) {
+      setMerits([]);
       setError(err.message || "Erro ao carregar documentos");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [page, size]);
 
   const fetchAllMerits = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      // TODO: Substituir pelo endpoint real da API
-      // const response = await httpClient.get<AcademicMerit[]>(API_URL, "/academic-merit/all/");
-      
-      // Dados mockados para demonstração
-      const mockAllMerits: AcademicMerit[] = [
-        {
-          id: 1,
-          document: "https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf",
-          created_at: "2024-03-10T10:00:00Z",
-          updated_at: "2024-03-10T10:00:00Z",
-          status: "aprovado",
-          user_data_display: {
-            user: {
-              first_name: "João",
-              last_name: "Silva",
-            },
-          },
-        },
-        {
-          id: 2,
-          document: "https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf",
-          created_at: "2024-03-11T14:30:00Z",
-          updated_at: "2024-03-11T14:30:00Z",
-          status: "aprovado",
-          user_data_display: {
-            user: {
-              first_name: "Maria",
-              last_name: "Santos",
-            },
-          },
-        },
-        {
-          id: 3,
-          document: "https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf",
-          created_at: "2024-03-12T09:15:00Z",
-          updated_at: "2024-03-12T09:15:00Z",
-          status: "reprovado",
-          user_data_display: {
-            user: {
-              first_name: "Pedro",
-              last_name: "Oliveira",
-            },
-          },
-        },
-        {
-          id: 4,
-          document: "https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf",
-          created_at: "2024-03-13T08:00:00Z",
-          updated_at: "2024-03-13T08:00:00Z",
-          status: "aprovado",
-          user_data_display: {
-            user: {
-              first_name: "Ana",
-              last_name: "Costa",
-            },
-          },
-        },
-      ];
+      const response = await academicMeritService.listAll();
 
-      // Simular delay da API
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      setAllMerits(mockAllMerits);
+      if (response.status >= 200 && response.status < 300 && response.data) {
+        const meritData = Array.isArray(response.data) ? response.data : [];
+        setAllMerits(meritData);
+        return;
+      }
+
+      setAllMerits([]);
+      setError(response.message || "Erro ao carregar documentos");
     } catch (err: any) {
+      setAllMerits([]);
       setError(err.message || "Erro ao carregar documentos");
     } finally {
       setLoading(false);
@@ -168,56 +89,40 @@ export const useAcademicMerit = () => {
 
     setActionLoading(true);
     try {
-      // TODO: Implementar chamada à API para aprovar
-      // await httpClient.patch(API_URL, `/academic-merit/${currentMerit.id}/approve/`, {});
-      
-      // Simular delay da API
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      // Remover o documento aprovado da lista
-      const newMerits = merits.filter((m) => m.id !== currentMerit.id);
-      setMerits(newMerits);
-      
-      // Ajustar o índice se necessário
-      if (currentIndex >= newMerits.length && newMerits.length > 0) {
-        setCurrentIndex(newMerits.length - 1);
-      } else if (newMerits.length === 0) {
-        setCurrentIndex(0);
+      const response = await academicMeritService.approve(currentMerit.id);
+
+      if (response.status >= 200 && response.status < 300) {
+        // Refresh list
+        await fetchMerits();
+      } else {
+        setError(response.message || "Erro ao aprovar documento");
       }
     } catch (err: any) {
       setError(err.message || "Erro ao aprovar documento");
     } finally {
       setActionLoading(false);
     }
-  }, [currentMerit, merits, currentIndex]);
+  }, [currentMerit, fetchMerits]);
 
   const recuseCurrent = useCallback(async () => {
     if (!currentMerit) return;
 
     setActionLoading(true);
     try {
-      // TODO: Implementar chamada à API para reprovar
-      // await httpClient.patch(API_URL, `/academic-merit/${currentMerit.id}/recuse/`, {});
-      
-      // Simular delay da API
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      // Remover o documento reprovado da lista
-      const newMerits = merits.filter((m) => m.id !== currentMerit.id);
-      setMerits(newMerits);
-      
-      // Ajustar o índice se necessário
-      if (currentIndex >= newMerits.length && newMerits.length > 0) {
-        setCurrentIndex(newMerits.length - 1);
-      } else if (newMerits.length === 0) {
-        setCurrentIndex(0);
+      const response = await academicMeritService.reject(currentMerit.id);
+
+      if (response.status >= 200 && response.status < 300) {
+        // Refresh list
+        await fetchMerits();
+      } else {
+        setError(response.message || "Erro ao reprovar documento");
       }
     } catch (err: any) {
       setError(err.message || "Erro ao reprovar documento");
     } finally {
       setActionLoading(false);
     }
-  }, [currentMerit, merits, currentIndex]);
+  }, [currentMerit, fetchMerits]);
 
   return {
     loading,
@@ -233,6 +138,10 @@ export const useAcademicMerit = () => {
     prev,
     fetchMerits,
     fetchAllMerits,
+    page,
+    size,
+    totalItems,
+    totalPages,
   };
 };
 

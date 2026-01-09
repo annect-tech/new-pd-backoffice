@@ -1,10 +1,15 @@
 import { useState, useCallback } from "react";
 import type { Exam } from "../interfaces/exam";
+import { examsService } from "../core/http/services/examsService";
 
 export const useExams = () => {
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [size, setSize] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [generalAnchor, setGeneralAnchor] = useState<null | HTMLElement>(null);
   const [rowAnchor, setRowAnchor] = useState<null | HTMLElement>(null);
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null);
@@ -14,127 +19,26 @@ export const useExams = () => {
     setLoading(true);
     setError(null);
     try {
-      // TODO: Substituir pelo endpoint real da API
-      // const response = await httpClient.get<Exam[]>(API_URL, "/exams/");
-      
-      // Dados mockados para demonstração
-      const mockExams: Exam[] = [
-        {
-          id: 1,
-          score: 85,
-          status: "aprovado",
-          user_data: {
-            cpf: "123.456.789-00",
-            user: {
-              first_name: "João",
-              last_name: "Silva",
-            },
-          },
-          exam_scheduled_hour: {
-            hour: "08:00",
-            exam_date: {
-              date: "2024-03-20",
-              local: {
-                name: "Centro de Convenções",
-              },
-            },
-          },
-        },
-        {
-          id: 2,
-          score: 90,
-          status: "aprovado",
-          user_data: {
-            cpf: "987.654.321-00",
-            user: {
-              first_name: "Maria",
-              last_name: "Santos",
-            },
-          },
-          exam_scheduled_hour: {
-            hour: "08:00",
-            exam_date: {
-              date: "2024-03-20",
-              local: {
-                name: "Centro de Convenções",
-              },
-            },
-          },
-        },
-        {
-          id: 3,
-          score: 60,
-          status: "reprovado",
-          user_data: {
-            cpf: "456.789.123-00",
-            user: {
-              first_name: "Pedro",
-              last_name: "Oliveira",
-            },
-          },
-          exam_scheduled_hour: {
-            hour: "08:00",
-            exam_date: {
-              date: "2024-03-20",
-              local: {
-                name: "Centro de Convenções",
-              },
-            },
-          },
-        },
-        {
-          id: 4,
-          score: 75,
-          status: "aprovado",
-          user_data: {
-            cpf: "789.123.456-00",
-            user: {
-              first_name: "Ana",
-              last_name: "Costa",
-            },
-          },
-          exam_scheduled_hour: {
-            hour: "14:00",
-            exam_date: {
-              date: "2024-03-20",
-              local: {
-                name: "Auditório Principal",
-              },
-            },
-          },
-        },
-        {
-          id: 5,
-          score: 55,
-          status: "reprovado",
-          user_data: {
-            cpf: "321.654.987-00",
-            user: {
-              first_name: "Carlos",
-              last_name: "Souza",
-            },
-          },
-          exam_scheduled_hour: {
-            hour: "14:00",
-            exam_date: {
-              date: "2024-03-20",
-              local: {
-                name: "Auditório Principal",
-              },
-            },
-          },
-        },
-      ];
+      const response = await examsService.list(page, size);
 
-      // Simular delay da API
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      setExams(mockExams);
+      if (response.status >= 200 && response.status < 300 && response.data) {
+        const examData = Array.isArray(response.data.data) ? response.data.data : [];
+        setExams(examData);
+        setPage(response.data.currentPage || page);
+        setSize(response.data.itemsPerPage || size);
+        setTotalItems(response.data.totalItems || 0);
+        setTotalPages(response.data.totalPages || 0);
+      } else {
+        setExams([]);
+        setError(response.message || "Erro ao carregar exames");
+      }
     } catch (err: any) {
+      setExams([]);
       setError(err.message || "Erro ao carregar exames");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [page, size]);
 
   const handleOpenGeneralMenu = (event: React.MouseEvent<HTMLElement>) => {
     setGeneralAnchor(event.currentTarget);
@@ -168,6 +72,10 @@ export const useExams = () => {
     loading,
     error,
     fetchExams,
+    page,
+    size,
+    totalItems,
+    totalPages,
     generalAnchor,
     rowAnchor,
     modalOpen,

@@ -104,12 +104,12 @@ const Contratos: React.FC = () => {
     },
   ];
 
-  const rows = contracts.map((contract) => ({
+  const rows = Array.isArray(contracts) ? contracts.map((contract) => ({
     id: contract.id,
     cpf: contract.user_data.cpf,
     name: `${contract.user_data.user.first_name} ${contract.user_data.user.last_name}`,
     status: contract.status,
-  }));
+  })) : [];
 
   return (
     <Box p={2}>

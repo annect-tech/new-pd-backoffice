@@ -72,6 +72,9 @@ const Seletivo: React.FC = () => {
 
   // Filter users
   const filtered = useMemo(() => {
+    if (!Array.isArray(users)) {
+      return [];
+    }
     return users
       .filter((u) => u.first_name.toLowerCase() !== "admin")
       .filter(

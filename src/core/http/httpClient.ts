@@ -45,7 +45,12 @@ export const httpClient = {
         data: json.data ?? json,
       };
     } catch (err: any) {
-      return { status: 0, message: err.message || "Network error" };
+      console.error(`[httpClient] Erro na requisição ${method} ${url}:`, err);
+      return { 
+        status: 0, 
+        message: err.message || "Network error",
+        data: undefined 
+      };
     }
   },
 

@@ -2,7 +2,9 @@
 
 ## ⚠️ ATENÇÃO: Leia Primeiro
 
-**IMPORTANTE:** Antes de começar a integração, leia o documento **[CORRECOES_CONTRATO_API.md](./CORRECOES_CONTRATO_API.md)** que contém correções importantes sobre o contrato da API, especialmente:
+**IMPORTANTE:** Este é um guia técnico de referência da API. Para o plano de implementação em sprints e status atual, veja **[PLANO_INTEGRACAO.md](./PLANO_INTEGRACAO.md)**.
+
+Antes de começar a integração, leia também o documento **[CORRECOES_CONTRATO_API.md](./CORRECOES_CONTRATO_API.md)** que contém correções importantes sobre o contrato da API, especialmente:
 
 - Formato correto das respostas (`accessToken`/`refreshToken` vs `access`/`refresh`)
 - Endpoints de perfil de usuário (não existe `/user/user-profiles/me`)

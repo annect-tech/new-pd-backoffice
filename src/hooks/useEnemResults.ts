@@ -1,57 +1,50 @@
 import { useCallback, useState } from "react";
-import { httpClient } from "../core/http/httpClient";
 import type { EnemResult } from "../interfaces/enemResult";
-
-const API_URL = import.meta.env.VITE_API_URL as string | undefined;
+import { enemResultsService } from "../core/http/services/enemResultsService";
 
 export const useEnemResults = () => {
   const [items, setItems] = useState<EnemResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [size, setSize] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
-  const fetchEnemResults = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      if (!API_URL) {
-        setError("URL da API não configurada (VITE_API_URL).");
-        return;
+  const fetchEnemResults = useCallback(
+    async (pOrEvent?: any, s: number = size) => {
+      const p = typeof pOrEvent === "number" ? pOrEvent : page;
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await enemResultsService.list(p, s);
+
+        if (response.status >= 200 && response.status < 300 && response.data) {
+          const itemData = Array.isArray(response.data.data) ? response.data.data : [];
+          setItems(itemData);
+          setPage(response.data.currentPage || p);
+          setSize(response.data.itemsPerPage || s);
+          setTotalItems(response.data.totalItems || 0);
+          setTotalPages(response.data.totalPages || 0);
+          return;
+        }
+
+        setItems([]);
+        setError(response.message || "Erro ao carregar resultados do ENEM.");
+      } catch (err: any) {
+        setItems([]);
+        setError(err.message || "Erro ao carregar resultados do ENEM.");
+      } finally {
+        setLoading(false);
       }
-
-      const response = await httpClient.get<EnemResult[]>(
-        API_URL,
-        "/admin/enem-results"
-      );
-
-      if (response.status >= 200 && response.status < 300 && response.data) {
-        setItems(response.data);
-        return;
-      }
-
-      setError(response.message || "Erro ao carregar resultados do ENEM.");
-    } catch (err: any) {
-      setError(err.message || "Erro ao carregar resultados do ENEM.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    [page, size]
+  );
 
   const updateStatus = useCallback(
     async (id: string, status: string) => {
       try {
-        if (!API_URL) {
-          return {
-            success: false,
-            message: "URL da API não configurada (VITE_API_URL).",
-          };
-        }
-
-        const response = await httpClient.patch<{ message: string }>(
-          API_URL,
-          "/admin/enem-results",
-          id,
-          { status }
-        );
+        const response = await enemResultsService.updateStatus(id, status);
 
         if (response.status >= 200 && response.status < 300) {
           await fetchEnemResults();
@@ -75,6 +68,6 @@ export const useEnemResults = () => {
     [fetchEnemResults]
   );
 
-  return { items, loading, error, fetchEnemResults, updateStatus };
+  return { items, loading, error, fetchEnemResults, updateStatus, page, size, totalItems, totalPages };
 };
 
