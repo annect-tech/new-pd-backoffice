@@ -4,7 +4,6 @@ import AuthCard from '../../../components/geralComponents/AuthCard'
 import AuthPromotionalSection from '../../../components/auth/SideAuthSection'
 import { getAuthTextFieldStyles } from '../../../components/auth/authTextFieldStyles'
 import { useAuth } from '../../../hooks/useAuth'
-import { useAuthContext } from '../../../app/providers/AuthProvider'
 import { useNavigate } from 'react-router-dom'
 import Visibility from '@mui/icons-material/Visibility'
 import VisibilityOff from '@mui/icons-material/VisibilityOff'
@@ -14,7 +13,6 @@ import { applyCpfMask, removeCpfMask } from '../../../util/masks'
 export default function Login() {
   const theme = useTheme()
   const { login, loading, error } = useAuth()
-  const { setCredentials } = useAuthContext()
   const navigate = useNavigate()
   const [cpf, setCpf] = useState('')
   const [password, setPassword] = useState('')
@@ -51,29 +49,6 @@ export default function Login() {
     }
   }
 
-  const handleAutoLogin = () => {
-    setFormError(null)
-    // Autenticação automática sem backend - apenas para acessar o sistema
-    // Define tokens mockados para passar pelo AuthMiddleware sem fazer login real
-    const mockAccessToken = 'mock-access-token-bypass-' + Date.now()
-    const mockRefreshToken = 'mock-refresh-token-bypass-' + Date.now()
-    
-    // Define as credenciais mockadas diretamente
-    setCredentials({
-      accessToken: mockAccessToken,
-      refreshToken: mockRefreshToken,
-      user: {
-        id: 1,
-        first_name: 'Usuário',
-        last_name: 'Teste',
-        email: 'usuario.teste@example.com',
-        role: 'admin'
-      }
-    })
-    
-    // Navega imediatamente - o AuthMiddleware verificará o token no próximo render
-    navigate(APP_ROUTES.HOME, { replace: true })
-  }
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', width: '100%' }}>
@@ -169,41 +144,6 @@ export default function Login() {
             >
               {loading ? 'Entrando...' : 'Entrar'}
             </Button>
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2, mt: 2, flexWrap: 'wrap' }}>
-              <Typography variant="body2" sx={{ color: theme.palette.text.primary }}>
-                Não tem conta?{' '}
-                <Button 
-                  variant="text" 
-                  onClick={() => navigate(APP_ROUTES.REGISTER)}
-                  sx={{
-                    color: theme.palette.primary.main,
-                    textTransform: 'none',
-                    p: 0,
-                    minWidth: 'auto',
-                    '&:hover': {
-                      background: 'transparent',
-                      textDecoration: 'underline',
-                    },
-                  }}
-                >
-                  CADASTRAR
-                </Button>
-              </Typography>
-              <Button
-                type="button"
-                variant="outlined"
-                color="secondary"
-                onClick={handleAutoLogin}
-                disabled={loading}
-                sx={{
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  borderRadius: 2,
-                }}
-              >
-                Entrar Automaticamente
-              </Button>
-            </Box>
           </form>
         </AuthCard>
       </Box>

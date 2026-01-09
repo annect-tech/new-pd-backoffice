@@ -20,18 +20,25 @@ import Perfil from "../../pages/perfil/Perfil";
 import EditarPerfil from "../../pages/perfil/EditarPerfil";
 import MeuPerfil from "../../pages/meuPerfil/MeuPerfil";
 import Login from "../../pages/authPages/Login";
+import { AuthMiddleware } from "../../core/middleware/AuthMiddleware";
 
 export const AppRoutes = () => (
   <Routes>
     {/* Rotas Públicas (sem AppLayout) */}
     <Route path={APP_ROUTES.LOGIN} element={<Login />} />
 
-    {/* Rotas Protegidas (com AppLayout) */}
-    <Route element={<AppLayout />}>
+    {/* Rotas Protegidas (com AuthMiddleware + AppLayout) */}
+    <Route
+      element={
+        <AuthMiddleware>
+          <AppLayout />
+        </AuthMiddleware>
+      }
+    >
       {/* Dashboard como página inicial */}
       <Route path={APP_ROUTES.HOME} element={<Dashboard />} />
       <Route path={APP_ROUTES.DASHBOARD} element={<Dashboard />} />
-      
+
       {/* Rotas dos Cards Gerais */}
       <Route path={APP_ROUTES.SELECTIVE} element={<Seletivo />} />
       <Route path={APP_ROUTES.EXAM_SCHEDULED} element={<ListaPresenca />} />
@@ -42,7 +49,7 @@ export const AppRoutes = () => (
       <Route path={APP_ROUTES.STUDENTS} element={<DadosAlunos />} />
       <Route path={APP_ROUTES.STUDENT_CREATE} element={<CadastroAlunos />} />
       <Route path={APP_ROUTES.RETENTION} element={<Retencao />} />
-      
+
       {/* Rotas dos Cards de Admin */}
       <Route path={APP_ROUTES.CITIES} element={<Cidades />} />
       <Route path={APP_ROUTES.CONTRACTS} element={<Contratos />} />
@@ -51,7 +58,7 @@ export const AppRoutes = () => (
       <Route path="/usuario/:id" element={<Perfil />} />
       <Route path="/usuario/:id/editar" element={<EditarPerfil />} />
       <Route path={APP_ROUTES.MY_PROFILE} element={<MeuPerfil />} />
-      
+
       <Route path={APP_ROUTES.NOTFOUND} element={<NotFound />} />
     </Route>
   </Routes>
