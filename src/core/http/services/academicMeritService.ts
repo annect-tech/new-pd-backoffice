@@ -45,11 +45,12 @@ export const academicMeritService = {
 
   /**
    * Lista todos os documentos (para histórico)
+   * Usa o endpoint list sem filtro de status para retornar todos
    */
   listAll: () =>
-    httpClient.get<AcademicMerit[]>(
+    httpClient.get<PaginatedResponse<AcademicMerit>>(
       API_URL,
-      "/admin/academic-merit-documents/all"
+      "/admin/academic-merit-documents?page=1&size=1000"
     ),
 
   /**

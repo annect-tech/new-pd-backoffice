@@ -19,6 +19,7 @@ import {
   Menu,
   MenuItem,
   Fade,
+  Snackbar,
 } from "@mui/material";
 import {
   Refresh as RefreshIcon,
@@ -43,7 +44,7 @@ import {
 } from "../../styles/designSystem";
 
 const ResultadosMerito: React.FC = () => {
-  const { allMerits, loading, error, fetchAllMerits } = useAcademicMerit();
+  const { allMerits, loading, error, fetchAllMerits, snackbar, closeSnackbar } = useAcademicMerit();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<
@@ -334,6 +335,21 @@ const ResultadosMerito: React.FC = () => {
           onClose={() => setViewerUrl(null)}
         />
       )}
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={closeSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={closeSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

@@ -2,6 +2,12 @@ import { useState, useCallback, useMemo } from "react";
 import type { AcademicMerit } from "../interfaces/academicMerit";
 import { academicMeritService } from "../core/http/services/academicMeritService";
 
+interface SnackbarState {
+  open: boolean;
+  message: string;
+  severity: "success" | "error" | "warning" | "info";
+}
+
 export const useAcademicMerit = () => {
   const [merits, setMerits] = useState<AcademicMerit[]>([]);
   const [allMerits, setAllMerits] = useState<AcademicMerit[]>([]);
@@ -9,11 +15,27 @@ export const useAcademicMerit = () => {
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [snackbar, setSnackbar] = useState<SnackbarState>({
+    open: false,
+    message: "",
+    severity: "info",
+  });
 
   const [page, setPage] = useState(1);
   const [size, setSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+
+  const showSnackbar = useCallback(
+    (message: string, severity: SnackbarState["severity"] = "info") => {
+      setSnackbar({ open: true, message, severity });
+    },
+    []
+  );
+
+  const closeSnackbar = useCallback(() => {
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  }, []);
 
   const fetchMerits = useCallback(async (pOrEvent?: any, s: number = size) => {
     const p = typeof pOrEvent === "number" ? pOrEvent : page;
@@ -31,18 +53,23 @@ export const useAcademicMerit = () => {
         setTotalItems(response.data.totalItems || 0);
         setTotalPages(response.data.totalPages || 0);
         setCurrentIndex(0);
+        showSnackbar("Dados carregados com sucesso", "success");
         return;
       }
 
       setMerits([]);
-      setError(response.message || "Erro ao carregar documentos");
+      const errorMessage = response.message || "Erro ao carregar documentos";
+      setError(errorMessage);
+      showSnackbar(errorMessage, "error");
     } catch (err: any) {
       setMerits([]);
-      setError(err.message || "Erro ao carregar documentos");
+      const errorMessage = err.message || "Erro ao carregar documentos";
+      setError(errorMessage);
+      showSnackbar(errorMessage, "error");
     } finally {
       setLoading(false);
     }
-  }, [page, size]);
+  }, [page, size, showSnackbar]);
 
   const fetchAllMerits = useCallback(async () => {
     setLoading(true);
@@ -51,20 +78,30 @@ export const useAcademicMerit = () => {
       const response = await academicMeritService.listAll();
 
       if (response.status >= 200 && response.status < 300 && response.data) {
-        const meritData = Array.isArray(response.data) ? response.data : [];
+        // A resposta agora é PaginatedResponse, então precisamos acessar response.data.data
+        const meritData = Array.isArray(response.data.data) 
+          ? response.data.data 
+          : Array.isArray(response.data) 
+          ? response.data 
+          : [];
         setAllMerits(meritData);
+        showSnackbar("Dados carregados com sucesso", "success");
         return;
       }
 
       setAllMerits([]);
-      setError(response.message || "Erro ao carregar documentos");
+      const errorMessage = response.message || "Erro ao carregar documentos";
+      setError(errorMessage);
+      showSnackbar(errorMessage, "error");
     } catch (err: any) {
       setAllMerits([]);
-      setError(err.message || "Erro ao carregar documentos");
+      const errorMessage = err.message || "Erro ao carregar documentos";
+      setError(errorMessage);
+      showSnackbar(errorMessage, "error");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showSnackbar]);
 
   const currentMerit = useMemo(() => {
     return merits[currentIndex] || null;
@@ -92,13 +129,18 @@ export const useAcademicMerit = () => {
       const response = await academicMeritService.approve(currentMerit.id);
 
       if (response.status >= 200 && response.status < 300) {
+        showSnackbar("Documento aprovado com sucesso", "success");
         // Refresh list
         await fetchMerits();
       } else {
-        setError(response.message || "Erro ao aprovar documento");
+        const errorMessage = response.message || "Erro ao aprovar documento";
+        setError(errorMessage);
+        showSnackbar(errorMessage, "error");
       }
     } catch (err: any) {
-      setError(err.message || "Erro ao aprovar documento");
+      const errorMessage = err.message || "Erro ao aprovar documento";
+      setError(errorMessage);
+      showSnackbar(errorMessage, "error");
     } finally {
       setActionLoading(false);
     }
@@ -112,17 +154,22 @@ export const useAcademicMerit = () => {
       const response = await academicMeritService.reject(currentMerit.id);
 
       if (response.status >= 200 && response.status < 300) {
+        showSnackbar("Documento reprovado com sucesso", "success");
         // Refresh list
         await fetchMerits();
       } else {
-        setError(response.message || "Erro ao reprovar documento");
+        const errorMessage = response.message || "Erro ao reprovar documento";
+        setError(errorMessage);
+        showSnackbar(errorMessage, "error");
       }
     } catch (err: any) {
-      setError(err.message || "Erro ao reprovar documento");
+      const errorMessage = err.message || "Erro ao reprovar documento";
+      setError(errorMessage);
+      showSnackbar(errorMessage, "error");
     } finally {
       setActionLoading(false);
     }
-  }, [currentMerit, fetchMerits]);
+  }, [currentMerit, fetchMerits, showSnackbar]);
 
   return {
     loading,
@@ -132,6 +179,8 @@ export const useAcademicMerit = () => {
     currentIndex,
     currentMerit,
     allMerits,
+    snackbar,
+    closeSnackbar,
     approveCurrent,
     recuseCurrent,
     next,

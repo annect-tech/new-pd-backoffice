@@ -14,6 +14,12 @@ interface Contract {
   };
 }
 
+interface SnackbarState {
+  open: boolean;
+  message: string;
+  severity: "success" | "error" | "warning" | "info";
+}
+
 export const useContracts = () => {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(false);
@@ -22,6 +28,22 @@ export const useContracts = () => {
   const [size, setSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [snackbar, setSnackbar] = useState<SnackbarState>({
+    open: false,
+    message: "",
+    severity: "info",
+  });
+
+  const showSnackbar = useCallback(
+    (message: string, severity: SnackbarState["severity"] = "info") => {
+      setSnackbar({ open: true, message, severity });
+    },
+    []
+  );
+
+  const closeSnackbar = useCallback(() => {
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  }, []);
 
   const fetchContracts = useCallback(
     async (pOrEvent?: any, s: number = size) => {
@@ -38,25 +60,32 @@ export const useContracts = () => {
           setSize(response.data.itemsPerPage || s);
           setTotalItems(response.data.totalItems || 0);
           setTotalPages(response.data.totalPages || 0);
+          showSnackbar("Dados carregados com sucesso", "success");
           return;
         }
 
         setContracts([]);
-        setError(response.message || "Erro ao buscar contratos");
+        const errorMessage = response.message || "Erro ao buscar contratos";
+        setError(errorMessage);
+        showSnackbar(errorMessage, "error");
       } catch (err: any) {
         setContracts([]);
-        setError(err?.message || "Erro ao buscar contratos");
+        const errorMessage = err?.message || "Erro ao buscar contratos";
+        setError(errorMessage);
+        showSnackbar(errorMessage, "error");
       } finally {
         setLoading(false);
       }
     },
-    [page, size]
+    [page, size, showSnackbar]
   );
 
   return {
     contracts,
     loading,
     error,
+    snackbar,
+    closeSnackbar,
     fetchContracts,
     page,
     size,

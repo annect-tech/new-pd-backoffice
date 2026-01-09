@@ -7,6 +7,7 @@ import {
   Paper,
   Alert,
   Fade,
+  Snackbar,
 } from "@mui/material";
 import { useAcademicMerit } from "../../hooks/useAcademicMerit";
 import { APP_ROUTES } from "../../util/constants";
@@ -26,6 +27,8 @@ const AprovacaoMerito: React.FC = () => {
     next,
     prev,
     fetchMerits,
+    snackbar,
+    closeSnackbar,
   } = useAcademicMerit();
 
   useEffect(() => {
@@ -499,6 +502,21 @@ const AprovacaoMerito: React.FC = () => {
           </Fade>
         </Box>
       </Box>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={closeSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={closeSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

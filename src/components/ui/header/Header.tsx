@@ -64,6 +64,7 @@ const Header: React.FC<HeaderProps> = () => {
           <IconButton
             onClick={handleMenuOpen}
             sx={{
+              bgcolor: "#FEFEFE",
               p: 0.5,
               "&:hover": {
                 bgcolor: "transparent",
@@ -103,34 +104,18 @@ const Header: React.FC<HeaderProps> = () => {
                   borderRadius: 1,
                   boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
                   border: "1px solid #E5E7EB",
+                  bgcolor: "#F9FAFB",
                 },
               },
             }}
           >
-            <MenuItem
-              onClick={handleProfileClick}
-              sx={{
-                py: 0.75,
-                px: 2,
-                fontSize: "0.8125rem",
-                color: "#6B7280",
-                "&:hover": {
-                  bgcolor: "#F9FAFB",
-                },
-              }}
-            >
-              Perfil
-            </MenuItem>
             <MenuItem
               onClick={handleLogout}
               sx={{
                 py: 0.75,
                 px: 2,
                 fontSize: "0.8125rem",
-                color: "#6B7280",
-                "&:hover": {
-                  bgcolor: "#F9FAFB",
-                },
+                color: "#0000000",
               }}
             >
               Sair

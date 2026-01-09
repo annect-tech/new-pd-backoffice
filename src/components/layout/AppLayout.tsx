@@ -234,6 +234,8 @@ export default function AppLayout() {
             sx={{
               marginLeft: "60px", // Espaço para o sidebar colapsado
               width: "calc(100% - 60px)",
+              overflowX: "hidden",
+              boxSizing: "border-box",
             }}
           >
             <Outlet />

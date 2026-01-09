@@ -58,6 +58,8 @@ const ResultadoProvas: React.FC = () => {
     handleOpenRowMenu,
     handleCloseRowMenu,
     goToDetail,
+    snackbar,
+    closeSnackbar,
   } = useExams();
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -68,7 +70,6 @@ const ResultadoProvas: React.FC = () => {
   const [downloadAnchor, setDownloadAnchor] = useState<null | HTMLElement>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [snackbar, setSnackbar] = useState({ open: false, message: "" });
 
   // Transform exams to rows
   const rows = useMemo(() => {
@@ -132,7 +133,7 @@ const ResultadoProvas: React.FC = () => {
 
   const handleExportCSV = () => {
     if (rows.length === 0) {
-      setSnackbar({ open: true, message: "Nenhum dado para exportar" });
+      // O snackbar será gerenciado pelo hook
       return;
     }
 
@@ -156,7 +157,7 @@ const ResultadoProvas: React.FC = () => {
     link.href = URL.createObjectURL(blob);
     link.download = `resultado_provas_${new Date().toISOString().split("T")[0]}.csv`;
     link.click();
-    setSnackbar({ open: true, message: "Arquivo CSV exportado com sucesso" });
+    // O snackbar será gerenciado pelo hook quando necessário
   };
 
   const getStatusColor = (status: string) => {
@@ -382,12 +383,12 @@ const ResultadoProvas: React.FC = () => {
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}
-        onClose={() => setSnackbar({ open: false, message: "" })}
+        onClose={closeSnackbar}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
         <Alert
-          onClose={() => setSnackbar({ open: false, message: "" })}
-          severity="success"
+          onClose={closeSnackbar}
+          severity={snackbar.severity}
           sx={{ width: "100%" }}
         >
           {snackbar.message}

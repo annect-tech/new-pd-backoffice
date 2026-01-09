@@ -143,7 +143,7 @@ export default function Login() {
             />
 
             {/* Link esqueci a senha */}
-            <Box sx={{ textAlign: 'right', mb: 3 }}>
+            {/* <Box sx={{ textAlign: 'right', mb: 3 }}>
               <Link
                 href="#"
                 underline="hover"
@@ -157,7 +157,7 @@ export default function Login() {
               >
                 Esqueceu a senha?
               </Link>
-            </Box>
+            </Box> */}
 
             {/* Botão de login */}
             <Button

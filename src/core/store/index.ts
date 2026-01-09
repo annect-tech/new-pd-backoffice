@@ -58,6 +58,22 @@ console.log("[store] store criado");
 export const persistor = persistStore(store);
 console.log("[store] persistor criado");
 
+// Configurar o token no httpClient quando o estado for restaurado
+persistor.subscribe(() => {
+  const state = store.getState();
+  if (state.auth.accessToken) {
+    httpClient.setAuthToken(state.auth.accessToken);
+    console.log("[store] Token restaurado e configurado no httpClient");
+  }
+});
+
+// Configurar o token inicial se já existir no estado
+const initialState = store.getState();
+if (initialState.auth.accessToken) {
+  httpClient.setAuthToken(initialState.auth.accessToken);
+  console.log("[store] Token inicial configurado no httpClient");
+}
+
 httpClient.setOnUnauthorized(async () => {
   const { refreshToken } = store.getState().auth;
   console.log("[store] onUnauthorized chamado, refreshToken:", refreshToken);

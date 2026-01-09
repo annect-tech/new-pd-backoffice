@@ -19,6 +19,7 @@ import {
   TableRow,
   TablePagination,
   TextField,
+  Snackbar,
 } from "@mui/material";
 import {
   MoreVert as MoreVertIcon,
@@ -40,7 +41,7 @@ import {
 } from "../../styles/designSystem";
 
 const Contratos: React.FC = () => {
-  const { contracts, loading, error, fetchContracts } = useContracts();
+  const { contracts, loading, error, fetchContracts, snackbar, closeSnackbar } = useContracts();
 
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -269,6 +270,21 @@ const Contratos: React.FC = () => {
           </Fade>
         </Box>
       </Box>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={closeSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={closeSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

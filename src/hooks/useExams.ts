@@ -2,6 +2,12 @@ import { useState, useCallback } from "react";
 import type { Exam } from "../interfaces/exam";
 import { examsService } from "../core/http/services/examsService";
 
+interface SnackbarState {
+  open: boolean;
+  message: string;
+  severity: "success" | "error" | "warning" | "info";
+}
+
 export const useExams = () => {
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(false);
@@ -14,6 +20,22 @@ export const useExams = () => {
   const [rowAnchor, setRowAnchor] = useState<null | HTMLElement>(null);
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [snackbar, setSnackbar] = useState<SnackbarState>({
+    open: false,
+    message: "",
+    severity: "info",
+  });
+
+  const showSnackbar = useCallback(
+    (message: string, severity: SnackbarState["severity"] = "info") => {
+      setSnackbar({ open: true, message, severity });
+    },
+    []
+  );
+
+  const closeSnackbar = useCallback(() => {
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  }, []);
 
   const fetchExams = useCallback(async () => {
     setLoading(true);
@@ -28,17 +50,22 @@ export const useExams = () => {
         setSize(response.data.itemsPerPage || size);
         setTotalItems(response.data.totalItems || 0);
         setTotalPages(response.data.totalPages || 0);
+        showSnackbar("Dados carregados com sucesso", "success");
       } else {
         setExams([]);
-        setError(response.message || "Erro ao carregar exames");
+        const errorMessage = response.message || "Erro ao carregar exames";
+        setError(errorMessage);
+        showSnackbar(errorMessage, "error");
       }
     } catch (err: any) {
       setExams([]);
-      setError(err.message || "Erro ao carregar exames");
+      const errorMessage = err.message || "Erro ao carregar exames";
+      setError(errorMessage);
+      showSnackbar(errorMessage, "error");
     } finally {
       setLoading(false);
     }
-  }, [page, size]);
+  }, [page, size, showSnackbar]);
 
   const handleOpenGeneralMenu = (event: React.MouseEvent<HTMLElement>) => {
     setGeneralAnchor(event.currentTarget);
@@ -71,6 +98,8 @@ export const useExams = () => {
     exams,
     loading,
     error,
+    snackbar,
+    closeSnackbar,
     fetchExams,
     page,
     size,

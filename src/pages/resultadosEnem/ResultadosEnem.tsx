@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   Alert,
   Box,
@@ -19,6 +19,7 @@ import {
   TextField,
   Toolbar,
   Typography,
+  Snackbar,
 } from "@mui/material";
 import {
   Visibility as VisibilityIcon,
@@ -42,65 +43,11 @@ import {
 import PdfViewModa from "../../components/modals/PdfViewModa";
 import EnemStatusUpdaterModal from "../../components/modals/EnemStatusUpdaterModal";
 import { APP_ROUTES } from "../../util/constants";
+import { useEnemResults } from "../../hooks/useEnemResults";
 import type { EnemResult } from "../../interfaces/enemResult";
 
-// Dados mockados (substituir por API futuramente)
-const MOCK_RESULTS: EnemResult[] = [
-  {
-    id: "1",
-    inscription_number: "2025ENEM001",
-    name: "Ana Souza",
-    cpf: "123.456.789-00",
-    foreign_language: "Inglês",
-    languages_score: 720,
-    human_sciences_score: 680,
-    natural_sciences_score: 705,
-    math_score: 750,
-    essay_score: 920,
-    pdf_file: "https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf",
-    status: "aprovado",
-    created_at: "2025-02-10T14:30:00Z",
-    user_id: 1,
-  },
-  {
-    id: "2",
-    inscription_number: "2025ENEM002",
-    name: "Bruno Lima",
-    cpf: "987.654.321-00",
-    foreign_language: "Espanhol",
-    languages_score: 640,
-    human_sciences_score: 610,
-    natural_sciences_score: 630,
-    math_score: 590,
-    essay_score: 780,
-    pdf_file: "https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf",
-    status: "pendente",
-    created_at: "2025-02-11T09:10:00Z",
-    user_id: 2,
-  },
-  {
-    id: "3",
-    inscription_number: "2025ENEM003",
-    name: "Carla Menezes",
-    cpf: "321.654.987-00",
-    foreign_language: "Inglês",
-    languages_score: 580,
-    human_sciences_score: 600,
-    natural_sciences_score: 590,
-    math_score: 560,
-    essay_score: 700,
-    pdf_file: "https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf",
-    status: "reprovado",
-    created_at: "2025-02-12T18:45:00Z",
-    user_id: 3,
-  },
-];
-
 const ResultadosEnem: React.FC = () => {
-
-  const [items, setItems] = useState<EnemResult[]>(MOCK_RESULTS);
-  const [loading] = useState(false);
-  const [error] = useState<string | null>(null);
+  const { items, loading, error, fetchEnemResults, updateStatus, snackbar, closeSnackbar } = useEnemResults();
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
   const [statusAnchor, setStatusAnchor] = useState<null | HTMLElement>(null);
   const [statusFilter, setStatusFilter] = useState<"all" | "aprovado" | "reprovado" | "pendente">("all");
@@ -110,16 +57,19 @@ const ResultadosEnem: React.FC = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [downloadAnchor, setDownloadAnchor] = useState<null | HTMLElement>(null);
 
+  useEffect(() => {
+    fetchEnemResults();
+  }, [fetchEnemResults]);
+
   const handleRefresh = () => {
     setStatusFilter("all");
     setSearchTerm("");
-    setItems(MOCK_RESULTS);
+    fetchEnemResults();
   };
 
-  // Atualiza status localmente (mock)
+  // Atualiza status usando o hook
   const handleUpdateStatus = async (id: string, newStatus: string) => {
-    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, status: newStatus } : i)));
-    return { success: true, message: "Status atualizado localmente (mock)." };
+    return await updateStatus(id, newStatus);
   };
 
   const filteredItems = useMemo(() => {
@@ -362,6 +312,21 @@ const ResultadosEnem: React.FC = () => {
         onClose={() => setModalOpen(false)}
         onUpdate={handleUpdateStatus}
       />
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={closeSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={closeSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

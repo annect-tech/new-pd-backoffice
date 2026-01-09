@@ -319,9 +319,43 @@ const DadosAlunos: React.FC = () => {
   };
 
   return (
-    <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      <Box sx={{ flex: 1, p: { xs: 2, sm: 3, md: 4 }, display: "flex", flexDirection: "column", overflow: "auto" }}>
-        <Box sx={{ maxWidth: 1400, width: "100%", margin: "0 auto" }}>
+    <Box 
+      sx={{ 
+        minHeight: "100vh", 
+        display: "flex", 
+        flexDirection: "column", 
+        overflowX: "hidden", 
+        width: "100%",
+        position: "relative",
+        boxSizing: "border-box",
+      }}
+    >
+      <Box 
+        sx={{ 
+          flex: 1, 
+          p: { xs: 2, sm: 3, md: 4 }, 
+          display: "flex", 
+          flexDirection: "column", 
+          overflow: "auto", 
+          overflowX: "hidden", 
+          width: "100%",
+          boxSizing: "border-box",
+          position: "relative",
+          minWidth: 0,
+          maxWidth: "100%",
+        }}
+      >
+        <Box 
+          sx={{ 
+            width: "100%", 
+            margin: "0 auto", 
+            overflowX: "hidden", 
+            boxSizing: "border-box",
+            position: "relative",
+            minWidth: 0,
+            maxWidth: "100%",
+          }}
+        >
           <PageHeader
             title="Dados de Alunos"
             subtitle="Visualize e gerencie informações dos alunos."
@@ -332,9 +366,20 @@ const DadosAlunos: React.FC = () => {
             ]}
           />
           <Fade in timeout={1000}>
-            <Paper {...paperStyles} sx={{ ...paperStyles.sx, overflow: "hidden" }}>
-              <Toolbar {...toolbarStyles}>
-                <Box display="flex" alignItems="center" sx={{ flex: 1, minWidth: 240, maxWidth: 420 }}>
+            <Paper {...paperStyles} sx={{ ...paperStyles.sx, overflow: "hidden", width: "100%", maxWidth: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column", minWidth: 0 }}>
+              <Toolbar 
+                {...toolbarStyles} 
+                sx={{ 
+                  ...toolbarStyles.sx, 
+                  overflowX: "hidden",
+                  flexWrap: "wrap",
+                  gap: 2,
+                  boxSizing: "border-box",
+                  minWidth: 0,
+                  width: "100%",
+                }}
+              >
+                <Box display="flex" alignItems="center" sx={{ flex: 1, minWidth: { xs: "100%", sm: 240 }, maxWidth: { xs: "100%", sm: 420 } }}>
                   <SearchIcon sx={{ mr: 1, color: designSystem.colors.text.disabled }} />
                   <TextField
                     placeholder="Pesquisar por nome, matrícula ou CPF..."
@@ -345,7 +390,16 @@ const DadosAlunos: React.FC = () => {
                     {...textFieldStyles}
                   />
                 </Box>
-                <Box display="flex" alignItems="center" gap={1}>
+                <Box 
+                  display="flex" 
+                  alignItems="center" 
+                  gap={1}
+                  flexWrap="wrap"
+                  sx={{
+                    minWidth: 0,
+                    flexShrink: 1,
+                  }}
+                >
                   <IconButton {...iconButtonStyles} onClick={(e) => setStatusAnchor(e.currentTarget)}>
                     <FilterListIcon />
                   </IconButton>
@@ -386,6 +440,7 @@ const DadosAlunos: React.FC = () => {
                     variant="outlined"
                     startIcon={<AddIcon />}
                     onClick={() => navigate(APP_ROUTES.STUDENT_CREATE)}
+                    sx={{ whiteSpace: "nowrap" }}
                   >
                     Novo
                   </Button>
@@ -393,7 +448,11 @@ const DadosAlunos: React.FC = () => {
                     variant="text"
                     onClick={toggleOldData}
                     disabled={oldLoading}
-                    sx={{ color: designSystem.colors.primary.main }}
+                    sx={{ 
+                      color: designSystem.colors.primary.main,
+                      whiteSpace: "nowrap",
+                      fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                    }}
                   >
                     {oldLoading ? "Carregando..." : showOld ? "Ocultar dados antigos" : "Mostrar dados antigos"}
                   </Button>
@@ -409,9 +468,44 @@ const DadosAlunos: React.FC = () => {
                   <Alert severity="error">{error}</Alert>
                 </Box>
               ) : (
-                <TableContainer sx={{ overflowX: "auto", width: "100%" }}>
-                  {/* set a minimum table width so that when viewport is smaller a horizontal scrollbar appears inside the table container */}
-                  <Table stickyHeader size="small" sx={{ minWidth: 1320 }}>
+                <Box 
+                  sx={{ 
+                    width: "100%", 
+                    maxWidth: "100%",
+                    overflow: "hidden", 
+                    boxSizing: "border-box", 
+                    minWidth: 0, 
+                    position: "relative",
+                    display: "block",
+                    paddingRight: "24px",
+                  }}
+                >
+                  <TableContainer 
+                    component="div"
+                    sx={{ 
+                      overflowX: "auto", 
+                      overflowY: "visible",
+                      width: "100%",
+                      maxWidth: "100%",
+                      boxSizing: "border-box",
+                      display: "block",
+                      "&::-webkit-scrollbar": {
+                        height: "8px",
+                      },
+                      "&::-webkit-scrollbar-track": {
+                        backgroundColor: designSystem.colors.background.secondary,
+                      },
+                      "&::-webkit-scrollbar-thumb": {
+                        backgroundColor: designSystem.colors.border.dark,
+                        borderRadius: "4px",
+                        "&:hover": {
+                          backgroundColor: designSystem.colors.primary.main,
+                        },
+                      },
+                    }}
+                  >
+                    {/* set a minimum table width so that when viewport is smaller a horizontal scrollbar appears inside the table container */}
+                    <Table stickyHeader size="small" sx={{ minWidth: 1320 }}>
                     <TableHead>
                       <TableRow>
                         <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 70 }}>ID</TableCell>
@@ -480,8 +574,16 @@ const DadosAlunos: React.FC = () => {
                     labelRowsPerPage="Linhas por página:"
                     labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count !== -1 ? count : `mais de ${to}`}`}
                     {...tablePaginationStyles}
+                    sx={{
+                      ...tablePaginationStyles.sx,
+                      width: "100%",
+                      maxWidth: "100%",
+                      overflowX: "auto",
+                      boxSizing: "border-box",
+                    }}
                   />
-                </TableContainer>
+                  </TableContainer>
+                </Box>
               )}
             </Paper>
           </Fade>
@@ -490,7 +592,7 @@ const DadosAlunos: React.FC = () => {
 
       {/* Componentes do pd-dados-alunos embaixo da tabela */}
       {selectedStudent && (
-        <Box sx={{ mt: 3, maxWidth: 1400, width: "100%", margin: "24px auto 0" }}>
+        <Box sx={{ mt: 3, maxWidth: 1400, width: "100%", margin: "24px auto 0", px: { xs: 2, sm: 3, md: 4 }, overflowX: "hidden" }}>
           {/* DashboardHead - Botões de ação */}
           <Paper
             elevation={2}
