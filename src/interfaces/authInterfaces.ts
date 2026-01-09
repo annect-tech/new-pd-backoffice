@@ -19,6 +19,7 @@ export interface User {
   first_name?: string;
   last_name?: string;
   email?: string;
+  profile_photo?: string; // Adicionado do interface-redesign
 }
 
 export interface AuthTokens {

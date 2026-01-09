@@ -7,6 +7,8 @@ import getTheme from "../../assets/styles/theme";
 import { APP_ROUTES } from "../../util/constants";
 import { useAuthContext } from "../../app/providers/AuthProvider";
 import CreateProfileModal from "../modals/CreateProfileModal";
+import { useAppDispatch } from "../../core/store/hooks";
+import { updateUserProfilePhoto } from "../../core/store/slices/authSlice";
 
 // Interface definida localmente para evitar problemas de resolução de módulo
 interface UserProfilePayload {
@@ -40,9 +42,19 @@ export default function AppLayout() {
   const themeMode = "light";
   const theme = useMemo(() => getTheme(themeMode), [themeMode]);
   const { user, accessToken } = useAuthContext();
+  const dispatch = useAppDispatch();
   const [showCreateProfile, setShowCreateProfile] = useState(false);
   const [profileData, setProfileData] = useState<UserProfilePayload>({});
   const [profileLoading, setProfileLoading] = useState(false);
+
+  // Define uma foto de perfil de exemplo para o usuário
+  useEffect(() => {
+    if (user && !user.profile_photo) {
+      // Foto de exemplo do Unsplash
+      const examplePhoto = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop";
+      dispatch(updateUserProfilePhoto(examplePhoto));
+    }
+  }, [user, dispatch]);
 
   // Verifica se deve mostrar o modal de criação de perfil
   useEffect(() => {
@@ -107,7 +119,6 @@ export default function AppLayout() {
 
   const sidebarMenuGroups = [
     {
-      title: "Cards Gerais",
       menus: [
         {
           icon: <DashboardIcon />,
@@ -162,7 +173,6 @@ export default function AppLayout() {
       ],
     },
     {
-      title: "Cards de Admin",
       menus: [
         {
           icon: <LocationCityIcon />,
@@ -191,7 +201,20 @@ export default function AppLayout() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Box display="flex" height="100vh" sx={{ bgcolor: "#F3E5F5", position: "relative" }}>
+      <Box display="flex" height="100vh" sx={{ position: "relative" }}>
+        {/* Overlay para melhor legibilidade */}
+        <Box
+          sx={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            bgcolor: "rgba(0, 0, 0, 0.0000001)",
+            zIndex: 0,
+          }}
+        />
+
         <LayoutSidebar
           collapsed={collapsed}
           menuGroups={sidebarMenuGroups}
@@ -204,6 +227,7 @@ export default function AppLayout() {
           sx={{
             width: "100%",
             position: "relative",
+            zIndex: 1,
           }}
         >
           <Box

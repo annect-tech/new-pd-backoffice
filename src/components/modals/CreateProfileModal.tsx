@@ -1,4 +1,5 @@
-import React, { ChangeEvent, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import type { ChangeEvent } from "react";
 import {
   Dialog,
   DialogContent,
@@ -773,15 +774,15 @@ const CreateProfileModal: React.FC<Props> = ({
               Voltar
             </Button>
             <Button
-              sx={{ m: 2 }}
+              sx={{
+                m: 2,
+                backgroundColor: "#A650F0",
+                "&:hover": { backgroundColor: "#8B3DD9" },
+              }}
               onClick={handleReviewConfirm}
               variant="contained"
               disabled={reviewLoading}
               color="primary"
-              sx={{
-                backgroundColor: "#A650F0",
-                "&:hover": { backgroundColor: "#8B3DD9" },
-              }}
             >
               {reviewLoading ? <CircularProgress size={20} /> : "Confirmar"}
             </Button>
