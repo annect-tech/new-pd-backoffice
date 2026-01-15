@@ -28,7 +28,8 @@ import {
   Download as DownloadIcon,
 } from "@mui/icons-material";
 import { useAcademicMerit } from "../../hooks/useAcademicMerit";
-import PdfViewModa from "../../components/modals/PdfViewModa";
+import { selectiveService } from "../../core/http/services/selectiveService";
+import PdfViewModal from "../../components/modals/PdfViewModal";
 import { APP_ROUTES } from "../../util/constants";
 import PageHeader from "../../components/ui/page/PageHeader";
 import {
@@ -43,8 +44,12 @@ import {
   tablePaginationStyles,
 } from "../../styles/designSystem";
 
+const API_URL = import.meta.env.VITE_API_URL as string || "http://186.248.135.172:31535";
+
 const ResultadosMerito: React.FC = () => {
   const { allMerits, loading, error, fetchAllMerits, snackbar, closeSnackbar } = useAcademicMerit();
+  const [userNamesMap, setUserNamesMap] = useState<Record<string, string>>({});
+  const [loadingNames, setLoadingNames] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<
@@ -55,20 +60,60 @@ const ResultadosMerito: React.FC = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
+  const [localSnackbar, setLocalSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: "success" | "error" | "warning" | "info";
+  }>({ open: false, message: "", severity: "info" });
 
   // Transform allMerits to rows
   const rows = useMemo(() => {
-    return allMerits.map((m) => ({
-      id: m.id,
-      aluno: `${m.user_data_display.user.first_name} ${m.user_data_display.user.last_name}`,
-      documento: m.document,
-      status: m.status || "pendente",
-      criadoEm: new Date(m.created_at).toLocaleString("pt-BR"),
-      atualizadoEm: m.updated_at
-        ? new Date(m.updated_at).toLocaleString("pt-BR")
-        : "N/A",
-    }));
-  }, [allMerits]);
+    if (!allMerits || allMerits.length === 0) {
+      return [];
+    }
+    
+    return allMerits.map((m) => {
+      // Tentar obter nome do user_data_display se disponível
+      let alunoNome = "Nome não disponível";
+      if (m.user_data_display?.user?.first_name || m.user_data_display?.user?.last_name) {
+        const firstName = m.user_data_display.user.first_name || "";
+        const lastName = m.user_data_display.user.last_name || "";
+        alunoNome = `${firstName} ${lastName}`.trim();
+      } else if (m.user_data_id) {
+        const userIdKey = String(m.user_data_id);
+        if (userNamesMap[userIdKey]) {
+          // Usar nome do mapa se disponível
+          alunoNome = userNamesMap[userIdKey];
+        } else {
+          // Se ainda não tiver nome carregado, mostrar "Carregando..." ou ID
+          alunoNome = loadingNames ? "Carregando..." : `Usuário ${m.user_data_id}`;
+        }
+      }
+      
+      // Mapear status da API para formato usado no frontend
+      const statusMap: Record<string, string> = {
+        "PENDING": "pendente",
+        "APPROVED": "aprovado",
+        "REJECTED": "reprovado",
+      };
+      const statusNormalizado = m.status 
+        ? (statusMap[m.status.toUpperCase()] || m.status.toLowerCase())
+        : "pendente";
+      
+      return {
+        id: m.id,
+        aluno: alunoNome,
+        documento: m.document || "",
+        status: statusNormalizado,
+        criadoEm: m.created_at 
+          ? new Date(m.created_at).toLocaleString("pt-BR")
+          : "N/A",
+        atualizadoEm: m.updated_at
+          ? new Date(m.updated_at).toLocaleString("pt-BR")
+          : "N/A",
+      };
+    });
+  }, [allMerits, userNamesMap, loadingNames]);
 
   // Filter rows
   const filtered = useMemo(() => {
@@ -92,8 +137,77 @@ const ResultadosMerito: React.FC = () => {
   }, [filtered, page, rowsPerPage]);
 
   useEffect(() => {
-    fetchAllMerits();
-  }, [fetchAllMerits]);
+    fetchAllMerits(1, 1000);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Buscar nomes dos usuários quando allMerits mudar
+  useEffect(() => {
+    if (!allMerits || allMerits.length === 0) return;
+
+    const fetchUserNames = async () => {
+      setLoadingNames(true);
+      // Extrair user_data_id únicos e converter para string para consistência
+      const uniqueUserIds = [...new Set(
+        allMerits
+          .map(m => m.user_data_id)
+          .filter(Boolean)
+          .map(id => String(id))
+      )];
+      
+      console.log("[ResultadosMerito] Buscando nomes para user_ids:", uniqueUserIds);
+      
+      if (uniqueUserIds.length === 0) {
+        setLoadingNames(false);
+        return;
+      }
+
+      const namesMap: Record<string, string> = {};
+
+      try {
+        // Buscar nomes em paralelo
+        const promises = uniqueUserIds.map(async (userId) => {
+          try {
+            console.log(`[ResultadosMerito] Buscando nome para user_id: ${userId}`);
+            const response = await selectiveService.getById(userId);
+            console.log(`[ResultadosMerito] Resposta para user_id ${userId}:`, {
+              status: response.status,
+              hasData: !!response.data,
+              data: response.data,
+            });
+            
+            if (response.status === 200 && response.data) {
+              // A API retorna FindUserDataOutputDto com campo 'name'
+              const userData = response.data as any;
+              const name = userData.name && userData.name !== 'N/A' 
+                ? userData.name 
+                : `Usuário ${userId}`;
+              console.log(`[ResultadosMerito] Nome encontrado para ${userId}:`, name);
+              namesMap[userId] = name;
+            } else {
+              // Se status não for 200 (ex: 404), usar fallback
+              console.warn(`[ResultadosMerito] Resposta inválida para ${userId} (status: ${response.status})`);
+              namesMap[userId] = `Usuário ${userId}`;
+            }
+          } catch (err) {
+            // Se falhar, usar fallback
+            console.error(`[ResultadosMerito] Erro ao buscar nome do usuário ${userId}:`, err);
+            namesMap[userId] = `Usuário ${userId}`;
+          }
+        });
+
+        await Promise.all(promises);
+        console.log("[ResultadosMerito] Mapa de nomes final:", namesMap);
+        setUserNamesMap(namesMap);
+      } catch (err) {
+        console.error("[ResultadosMerito] Erro ao buscar nomes dos usuários:", err);
+      } finally {
+        setLoadingNames(false);
+      }
+    };
+
+    fetchUserNames();
+  }, [allMerits]);
 
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
@@ -116,8 +230,45 @@ const ResultadosMerito: React.FC = () => {
     closeFilterMenu();
   };
 
+  // Constrói URL completa do PDF
+  const buildPdfUrl = (pdfPath: string | null | undefined): string | null => {
+    if (!pdfPath) return null;
+    
+    // Se já for uma URL completa, retorna como está
+    if (pdfPath.startsWith("http://") || pdfPath.startsWith("https://")) {
+      return pdfPath;
+    }
+    
+    // Remove barra inicial se existir
+    const cleanPath = pdfPath.startsWith("/") ? pdfPath.slice(1) : pdfPath;
+    
+    // Constrói URL completa
+    return `${API_URL}/${cleanPath}`;
+  };
+
   const handleView = (url: string) => {
-    setViewerUrl(url);
+    if (url && url.trim() !== "") {
+      const fullUrl = buildPdfUrl(url);
+      if (fullUrl) {
+        setViewerUrl(fullUrl);
+      } else {
+        setLocalSnackbar({
+          open: true,
+          message: "Documento não disponível",
+          severity: "warning",
+        });
+      }
+    } else {
+      setLocalSnackbar({
+        open: true,
+        message: "Documento não disponível",
+        severity: "warning",
+      });
+    }
+  };
+
+  const closeLocalSnackbar = () => {
+    setLocalSnackbar((prev) => ({ ...prev, open: false }));
   };
 
   const handleExportCSV = () => {
@@ -217,7 +368,7 @@ const ResultadosMerito: React.FC = () => {
                       CSV
                     </MenuItem>
                   </Menu>
-                  <IconButton {...iconButtonStyles} onClick={fetchAllMerits}>
+                  <IconButton {...iconButtonStyles} onClick={() => fetchAllMerits(1, 1000)}>
                     <RefreshIcon />
                   </IconButton>
                 </Box>
@@ -277,12 +428,17 @@ const ResultadosMerito: React.FC = () => {
                                 variant="outlined"
                                 size="small"
                                 onClick={() => handleView(row.documento)}
+                                disabled={!row.documento || row.documento.trim() === ""}
                                 sx={{
                                   borderColor: designSystem.colors.primary.main,
                                   color: designSystem.colors.primary.main,
                                   "&:hover": {
                                     borderColor: designSystem.colors.primary.darker,
                                     backgroundColor: designSystem.colors.primary.lightest,
+                                  },
+                                  "&:disabled": {
+                                    borderColor: designSystem.colors.text.disabled,
+                                    color: designSystem.colors.text.disabled,
                                   },
                                 }}
                               >
@@ -329,7 +485,7 @@ const ResultadosMerito: React.FC = () => {
       </Box>
 
       {viewerUrl && (
-        <PdfViewModa
+        <PdfViewModal
           open={Boolean(viewerUrl)}
           documentUrl={viewerUrl}
           onClose={() => setViewerUrl(null)}
@@ -348,6 +504,21 @@ const ResultadosMerito: React.FC = () => {
           sx={{ width: "100%" }}
         >
           {snackbar.message}
+        </Alert>
+      </Snackbar>
+
+      <Snackbar
+        open={localSnackbar.open}
+        autoHideDuration={3000}
+        onClose={closeLocalSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={closeLocalSnackbar}
+          severity={localSnackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {localSnackbar.message}
         </Alert>
       </Snackbar>
     </Box>

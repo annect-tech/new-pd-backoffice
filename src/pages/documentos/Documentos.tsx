@@ -1,4 +1,4 @@
-import { type ChangeEvent, useState } from "react";
+import React, { type ChangeEvent, useState } from "react";
 import {
   Box,
   Typography,
@@ -7,6 +7,7 @@ import {
   Paper,
   Toolbar,
   Alert,
+  Snackbar,
   Fade,
   Table,
   TableBody,
@@ -32,12 +33,14 @@ import {
   tablePaginationStyles,
   textFieldStyles,
 } from "../../styles/designSystem";
-import { useDocuments } from "./useDocuments";
-import PdfViewModa from "../../components/modals/PdfViewModa";
+import { useDocuments } from "../../hooks/useDocuments";
+import PdfViewModal from "../../components/modals/PdfViewModal";
 import { APP_ROUTES } from "../../util/constants";
 
+const API_URL = import.meta.env.VITE_API_URL as string || "http://186.248.135.172:31535";
+
 export default function DocumentsList() {
-  const { docs, loading, error, uploadId, uploadAddress, uploadSchoolHistory } =
+  const { documents, loading, snackbar, closeSnackbar, fetchDocuments, uploadId, uploadAddress, uploadSchoolHistory, pagination } =
     useDocuments();
 
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
@@ -45,10 +48,15 @@ export default function DocumentsList() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  const rows = docs.map((d) => ({
+  // Carregar documentos ao montar o componente
+  React.useEffect(() => {
+    fetchDocuments(page + 1, rowsPerPage);
+  }, [page, rowsPerPage]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const rows = documents.map((d) => ({
     id: d.id,
-    userId: d.user_data,
-    userName: d.user_name || `Usuário ${d.user_data}`,
+    userId: parseInt(d.user_data_id),
+    userName: d.student_name || `Usuário ${d.user_data_id}`,
     idDoc: d.id_doc,
     idDocStatus: d.id_doc_status,
     addressDoc: d.address_doc,
@@ -92,7 +100,28 @@ export default function DocumentsList() {
     if (type === "school") uploadSchoolHistory(userId, file.name, file);
   };
 
-  const openViewer = (url: string) => setViewerUrl(url);
+  // Constrói URL completa do PDF
+  const buildPdfUrl = (pdfPath: string | null | undefined): string | null => {
+    if (!pdfPath) return null;
+    
+    // Se já for uma URL completa, retorna como está
+    if (pdfPath.startsWith("http://") || pdfPath.startsWith("https://")) {
+      return pdfPath;
+    }
+    
+    // Remove barra inicial se existir
+    const cleanPath = pdfPath.startsWith("/") ? pdfPath.slice(1) : pdfPath;
+    
+    // Constrói URL completa
+    return `${API_URL}/${cleanPath}`;
+  };
+
+  const openViewer = (url: string) => {
+    const fullUrl = buildPdfUrl(url);
+    if (fullUrl) {
+      setViewerUrl(fullUrl);
+    }
+  };
   const closeViewer = () => setViewerUrl(null);
 
   const renderDocCell = (
@@ -198,7 +227,7 @@ export default function DocumentsList() {
                 <Box display="flex" alignItems="center" gap={1}>
                   <IconButton
                     {...iconButtonStyles}
-                    onClick={() => window.location.reload()}
+                    onClick={() => fetchDocuments(page + 1, rowsPerPage)}
                     title="Atualizar lista"
                   >
                     <RefreshIcon />
@@ -209,10 +238,6 @@ export default function DocumentsList() {
               {loading ? (
                 <Box display="flex" justifyContent="center" alignItems="center" p={4}>
                   <CircularProgress {...progressStyles} />
-                </Box>
-              ) : error ? (
-                <Box p={2}>
-                  <Alert severity="error">{error}</Alert>
                 </Box>
               ) : (
                 <TableContainer sx={{ overflowX: "auto", width: "100%" }}>
@@ -268,7 +293,7 @@ export default function DocumentsList() {
                   </Table>
                   <TablePagination
                     component="div"
-                    count={filteredRows.length}
+                    count={pagination.totalItems}
                     page={page}
                     onPageChange={handleChangePage}
                     rowsPerPage={rowsPerPage}
@@ -286,12 +311,28 @@ export default function DocumentsList() {
       </Box>
 
       {viewerUrl && (
-        <PdfViewModa
+        <PdfViewModal
           open={true}
           documentUrl={viewerUrl}
           onClose={closeViewer}
         />
       )}
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={closeSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={closeSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

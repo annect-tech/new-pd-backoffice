@@ -13,14 +13,18 @@ import DadosAlunos from "../../pages/dadosAlunos/DadosAlunos";
 import CadastroAlunos from "../../pages/cadastroAlunos/CadastroAlunos";
 import Retencao from "../../pages/retencao/Retencao";
 import Cidades from "../../pages/cidades/Cidades";
+import TenantCities from "../../pages/tenantCities/TenantCities";
 import Contratos from "../../pages/contratos/Contratos";
 import Documentos from "../../pages/documentos/Documentos";
 import Usuarios from "../../pages/usuarios/Usuarios";
 import Perfil from "../../pages/perfil/Perfil";
 import EditarPerfil from "../../pages/perfil/EditarPerfil";
 import MeuPerfil from "../../pages/meuPerfil/MeuPerfil";
+import ApiExplorer from "../../pages/apiExplorer/ApiExplorer";
 import Login from "../../pages/authPages/Login";
 import { AuthMiddleware } from "../../core/middleware/AuthMiddleware";
+import { RoleGuard } from "../../core/middleware/RoleGuard";
+import Unauthorized from "../../pages/unauthorized/Unauthorized";
 
 export const AppRoutes = () => (
   <Routes>
@@ -51,10 +55,55 @@ export const AppRoutes = () => (
       <Route path={APP_ROUTES.RETENTION} element={<Retencao />} />
 
       {/* Rotas dos Cards de Admin */}
-      <Route path={APP_ROUTES.CITIES} element={<Cidades />} />
-      <Route path={APP_ROUTES.CONTRACTS} element={<Contratos />} />
-      <Route path={APP_ROUTES.DOCUMENTS} element={<Documentos />} />
-      <Route path={APP_ROUTES.USERS_LIST} element={<Usuarios />} />
+      <Route
+        path={APP_ROUTES.CITIES}
+        element={
+          <RoleGuard allowedRoles={["ADMIN", "ADMIN_MASTER"]}>
+            <Cidades />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path={APP_ROUTES.TENANT_CITIES}
+        element={
+          <RoleGuard allowedRoles={["ADMIN", "ADMIN_MASTER"]}>
+            <TenantCities />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path={APP_ROUTES.CONTRACTS}
+        element={
+          <RoleGuard allowedRoles={["ADMIN", "ADMIN_MASTER"]}>
+            <Contratos />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path={APP_ROUTES.DOCUMENTS}
+        element={
+          <RoleGuard allowedRoles={["ADMIN", "ADMIN_MASTER"]}>
+            <Documentos />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path={APP_ROUTES.USERS_LIST}
+        element={
+          <RoleGuard allowedRoles={["ADMIN", "ADMIN_MASTER"]}>
+            <Usuarios />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path="/api-explorer"
+        element={
+          <RoleGuard allowedRoles={["ADMIN", "ADMIN_MASTER"]}>
+            <ApiExplorer />
+          </RoleGuard>
+        }
+      />
+      <Route path={APP_ROUTES.UNAUTHORIZED} element={<Unauthorized />} />
       <Route path="/usuario/:id" element={<Perfil />} />
       <Route path="/usuario/:id/editar" element={<EditarPerfil />} />
       <Route path={APP_ROUTES.MY_PROFILE} element={<MeuPerfil />} />

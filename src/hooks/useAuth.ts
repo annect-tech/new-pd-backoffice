@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { authService } from '../core/http/services/authService'
 import { useAuthContext } from '../app/providers/AuthProvider'
-import { decodeJWT } from '../utils/jwt'
+import { decodeJWT } from '../util/jwt'
 
 export function useAuth() {
   const { setCredentials, logout, accessToken, refreshToken, user } = useAuthContext()

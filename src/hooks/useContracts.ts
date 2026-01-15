@@ -80,6 +80,120 @@ export const useContracts = () => {
     [page, size, showSnackbar]
   );
 
+  /**
+   * Obtém detalhes de um contrato específico
+   */
+  const fetchContractById = useCallback(
+    async (id: string | number) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await contractsService.getById(id);
+
+        if (response.status >= 200 && response.status < 300 && response.data) {
+          return response.data;
+        } else {
+          const errorMessage = response.message || "Erro ao buscar contrato";
+          setError(errorMessage);
+          showSnackbar(errorMessage, "error");
+          return null;
+        }
+      } catch (err: any) {
+        const errorMessage = err.message || "Erro ao buscar contrato";
+        setError(errorMessage);
+        showSnackbar(errorMessage, "error");
+        return null;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [showSnackbar]
+  );
+
+  /**
+   * Atualiza o status de um contrato
+   */
+  const updateStatus = useCallback(
+    async (id: string | number, status: string) => {
+      try {
+        const response = await contractsService.updateStatus(id, status);
+
+        if (response.status >= 200 && response.status < 300) {
+          showSnackbar("Status atualizado com sucesso", "success");
+          await fetchContracts();
+          return true;
+        } else {
+          const errorMessage = response.message || "Erro ao atualizar status";
+          setError(errorMessage);
+          showSnackbar(errorMessage, "error");
+          return false;
+        }
+      } catch (err: any) {
+        const errorMessage = err.message || "Erro ao atualizar status";
+        setError(errorMessage);
+        showSnackbar(errorMessage, "error");
+        return false;
+      }
+    },
+    [fetchContracts, showSnackbar]
+  );
+
+  /**
+   * Cria um novo contrato
+   */
+  const createContract = useCallback(
+    async (payload: Partial<Contract>) => {
+      try {
+        const response = await contractsService.create(payload);
+
+        if (response.status >= 200 && response.status < 300) {
+          showSnackbar("Contrato criado com sucesso", "success");
+          await fetchContracts();
+          return response.data;
+        } else {
+          const errorMessage = response.message || "Erro ao criar contrato";
+          setError(errorMessage);
+          showSnackbar(errorMessage, "error");
+          return null;
+        }
+      } catch (err: any) {
+        const errorMessage = err.message || "Erro ao criar contrato";
+        setError(errorMessage);
+        showSnackbar(errorMessage, "error");
+        return null;
+      }
+    },
+    [fetchContracts, showSnackbar]
+  );
+
+  /**
+   * Deleta um contrato
+   */
+  const deleteContract = useCallback(
+    async (id: string | number) => {
+      try {
+        const response = await contractsService.delete(id);
+
+        if (response.status >= 200 && response.status < 300) {
+          showSnackbar("Contrato deletado com sucesso", "success");
+          await fetchContracts();
+          return true;
+        } else {
+          const errorMessage = response.message || "Erro ao deletar contrato";
+          setError(errorMessage);
+          showSnackbar(errorMessage, "error");
+          return false;
+        }
+      } catch (err: any) {
+        const errorMessage = err.message || "Erro ao deletar contrato";
+        setError(errorMessage);
+        showSnackbar(errorMessage, "error");
+        return false;
+      }
+    },
+    [fetchContracts, showSnackbar]
+  );
+
   return {
     contracts,
     loading,
@@ -87,6 +201,10 @@ export const useContracts = () => {
     snackbar,
     closeSnackbar,
     fetchContracts,
+    fetchContractById,
+    updateStatus,
+    createContract,
+    deleteContract,
     page,
     size,
     totalItems,

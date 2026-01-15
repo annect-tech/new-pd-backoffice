@@ -40,11 +40,13 @@ import {
   progressStyles,
   tablePaginationStyles,
 } from "../../styles/designSystem";
-import PdfViewModa from "../../components/modals/PdfViewModa";
+import PdfViewModal from "../../components/modals/PdfViewModal";
 import EnemStatusUpdaterModal from "../../components/modals/EnemStatusUpdaterModal";
 import { APP_ROUTES } from "../../util/constants";
 import { useEnemResults } from "../../hooks/useEnemResults";
 import type { EnemResult } from "../../interfaces/enemResult";
+
+const API_URL = import.meta.env.VITE_API_URL as string || "http://186.248.135.172:31535";
 
 const ResultadosEnem: React.FC = () => {
   const { items, loading, error, fetchEnemResults, updateStatus, snackbar, closeSnackbar } = useEnemResults();
@@ -72,6 +74,47 @@ const ResultadosEnem: React.FC = () => {
     return await updateStatus(id, newStatus);
   };
 
+  // Normaliza o status para valores corretos
+  const normalizeStatus = (status: string | null | undefined): string => {
+    if (!status) return "pendente";
+    
+    const normalized = status.toLowerCase().trim();
+    
+    // Mapeia valores incorretos ou variações
+    if (normalized === "aprovado" || normalized === "approved" || normalized === "aprovada") {
+      return "aprovado";
+    }
+    if (normalized === "reprovado" || normalized === "rejected" || normalized === "reprovada") {
+      return "reprovado";
+    }
+    if (normalized === "filesent" || normalized === "filesent?" || normalized === "file_sent" || normalized === "enviado") {
+      return "pendente";
+    }
+    
+    // Se não reconhecer o status, retorna pendente
+    if (!["aprovado", "reprovado", "pendente"].includes(normalized)) {
+      return "pendente";
+    }
+    
+    return normalized;
+  };
+
+  // Constrói URL completa do PDF
+  const buildPdfUrl = (pdfPath: string | null | undefined): string | null => {
+    if (!pdfPath) return null;
+    
+    // Se já for uma URL completa, retorna como está
+    if (pdfPath.startsWith("http://") || pdfPath.startsWith("https://")) {
+      return pdfPath;
+    }
+    
+    // Remove barra inicial se existir
+    const cleanPath = pdfPath.startsWith("/") ? pdfPath.slice(1) : pdfPath;
+    
+    // Constrói URL completa
+    return `${API_URL}/${cleanPath}`;
+  };
+
   const filteredItems = useMemo(() => {
     const term = searchTerm.toLowerCase();
     return items
@@ -83,7 +126,8 @@ const ResultadosEnem: React.FC = () => {
       )
       .filter((item) => {
         if (statusFilter === "all") return true;
-        return item.status?.toLowerCase() === statusFilter;
+        const itemStatus = normalizeStatus(item.status);
+        return itemStatus === statusFilter;
       });
   }, [items, searchTerm, statusFilter]);
 
@@ -94,7 +138,7 @@ const ResultadosEnem: React.FC = () => {
       name: item.name,
       cpf: item.cpf,
       language: item.foreign_language,
-      status: item.status || "pendente",
+      status: normalizeStatus(item.status),
       createdAt: new Date(item.created_at).toLocaleString("pt-BR"),
       pdf: item.pdf_file,
     }));
@@ -175,13 +219,13 @@ const ResultadosEnem: React.FC = () => {
                       Todos ({items.length})
                     </MenuItem>
                     <MenuItem onClick={() => { setStatusFilter("aprovado"); setStatusAnchor(null); }}>
-                      Aprovados ({items.filter((i) => i.status?.toLowerCase() === "aprovado").length})
+                      Aprovados ({items.filter((i) => normalizeStatus(i.status) === "aprovado").length})
                     </MenuItem>
                     <MenuItem onClick={() => { setStatusFilter("reprovado"); setStatusAnchor(null); }}>
-                      Reprovados ({items.filter((i) => i.status?.toLowerCase() === "reprovado").length})
+                      Reprovados ({items.filter((i) => normalizeStatus(i.status) === "reprovado").length})
                     </MenuItem>
                     <MenuItem onClick={() => { setStatusFilter("pendente"); setStatusAnchor(null); }}>
-                      Pendentes ({items.filter((i) => i.status?.toLowerCase() === "pendente").length})
+                      Pendentes ({items.filter((i) => normalizeStatus(i.status) === "pendente").length})
                     </MenuItem>
                   </Menu>
                   <IconButton {...iconButtonStyles} onClick={(e) => setDownloadAnchor(e.currentTarget)}>
@@ -274,7 +318,11 @@ const ResultadosEnem: React.FC = () => {
                             </TableCell>
                             <TableCell>{row.createdAt}</TableCell>
                             <TableCell>
-                              <IconButton {...iconButtonStyles} onClick={() => setViewerUrl(row.pdf)}>
+                              <IconButton 
+                                {...iconButtonStyles} 
+                                onClick={() => setViewerUrl(buildPdfUrl(row.pdf))}
+                                disabled={!row.pdf}
+                              >
                                 <VisibilityIcon />
                               </IconButton>
                             </TableCell>
@@ -303,7 +351,7 @@ const ResultadosEnem: React.FC = () => {
       </Box>
 
       {viewerUrl && (
-        <PdfViewModa open documentUrl={viewerUrl} onClose={() => setViewerUrl(null)} />
+        <PdfViewModal open documentUrl={viewerUrl} onClose={() => setViewerUrl(null)} />
       )}
 
       <EnemStatusUpdaterModal

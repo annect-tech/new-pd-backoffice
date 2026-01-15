@@ -19,18 +19,16 @@ export const academicMeritService = {
    * @param status - Filtro por status (pending, aprovado, reprovado)
    */
   list: (page: number = 1, size: number = 10, status?: string) => {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      size: size.toString(),
-    });
-
-    if (status) {
-      params.append("status", status);
-    }
-
     return httpClient.get<PaginatedResponse<AcademicMerit>>(
       API_URL,
-      `/admin/academic-merit-documents?${params.toString()}`
+      "/admin/academic-merit-documents",
+      {
+        queryParams: {
+          page,
+          size,
+          ...(status ? { status } : {}),
+        },
+      }
     );
   },
 

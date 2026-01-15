@@ -32,8 +32,9 @@ const AprovacaoMerito: React.FC = () => {
   } = useAcademicMerit();
 
   useEffect(() => {
-    fetchMerits();
-  }, [fetchMerits]);
+    fetchMerits(1, 10, "pending");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (loading) {
     return (
@@ -358,7 +359,9 @@ const AprovacaoMerito: React.FC = () => {
                           mt: 0.5,
                         }}
                       >
-                        {`${currentMerit.user_data_display.user.first_name} ${currentMerit.user_data_display.user.last_name}`}
+                        {currentMerit?.user_data_display?.user?.first_name || currentMerit?.user_data_display?.user?.last_name
+                          ? `${currentMerit.user_data_display.user.first_name || ""} ${currentMerit.user_data_display.user.last_name || ""}`.trim()
+                          : "Nome não disponível"}
                       </Typography>
                     </Box>
 

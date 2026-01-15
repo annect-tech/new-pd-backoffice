@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router";
 import { APP_ROUTES } from "../../util/constants";
 import {
@@ -12,118 +12,78 @@ import {
   Fade,
   TextField,
   IconButton,
+  Alert,
+  Chip,
+  Switch,
+  FormControlLabel,
+  Tooltip,
 } from "@mui/material";
-import { Search as SearchIcon, Refresh as RefreshIcon } from "@mui/icons-material";
+import { Search as SearchIcon, Refresh as RefreshIcon, Add as AddIcon } from "@mui/icons-material";
 import PageHeader from "../../components/ui/page/PageHeader";
 import {
   designSystem,
   paperStyles,
   progressStyles,
 } from "../../styles/designSystem";
-
-// Interface baseada no código fornecido
-interface UserProfileResponse {
-  id: number;
-  profile_photo?: string;
-  user_display: {
-    first_name: string;
-    last_name: string;
-    email: string;
-    username?: string;
-  };
-}
-
-// Dados mockados
-const MOCK_USERS: UserProfileResponse[] = [
-  {
-    id: 1,
-    profile_photo: "https://i.pravatar.cc/150?img=1",
-    user_display: {
-      first_name: "João",
-      last_name: "Silva",
-      email: "joao.silva@example.com",
-      username: "joao.silva",
-    },
-  },
-  {
-    id: 2,
-    profile_photo: "https://i.pravatar.cc/150?img=2",
-    user_display: {
-      first_name: "Maria",
-      last_name: "Santos",
-      email: "maria.santos@example.com",
-      username: "maria.santos",
-    },
-  },
-  {
-    id: 3,
-    profile_photo: "https://i.pravatar.cc/150?img=3",
-    user_display: {
-      first_name: "Pedro",
-      last_name: "Oliveira",
-      email: "pedro.oliveira@example.com",
-      username: "pedro.oliveira",
-    },
-  },
-  {
-    id: 4,
-    profile_photo: "https://i.pravatar.cc/150?img=4",
-    user_display: {
-      first_name: "Ana",
-      last_name: "Costa",
-      email: "ana.costa@example.com",
-      username: "ana.costa",
-    },
-  },
-  {
-    id: 5,
-    profile_photo: "https://i.pravatar.cc/150?img=5",
-    user_display: {
-      first_name: "Carlos",
-      last_name: "Ferreira",
-      email: "carlos.ferreira@example.com",
-      username: "carlos.ferreira",
-    },
-  },
-  {
-    id: 6,
-    profile_photo: "https://i.pravatar.cc/150?img=6",
-    user_display: {
-      first_name: "Juliana",
-      last_name: "Almeida",
-      email: "juliana.almeida@example.com",
-      username: "juliana.almeida",
-    },
-  },
-];
+import { useUsers } from "../../hooks/useUsers";
+import CreateUserModal from "../../components/modals/CreateUserModal";
+import type { CreateUserPayload } from "../../core/http/services/usersService";
 
 export default function UserList() {
-  const [users, setUsers] = useState<UserProfileResponse[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [createModalOpen, setCreateModalOpen] = useState(false);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = () => {
-    setLoading(true);
-    // Simula carregamento de dados
-    setTimeout(() => {
-      setUsers(MOCK_USERS);
-      setLoading(false);
-    }, 500);
-  };
+  const { users, loading, error, refetch, createUser, creating, toggleUserActive, toggling } = useUsers(1, 100);
 
   const filteredUsers = users.filter((user) => {
-    const fullName = `${user.user_display.first_name} ${user.user_display.last_name}`.toLowerCase();
-    const email = user.user_display.email.toLowerCase();
-    const username = user.user_display.username?.toLowerCase() || "";
+    const firstName = user.first_name || "";
+    const lastName = user.last_name || "";
+    const fullName = `${firstName} ${lastName}`.toLowerCase();
+    const email = user.email?.toLowerCase() || "";
+    const username = user.username?.toLowerCase() || "";
     const search = searchTerm.toLowerCase();
 
     return fullName.includes(search) || email.includes(search) || username.includes(search);
   });
+
+  const getUserDisplayName = (user: typeof users[0]) => {
+    if (user.profile?.user_display) {
+      return `${user.profile.user_display.first_name} ${user.profile.user_display.last_name}`;
+    }
+    if (user.first_name && user.last_name) {
+      return `${user.first_name} ${user.last_name}`;
+    }
+    return user.username || user.email || "Usuário sem nome";
+  };
+
+  const getUserEmail = (user: typeof users[0]) => {
+    return user.profile?.user_display?.email || user.email || "";
+  };
+
+  const getUserPhoto = (user: typeof users[0]) => {
+    return user.profile?.profile_photo || undefined;
+  };
+
+  const getUserUsername = (user: typeof users[0]) => {
+    return user.profile?.user_display?.username || user.username || "";
+  };
+
+  const handleCreateUser = async (payload: CreateUserPayload) => {
+    try {
+      const result = await createUser(payload);
+      if (result) {
+        setCreateModalOpen(false);
+      }
+    } catch (error: any) {
+      // O erro já foi tratado no useUsers e será exibido no modal
+      // Apenas re-lançar para que o modal possa capturá-lo
+      throw error;
+    }
+  };
+
+  const handleToggleActive = async (email: string, currentStatus: boolean) => {
+    await toggleUserActive(email, !currentStatus);
+  };
 
   return (
     <Box
@@ -200,22 +160,45 @@ export default function UserList() {
                     }}
                   />
                 </Box>
-                <IconButton
-                  onClick={fetchUsers}
-                  sx={{
-                    color: designSystem.colors.text.disabled,
-                    "&:hover": {
-                      backgroundColor: designSystem.colors.primary.lightest,
-                      color: designSystem.colors.primary.main,
-                    },
-                  }}
-                >
-                  <RefreshIcon />
-                </IconButton>
+                <Box display="flex" gap={1}>
+                  <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    onClick={() => setCreateModalOpen(true)}
+                    sx={{
+                      backgroundColor: designSystem.colors.primary.main,
+                      color: "#FFFFFF",
+                      fontWeight: 500,
+                      fontSize: "0.875rem",
+                      "&:hover": {
+                        backgroundColor: designSystem.colors.primary.dark,
+                      },
+                    }}
+                  >
+                    Novo Usuário
+                  </Button>
+                  <IconButton
+                    onClick={refetch}
+                    sx={{
+                      color: designSystem.colors.text.disabled,
+                      "&:hover": {
+                        backgroundColor: designSystem.colors.primary.lightest,
+                        color: designSystem.colors.primary.main,
+                      },
+                    }}
+                  >
+                    <RefreshIcon />
+                  </IconButton>
+                </Box>
               </Box>
 
               {/* Lista de Usuários */}
               <Box sx={{ p: 3 }}>
+                {error && (
+                  <Alert severity="error" sx={{ mb: 2 }}>
+                    {error}
+                  </Alert>
+                )}
                 {loading ? (
                   <Box display="flex" justifyContent="center" p={4}>
                     <CircularProgress {...progressStyles} />
@@ -250,8 +233,8 @@ export default function UserList() {
                         }}
                       >
                         <Avatar
-                          src={user.profile_photo}
-                          alt={user.user_display.first_name}
+                          src={getUserPhoto(user)}
+                          alt={getUserDisplayName(user)}
                           sx={{
                             width: 64,
                             height: 64,
@@ -259,7 +242,9 @@ export default function UserList() {
                             border: `3px solid ${designSystem.colors.background.primary}`,
                             boxShadow: designSystem.shadows.small,
                           }}
-                        />
+                        >
+                          {getUserDisplayName(user).charAt(0).toUpperCase()}
+                        </Avatar>
                         <Box flex={1} minWidth={0}>
                           <Typography
                             variant="h6"
@@ -268,7 +253,7 @@ export default function UserList() {
                             noWrap
                             sx={{ fontSize: "1.1rem" }}
                           >
-                            {user.user_display.first_name} {user.user_display.last_name}
+                            {getUserDisplayName(user)}
                           </Typography>
                           <Typography
                             variant="body2"
@@ -276,17 +261,42 @@ export default function UserList() {
                             noWrap
                             sx={{ fontSize: "0.875rem" }}
                           >
-                            {user.user_display.email}
+                            {getUserEmail(user)}
                           </Typography>
-                          {user.user_display.username && (
+                          {getUserUsername(user) && (
                             <Typography
                               variant="caption"
                               color={designSystem.colors.text.tertiary}
                               sx={{ fontSize: "0.8rem" }}
                             >
-                              @{user.user_display.username}
+                              @{getUserUsername(user)}
                             </Typography>
                           )}
+                          <Box display="flex" alignItems="center" gap={1} mt={0.5}>
+                            <Chip
+                              label={user.is_active !== false ? "Ativo" : "Inativo"}
+                              size="small"
+                              color={user.is_active !== false ? "success" : "default"}
+                              sx={{
+                                fontSize: "0.75rem",
+                                height: "20px",
+                              }}
+                            />
+                            <Tooltip title={user.is_active !== false ? "Desativar usuário" : "Ativar usuário"}>
+                              <FormControlLabel
+                                control={
+                                  <Switch
+                                    checked={user.is_active !== false}
+                                    onChange={() => handleToggleActive(user.email, user.is_active !== false)}
+                                    disabled={toggling}
+                                    size="small"
+                                  />
+                                }
+                                label=""
+                                sx={{ m: 0 }}
+                              />
+                            </Tooltip>
+                          </Box>
                         </Box>
                         <Box display="flex" gap={1.5}>
                           <Button
@@ -330,6 +340,14 @@ export default function UserList() {
           </Fade>
         </Box>
       </Box>
+
+      {/* Modal de Criação de Usuário */}
+      <CreateUserModal
+        open={createModalOpen}
+        loading={creating}
+        onCreateUser={handleCreateUser}
+        onClose={() => setCreateModalOpen(false)}
+      />
     </Box>
   );
 }

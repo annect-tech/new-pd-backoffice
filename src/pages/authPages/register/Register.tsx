@@ -12,7 +12,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
-import AuthCard from '../../../components/geralComponents/AuthCard';
+import AuthCard from '../../../components/ui/card/AuthCard';
 import AuthPromotionalSection from '../../../components/auth/SideAuthSection';
 import { getAuthTextFieldStyles } from '../../../components/auth/authTextFieldStyles';
 import useRegister from './register';

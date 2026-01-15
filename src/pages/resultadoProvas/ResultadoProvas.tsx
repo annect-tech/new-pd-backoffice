@@ -28,6 +28,7 @@ import {
   Download as DownloadIcon,
 } from "@mui/icons-material";
 import { useExams } from "../../hooks/useExams";
+import { usersService } from "../../core/http/services/usersService";
 import NoteUpdaterModal from "../../components/modals/NoteUpdaterModal";
 import { APP_ROUTES } from "../../util/constants";
 import PageHeader from "../../components/ui/page/PageHeader";
@@ -64,38 +65,76 @@ const ResultadoProvas: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<
-    "all" | "aprovado" | "reprovado"
+    "all" | "aprovado" | "reprovado" | "pendente"
   >("all");
   const [filterAnchor, setFilterAnchor] = useState<null | HTMLElement>(null);
   const [downloadAnchor, setDownloadAnchor] = useState<null | HTMLElement>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [userInfoMap, setUserInfoMap] = useState<Record<string, { name?: string; cpf?: string }>>({});
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
   // Transform exams to rows
   const rows = useMemo(() => {
-    return exams.map((exam) => ({
-      id: exam.id,
-      cpf: exam.user_data.cpf,
-      name: `${exam.user_data.user.first_name} ${exam.user_data.user.last_name}`,
-      score: exam.score ?? null,
-      status: exam.status,
-      local: exam.exam_scheduled_hour?.exam_date?.local?.name ?? "N/A",
-      date: exam.exam_scheduled_hour?.exam_date?.date ?? "N/A",
-      hour: exam.exam_scheduled_hour?.hour ?? "N/A",
-    }));
-  }, [exams]);
+    return exams.map((exam) => {
+      const userData = exam.user_data;
+      const user = userData?.user;
+      const userDataId = (exam as any)?.user_data_id;
+      const userIdKey = userDataId ? String(userDataId) : undefined;
+
+      // CPF: prioriza dados do mapa, depois nested data, depois ID
+      const cpf =
+        (userIdKey && userInfoMap[userIdKey]?.cpf) ||
+        userData?.cpf ||
+        (userDataId ? String(userDataId) : "N/A");
+      
+      // Nome: prioriza dados do mapa, depois nested data, depois fallback
+      const nome =
+        (userIdKey && userInfoMap[userIdKey]?.name) ||
+        (user?.first_name || user?.last_name
+          ? `${user?.first_name ?? ""} ${user?.last_name ?? ""}`.trim()
+          : userDataId
+          ? `Usuário ${userDataId}`
+          : "N/A");
+
+      // Normalizar status para exibição/filtragem
+      const statusMap: Record<string, string> = {
+        APPROVED: "aprovado",
+        REJECTED: "reprovado",
+        PENDING: "pendente",
+      };
+      const statusNormalizado =
+        exam.status && statusMap[exam.status.toUpperCase()]
+          ? statusMap[exam.status.toUpperCase()]
+          : exam.status?.toLowerCase() ?? "pendente";
+
+      return {
+        id: exam.id,
+        cpf,
+        name: nome,
+        score: exam.score ?? null,
+        status: statusNormalizado,
+        local: exam.exam_scheduled_hour?.exam_date?.local?.name ?? "N/A",
+        date: exam.exam_scheduled_hour?.exam_date?.date ?? "N/A",
+        hour: exam.exam_scheduled_hour?.hour ?? "N/A",
+        user_data_id: userDataId,
+      };
+    });
+  }, [exams, userInfoMap]);
 
   // Filter rows
   const filtered = useMemo(() => {
+    const term = searchTerm.toLowerCase();
     return rows
-      .filter(
-        (row) =>
-          row.cpf.includes(searchTerm) ||
-          row.name.toLowerCase().includes(searchTerm.toLowerCase())
-      )
+      .filter((row) => {
+        const cpfStr = String(row.cpf ?? "").toLowerCase();
+        const nameStr = String(row.name ?? "").toLowerCase();
+        return cpfStr.includes(term) || nameStr.includes(term);
+      })
       .filter((row) => {
         if (filterStatus === "aprovado") return row.status === "aprovado";
         if (filterStatus === "reprovado") return row.status === "reprovado";
+        if (filterStatus === "pendente") return row.status === "pendente";
         return true;
       });
   }, [rows, searchTerm, filterStatus]);
@@ -107,8 +146,104 @@ const ResultadoProvas: React.FC = () => {
   }, [filtered, page, rowsPerPage]);
 
   useEffect(() => {
-    fetchExams();
-  }, [fetchExams]);
+    fetchExams(1, 10);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Buscar dados de usuário (nome/cpf) a partir de user_data_id
+  useEffect(() => {
+    if (!exams || exams.length === 0) return;
+
+    const uniqueUserIds = [
+      ...new Set(
+        exams
+          .map((e) => (e as any)?.user_data_id)
+          .filter(Boolean)
+          .map((id) => String(id))
+      ),
+    ];
+
+    if (uniqueUserIds.length === 0) {
+      if (import.meta.env.DEV) {
+        console.log("[ResultadoProvas] Nenhum user_data_id encontrado nos exames");
+      }
+      return;
+    }
+
+    const fetchUsers = async () => {
+      setLoadingUsers(true);
+      const map: Record<string, { name?: string; cpf?: string }> = {};
+      
+      if (import.meta.env.DEV) {
+        console.log(`[ResultadoProvas] Buscando dados de ${uniqueUserIds.length} usuários...`);
+      }
+      
+      try {
+        // Buscar todos os usuários do sistema
+        const resp = await usersService.listAllUsers(1, 1000);
+        
+        if (resp.status === 200 && resp.data) {
+          let users: any[] = [];
+          
+          // Verificar diferentes formatos de resposta
+          if (Array.isArray(resp.data)) {
+            users = resp.data;
+          } else if (resp.data?.data && Array.isArray(resp.data.data)) {
+            users = resp.data.data;
+          } else if (resp.data?.results && Array.isArray(resp.data.results)) {
+            users = resp.data.results;
+          }
+          
+          if (import.meta.env.DEV) {
+            console.log(`[ResultadoProvas] ${users.length} usuários retornados da API`);
+          }
+          
+          // Criar mapa de usuários
+          uniqueUserIds.forEach((userId) => {
+            const user = users.find((u) => String(u.id) === userId);
+            
+            if (user) {
+              const firstName = user.first_name || "";
+              const lastName = user.last_name || "";
+              const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
+              
+              map[userId] = {
+                name: fullName || user.username || undefined,
+                cpf: user.cpf || undefined,
+              };
+              
+              if (import.meta.env.DEV) {
+                console.log(`[ResultadoProvas] ✓ Dados do usuário ${userId}:`, map[userId]);
+              }
+            } else {
+              if (import.meta.env.DEV) {
+                console.warn(`[ResultadoProvas] ✗ Usuário ${userId} não encontrado na lista`);
+              }
+            }
+          });
+          
+          if (import.meta.env.DEV) {
+            console.log(`[ResultadoProvas] Busca concluída: ${Object.keys(map).length}/${uniqueUserIds.length} usuários encontrados`);
+            console.log("[ResultadoProvas] Mapa de usuários:", map);
+          }
+        } else {
+          if (import.meta.env.DEV) {
+            console.warn(`[ResultadoProvas] Resposta inválida da API (status: ${resp.status})`);
+          }
+        }
+        
+        setUserInfoMap((prev) => ({ ...prev, ...map }));
+      } catch (err) {
+        if (import.meta.env.DEV) {
+          console.error(`[ResultadoProvas] Erro ao buscar usuários:`, err);
+        }
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+
+    fetchUsers();
+  }, [exams]);
 
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
@@ -126,7 +261,7 @@ const ResultadoProvas: React.FC = () => {
   const openDownloadMenu = (e: React.MouseEvent<HTMLElement>) =>
     setDownloadAnchor(e.currentTarget);
   const closeFilterMenu = () => setFilterAnchor(null);
-  const applyFilter = (status: "all" | "aprovado" | "reprovado") => {
+  const applyFilter = (status: "all" | "aprovado" | "reprovado" | "pendente") => {
     setFilterStatus(status);
     closeFilterMenu();
   };
@@ -163,11 +298,13 @@ const ResultadoProvas: React.FC = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "aprovado":
-        return "#4CAF50";
+        return "#4CAF50"; // Verde
       case "reprovado":
-        return "#F44336";
+        return "#F44336"; // Vermelho
+      case "pendente":
+        return "#FF9800"; // Laranja
       default:
-        return "#666";
+        return "#666"; // Cinza
     }
   };
 
@@ -206,15 +343,54 @@ const ResultadoProvas: React.FC = () => {
                     anchorEl={filterAnchor}
                     open={Boolean(filterAnchor)}
                     onClose={closeFilterMenu}
+                    slotProps={{
+                      paper: {
+                        sx: {
+                          borderRadius: 2,
+                          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                          minWidth: 200,
+                        },
+                      },
+                    }}
                   >
-                    <MenuItem onClick={() => applyFilter("all")}>
+                    <Typography sx={{ px: 2, py: 1, fontWeight: 600, fontSize: "0.875rem", color: "#6B7280" }}>
+                      Filtrar por Status
+                    </Typography>
+                    <MenuItem 
+                      onClick={() => applyFilter("all")}
+                      sx={{ 
+                        backgroundColor: filterStatus === "all" ? "#F3F4F6" : "transparent",
+                        fontWeight: filterStatus === "all" ? 600 : 400 
+                      }}
+                    >
                       Todos ({rows.length})
                     </MenuItem>
-                    <MenuItem onClick={() => applyFilter("aprovado")}>
+                    <MenuItem 
+                      onClick={() => applyFilter("aprovado")}
+                      sx={{ 
+                        backgroundColor: filterStatus === "aprovado" ? "#F3F4F6" : "transparent",
+                        fontWeight: filterStatus === "aprovado" ? 600 : 400 
+                      }}
+                    >
                       Aprovados ({rows.filter((r) => r.status === "aprovado").length})
                     </MenuItem>
-                    <MenuItem onClick={() => applyFilter("reprovado")}>
+                    <MenuItem 
+                      onClick={() => applyFilter("reprovado")}
+                      sx={{ 
+                        backgroundColor: filterStatus === "reprovado" ? "#F3F4F6" : "transparent",
+                        fontWeight: filterStatus === "reprovado" ? 600 : 400 
+                      }}
+                    >
                       Reprovados ({rows.filter((r) => r.status === "reprovado").length})
+                    </MenuItem>
+                    <MenuItem 
+                      onClick={() => applyFilter("pendente")}
+                      sx={{ 
+                        backgroundColor: filterStatus === "pendente" ? "#F3F4F6" : "transparent",
+                        fontWeight: filterStatus === "pendente" ? 600 : 400 
+                      }}
+                    >
+                      Pendentes ({rows.filter((r) => r.status === "pendente").length})
                     </MenuItem>
                   </Menu>
                   <IconButton {...iconButtonStyles} onClick={openDownloadMenu}>
@@ -234,7 +410,7 @@ const ResultadoProvas: React.FC = () => {
                       CSV
                     </MenuItem>
                   </Menu>
-                  <IconButton {...iconButtonStyles} onClick={fetchExams}>
+                  <IconButton {...iconButtonStyles} onClick={() => fetchExams(1, 10)}>
                     <RefreshIcon />
                   </IconButton>
                   <IconButton {...iconButtonStyles} onClick={handleOpenGeneralMenu}>
@@ -266,6 +442,14 @@ const ResultadoProvas: React.FC = () => {
                   <Alert severity="error">{error}</Alert>
                 </Box>
               ) : (
+                <>
+                  {loadingUsers && (
+                    <Box sx={{ px: 2, py: 1 }}>
+                      <Alert severity="info" sx={{ fontSize: "0.875rem" }}>
+                        Carregando dados dos usuários...
+                      </Alert>
+                    </Box>
+                  )}
                 <TableContainer sx={{ maxWidth: "100%" }}>
                   <Table stickyHeader size="small" sx={{ tableLayout: "fixed", width: "100%" }}>
                     <TableHead>
@@ -356,6 +540,7 @@ const ResultadoProvas: React.FC = () => {
                     {...tablePaginationStyles}
                   />
                 </TableContainer>
+                </>
               )}
             </Paper>
           </Fade>
@@ -376,7 +561,7 @@ const ResultadoProvas: React.FC = () => {
         exams={exams}
         onClose={() => {
           setModalOpen(false);
-          fetchExams();
+          fetchExams(1, 10);
         }}
       />
 

@@ -26,7 +26,31 @@ interface EnemStatusUpdaterModalProps {
   }>;
 }
 
-const STATUS_OPTIONS = ["pendente", "aprovado", "reprovado"];
+// Mapeamento de status do frontend (português) para backend (inglês maiúsculo)
+const STATUS_MAP_TO_API: Record<string, string> = {
+  "pendente": "PENDING",
+  "aprovado": "APPROVED",
+  "reprovado": "REJECTED",
+};
+
+// Mapeamento de status do backend para frontend (para exibição)
+const STATUS_MAP_FROM_API: Record<string, string> = {
+  "PENDING": "pendente",
+  "APPROVED": "aprovado",
+  "REJECTED": "reprovado",
+  "pending": "pendente",
+  "approved": "aprovado",
+  "rejected": "reprovado",
+  "filesent": "pendente",
+  "filesent?": "pendente",
+  "file_sent": "pendente",
+};
+
+const STATUS_OPTIONS = [
+  { value: "pendente", label: "Pendente" },
+  { value: "aprovado", label: "Aprovado" },
+  { value: "reprovado", label: "Reprovado" },
+];
 
 const EnemStatusUpdaterModal: React.FC<EnemStatusUpdaterModalProps> = ({
   open,
@@ -44,7 +68,10 @@ const EnemStatusUpdaterModal: React.FC<EnemStatusUpdaterModalProps> = ({
     setLoading(true);
     setFeedback(null);
 
-    const result = await onUpdate(selectedId, newStatus);
+    // Converte o status do frontend (português) para o formato da API (inglês maiúsculo)
+    const apiStatus = STATUS_MAP_TO_API[newStatus] || newStatus;
+    
+    const result = await onUpdate(selectedId, apiStatus);
     setFeedback({
       type: result.success ? "success" : "error",
       message: result.message,
@@ -55,6 +82,14 @@ const EnemStatusUpdaterModal: React.FC<EnemStatusUpdaterModalProps> = ({
     if (result.success) {
       setTimeout(() => handleClose(), 1200);
     }
+  };
+
+  // Normaliza o status para exibição
+  const normalizeStatusDisplay = (status: string | null | undefined): string => {
+    if (!status) return "pendente";
+    
+    const normalized = status.toLowerCase().trim();
+    return STATUS_MAP_FROM_API[normalized] || STATUS_MAP_FROM_API[status] || "pendente";
   };
 
   const handleClose = () => {
@@ -86,7 +121,7 @@ const EnemStatusUpdaterModal: React.FC<EnemStatusUpdaterModalProps> = ({
           >
             {results.map((item) => (
               <MenuItem key={item.id} value={item.id}>
-                {item.inscription_number} - {item.name}
+                {item.inscription_number} - {item.name} CPF {item.cpf}
               </MenuItem>
             ))}
           </Select>
@@ -99,9 +134,9 @@ const EnemStatusUpdaterModal: React.FC<EnemStatusUpdaterModalProps> = ({
             label="Novo status"
             onChange={(e) => setNewStatus(e.target.value as string)}
           >
-            {STATUS_OPTIONS.map((status) => (
-              <MenuItem key={status} value={status}>
-                {status}
+            {STATUS_OPTIONS.map((option) => (
+              <MenuItem key={option.value} value={option.value}>
+                {option.label}
               </MenuItem>
             ))}
           </Select>
@@ -110,7 +145,9 @@ const EnemStatusUpdaterModal: React.FC<EnemStatusUpdaterModalProps> = ({
         {current && (
           <Box sx={{ mt: 1 }}>
             <Typography variant="body2" color="text.secondary">
-              Status atual: <strong>{current.status}</strong>
+              Status atual: <strong style={{ textTransform: "capitalize" }}>
+                {normalizeStatusDisplay(current.status)}
+              </strong>
             </Typography>
           </Box>
         )}

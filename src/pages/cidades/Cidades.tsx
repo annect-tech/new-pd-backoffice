@@ -68,6 +68,7 @@ const Cidades: React.FC = () => {
   const {
     cities,
     loading,
+    pagination,
     createCity,
     updateCity,
     snackbar,
@@ -85,28 +86,15 @@ const Cidades: React.FC = () => {
   });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [editalFile, setEditalFile] = useState<File | null>(null);
   const [logoError, setLogoError] = useState<string>("");
   const [editalError, setEditalError] = useState<string>("");
 
-  const filtered = useMemo(() => {
-    return cities.filter(
-      (c) =>
-        c.localidade.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.uf.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [cities, searchTerm]);
-
-  const paginatedData = useMemo(() => {
-    const startIndex = page * rowsPerPage;
-    return filtered.slice(startIndex, startIndex + rowsPerPage);
-  }, [filtered, page, rowsPerPage]);
-
   useEffect(() => {
-    fetchCities();
-  }, [fetchCities]);
+    fetchCities(page + 1, rowsPerPage, searchTerm.trim() || undefined);
+  }, [fetchCities, page, rowsPerPage, searchTerm]);
 
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
@@ -207,7 +195,7 @@ const Cidades: React.FC = () => {
     } else if (editingId != null) {
       await updateCity(editingId.toString(), form);
     }
-    await fetchCities();
+    await fetchCities(page + 1, rowsPerPage, searchTerm.trim() || undefined);
     handleClose();
   };
 
@@ -257,14 +245,17 @@ const Cidades: React.FC = () => {
                     placeholder="Pesquisar por cidade ou UF..."
                     variant="standard"
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setPage(0);
+                    }}
                     fullWidth
                     {...textFieldStyles}
                   />
                 </Box>
                 <Box display="flex" gap={1}>
                   <IconButton
-                    onClick={fetchCities}
+                    onClick={() => fetchCities(page + 1, rowsPerPage, searchTerm.trim() || undefined)}
                     {...iconButtonStyles}
                   >
                     <RefreshIcon />
@@ -296,7 +287,7 @@ const Cidades: React.FC = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {paginatedData.length === 0 ? (
+                      {cities.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
                             <Typography color={designSystem.colors.text.disabled} fontSize="0.95rem">
@@ -307,7 +298,7 @@ const Cidades: React.FC = () => {
                           </TableCell>
                         </TableRow>
                       ) : (
-                        paginatedData.map((city) => (
+                        cities.map((city) => (
                           <TableRow
                             key={city.id}
                             {...tableRowHoverStyles}
@@ -351,12 +342,12 @@ const Cidades: React.FC = () => {
                   </Table>
                   <TablePagination
                     component="div"
-                    count={filtered.length}
+                    count={pagination.totalItems}
                     page={page}
                     onPageChange={handleChangePage}
                     rowsPerPage={rowsPerPage}
                     onRowsPerPageChange={handleChangeRowsPerPage}
-                    rowsPerPageOptions={[5, 10, 25]}
+                    rowsPerPageOptions={[5, 10, 25, 50]}
                     labelRowsPerPage="Linhas por página:"
                     labelDisplayedRows={({ from, to, count }) =>
                       `${from}-${to} de ${count !== -1 ? count : `mais de ${to}`}`

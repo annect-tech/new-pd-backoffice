@@ -19,18 +19,17 @@ export const examsService = {
    * @param search - Termo de busca opcional
    */
   list: (page: number = 1, size: number = 10, search?: string) => {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      size: size.toString(),
-    });
-
-    if (search) {
-      params.append("search", search);
-    }
-
+    // A rota correta para listar registros de prova (student exams)
     return httpClient.get<PaginatedResponse<Exam>>(
       API_URL,
-      `/admin/exam?${params.toString()}`
+      "/admin/student-exams",
+      {
+        queryParams: {
+          page,
+          size,
+          ...(search ? { search } : {}),
+        },
+      }
     );
   },
 

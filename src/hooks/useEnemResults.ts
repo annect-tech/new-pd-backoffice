@@ -68,6 +68,36 @@ export const useEnemResults = () => {
     [page, size, showSnackbar]
   );
 
+  /**
+   * Obtém detalhes de um resultado ENEM específico
+   */
+  const fetchEnemResultById = useCallback(
+    async (id: string | number) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await enemResultsService.getById(id);
+
+        if (response.status >= 200 && response.status < 300 && response.data) {
+          return response.data;
+        } else {
+          const errorMessage = response.message || "Erro ao buscar resultado ENEM";
+          setError(errorMessage);
+          showSnackbar(errorMessage, "error");
+          return null;
+        }
+      } catch (err: any) {
+        const errorMessage = err.message || "Erro ao buscar resultado ENEM";
+        setError(errorMessage);
+        showSnackbar(errorMessage, "error");
+        return null;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [showSnackbar]
+  );
+
   const updateStatus = useCallback(
     async (id: string, status: string) => {
       try {
@@ -100,14 +130,73 @@ export const useEnemResults = () => {
     [fetchEnemResults, showSnackbar]
   );
 
+  /**
+   * Cria um novo resultado ENEM
+   */
+  const createEnemResult = useCallback(
+    async (payload: Partial<EnemResult>) => {
+      try {
+        const response = await enemResultsService.create(payload);
+
+        if (response.status >= 200 && response.status < 300) {
+          showSnackbar("Resultado ENEM criado com sucesso", "success");
+          await fetchEnemResults();
+          return response.data;
+        } else {
+          const errorMessage = response.message || "Erro ao criar resultado ENEM";
+          setError(errorMessage);
+          showSnackbar(errorMessage, "error");
+          return null;
+        }
+      } catch (err: any) {
+        const errorMessage = err.message || "Erro ao criar resultado ENEM";
+        setError(errorMessage);
+        showSnackbar(errorMessage, "error");
+        return null;
+      }
+    },
+    [fetchEnemResults, showSnackbar]
+  );
+
+  /**
+   * Deleta um resultado ENEM
+   */
+  const deleteEnemResult = useCallback(
+    async (id: string | number) => {
+      try {
+        const response = await enemResultsService.delete(id);
+
+        if (response.status >= 200 && response.status < 300) {
+          showSnackbar("Resultado ENEM deletado com sucesso", "success");
+          await fetchEnemResults();
+          return true;
+        } else {
+          const errorMessage = response.message || "Erro ao deletar resultado ENEM";
+          setError(errorMessage);
+          showSnackbar(errorMessage, "error");
+          return false;
+        }
+      } catch (err: any) {
+        const errorMessage = err.message || "Erro ao deletar resultado ENEM";
+        setError(errorMessage);
+        showSnackbar(errorMessage, "error");
+        return false;
+      }
+    },
+    [fetchEnemResults, showSnackbar]
+  );
+
   return { 
     items, 
     loading, 
     error, 
     snackbar, 
     closeSnackbar, 
-    fetchEnemResults, 
-    updateStatus, 
+    fetchEnemResults,
+    fetchEnemResultById,
+    updateStatus,
+    createEnemResult,
+    deleteEnemResult,
     page, 
     size, 
     totalItems, 

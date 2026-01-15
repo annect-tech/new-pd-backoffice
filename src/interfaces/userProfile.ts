@@ -29,6 +29,7 @@ export interface Address {
   bairro: string;
   localidade: string;
   uf: string;
+  user_data_id?: number;
 }
 
 export interface Guardian {

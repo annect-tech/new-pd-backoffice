@@ -36,7 +36,8 @@ import {
   Search as SearchIcon,
 } from "@mui/icons-material";
 import { useSelective } from "../../hooks/useSelective";
-import type { UserProfile } from "../../interfaces/userProfile";
+import { selectiveService } from "../../core/http/services/selectiveService";
+import type { UserProfile, Address } from "../../interfaces/userProfile";
 import { APP_ROUTES } from "../../util/constants";
 import PageHeader from "../../components/ui/page/PageHeader";
 import {
@@ -55,6 +56,7 @@ const Seletivo: React.FC = () => {
   const {
     users,
     loading,
+    pagination,
     snackbar,
     closeSnackbar,
     fetchUsers,
@@ -64,9 +66,12 @@ const Seletivo: React.FC = () => {
   } = useSelective();
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState<
-    "all" | "active" | "inactive"
-  >("all");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  // const [filterStatus, setFilterStatus] = useState<
+  //   "all" | "active" | "inactive"
+  // >("all");
+  const filterStatus = "all"; // Filtro de status desabilitado por enquanto
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc" | "none">("none");
   const [filterAnchor, setFilterAnchor] = useState<null | HTMLElement>(null);
   const [downloadAnchor, setDownloadAnchor] = useState<null | HTMLElement>(
     null
@@ -77,39 +82,204 @@ const Seletivo: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [addressesMap, setAddressesMap] = useState<Map<number, Address[]>>(new Map());
+  const [loadingAddresses, setLoadingAddresses] = useState(false);
 
-  // Filter users
-  const filtered = useMemo(() => {
+  // Enriquecer usuários com dados de endereço do mapa
+  const enrichedUsers = useMemo(() => {
     if (!Array.isArray(users)) {
       return [];
     }
-    return users
-      .filter((u) => u.first_name.toLowerCase() !== "admin")
-      .filter(
-        (u) =>
-          u.cpf.includes(searchTerm) ||
-          u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          `${u.first_name} ${u.last_name}`
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          u.email.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-      .filter((u) => {
-        if (filterStatus === "active") return u.allowed_city.active;
-        if (filterStatus === "inactive") return !u.allowed_city.active;
+    
+    return users.map((user) => {
+      // Se o usuário já tem endereços, retornar como está
+      if (user.addresses && user.addresses.length > 0) {
+        return user;
+      }
+      
+      // Caso contrário, buscar do mapa de endereços
+      const userAddresses = addressesMap.get(user.id);
+      if (userAddresses && userAddresses.length > 0) {
+        return {
+          ...user,
+          addresses: userAddresses,
+        };
+      }
+      
+      return user;
+    });
+  }, [users, addressesMap]);
+
+  // Filter and sort users
+  const filtered = useMemo(() => {
+    if (!Array.isArray(enrichedUsers)) {
+      return [];
+    }
+    
+    if (enrichedUsers.length === 0) {
+      return [];
+    }
+    
+    let result = [...enrichedUsers];
+    
+    // Filtrar admin
+    result = result.filter((u) => {
+      const firstName = (u?.first_name || "").toLowerCase();
+      return firstName !== "admin";
+    });
+    
+    // Aplicar busca local se houver termo de pesquisa
+    if (debouncedSearchTerm && debouncedSearchTerm.trim()) {
+      const searchLower = debouncedSearchTerm.trim().toLowerCase();
+      console.log('[Seletivo] Aplicando busca local para:', searchLower);
+      
+      result = result.filter((u) => {
+        // Buscar em CPF
+        const cpf = (u.cpf || "").toLowerCase();
+        if (cpf.includes(searchLower)) return true;
+        
+        // Buscar em celular
+        const celphone = (u.celphone || "").toLowerCase();
+        if (celphone.includes(searchLower)) return true;
+        
+        // Buscar em email
+        const email = (u.email || "").toLowerCase();
+        if (email.includes(searchLower)) return true;
+        
+        // Buscar em nome completo
+        const fullName = [u.first_name, u.last_name].filter(Boolean).join(" ").toLowerCase();
+        if (fullName.includes(searchLower)) return true;
+        
+        // Buscar em name (fallback)
+        const name = ((u as any).name || "").toLowerCase();
+        if (name.includes(searchLower)) return true;
+        
+        return false;
+      });
+      
+      console.log('[Seletivo] Resultados da busca:', result.length);
+    }
+    
+    // Aplicar filtro de status
+    if (filterStatus !== "all") {
+      result = result.filter((u) => {
+        if (!u?.allowed_city) {
+          return filterStatus === "inactive";
+        }
+        if (filterStatus === "active") {
+          return u.allowed_city.active === true;
+        }
+        if (filterStatus === "inactive") {
+          return u.allowed_city.active === false || u.allowed_city.active === null;
+        }
         return true;
       });
-  }, [users, searchTerm, filterStatus]);
+    }
+    
+    // Aplicar ordenação sempre
+    if (sortOrder !== "none") {
+      console.log('[Seletivo] Aplicando ordenação:', sortOrder);
+      result.sort((a, b) => {
+        // Usar a mesma lógica de nome da tabela
+        const getFullName = (user: any) => {
+          return [user.first_name, user.last_name].filter(Boolean).join(" ") || user.name || "";
+        };
+        
+        const nameA = getFullName(a).trim().toLowerCase();
+        const nameB = getFullName(b).trim().toLowerCase();
+        
+        const comparison = nameA.localeCompare(nameB, 'pt-BR');
+        const finalResult = sortOrder === "asc" ? comparison : -comparison;
+        
+        return finalResult;
+      });
+      console.log('[Seletivo] Primeiros 3 após ordenação:', result.slice(0, 3).map(u => {
+        return [u.first_name, u.last_name].filter(Boolean).join(" ") || (u as any).name || "—";
+      }));
+    }
+    
+    return result;
+  }, [enrichedUsers, filterStatus, sortOrder, debouncedSearchTerm]);
 
-  // Paginated data
-  const paginatedData = useMemo(() => {
-    const startIndex = page * rowsPerPage;
-    return filtered.slice(startIndex, startIndex + rowsPerPage);
-  }, [filtered, page, rowsPerPage]);
-
+  // Debug logs
   useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+    console.log('[Seletivo Debug]', {
+      totalUsers: users?.length || 0,
+      enrichedUsers: enrichedUsers?.length || 0,
+      filtered: filtered?.length || 0,
+      searchTerm,
+      debouncedSearchTerm,
+      filterStatus,
+      sortOrder,
+      page,
+      rowsPerPage
+    });
+  }, [users, enrichedUsers, filtered, searchTerm, debouncedSearchTerm, filterStatus, sortOrder, page, rowsPerPage]);
+
+  // Buscar dados completos dos usuários (incluindo endereços) quando a lista mudar
+  useEffect(() => {
+    const fetchUsersDetails = async () => {
+      if (!users || users.length === 0) return;
+      
+      setLoadingAddresses(true);
+      try {
+        console.log("[Seletivo] Carregando dados completos dos usuários...");
+        
+        const map = new Map<number, Address[]>();
+        
+        // Buscar dados completos de cada usuário em paralelo
+        const promises = users.map(async (user) => {
+          try {
+            const response = await selectiveService.getById(user.id);
+            
+            if (response.status >= 200 && response.status < 300 && response.data) {
+              const fullUser = response.data;
+              
+              // Se o usuário tem endereços, adicionar ao mapa
+              if (fullUser.addresses && fullUser.addresses.length > 0) {
+                map.set(user.id, fullUser.addresses);
+              }
+            }
+          } catch (error) {
+            console.error(`[Seletivo] Erro ao buscar dados do usuário ${user.id}:`, error);
+          }
+        });
+        
+        await Promise.all(promises);
+        
+        console.log(`[Seletivo] ✅ Dados completos carregados. ${map.size} usuários com endereços`);
+        setAddressesMap(map);
+      } catch (error) {
+        console.error("[Seletivo] Erro ao buscar dados dos usuários:", error);
+      } finally {
+        setLoadingAddresses(false);
+      }
+    };
+    
+    fetchUsersDetails();
+  }, [users]);
+
+  // Debounce do searchTerm
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Resetar página quando o termo de pesquisa mudar
+  useEffect(() => {
+    setPage(0);
+  }, [debouncedSearchTerm]);
+
+  // Buscar dados quando página ou rowsPerPage mudarem
+  // Não enviamos o searchTerm ao backend, pois filtramos localmente
+  useEffect(() => {
+    fetchUsers(page + 1, rowsPerPage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, rowsPerPage]);
 
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
@@ -127,18 +297,42 @@ const Seletivo: React.FC = () => {
   const openDownloadMenu = (e: React.MouseEvent<HTMLElement>) =>
     setDownloadAnchor(e.currentTarget);
   const closeFilterMenu = () => setFilterAnchor(null);
-  const applyFilter = (status: "all" | "active" | "inactive") => {
-    setFilterStatus(status);
+  // const applyFilter = (status: "all" | "active" | "inactive") => {
+  //   setFilterStatus(status);
+  //   closeFilterMenu();
+  // };
+  const applySortOrder = (order: "asc" | "desc" | "none") => {
+    console.log('[Seletivo] Mudando ordenação para:', order);
+    setSortOrder(order);
     closeFilterMenu();
   };
 
-  const openModal = (
+  const openModal = async (
     type: "persona" | "addresses" | "guardians" | "registration",
     user: UserProfile
   ) => {
-    setCurrentUser(user);
+    setLoadingDetails(true);
     setOpenModalType(type);
+    
+    try {
+      // Buscar dados completos do usuário
+      const response = await selectiveService.getById(user.id);
+      
+      if (response.status >= 200 && response.status < 300 && response.data) {
+        setCurrentUser(response.data);
+      } else {
+        setCurrentUser(user);
+        // Mostrar aviso que alguns dados podem não estar disponíveis
+        console.warn("Não foi possível carregar dados completos do usuário");
+      }
+    } catch (error) {
+      console.error("Erro ao carregar dados do usuário:", error);
+      setCurrentUser(user);
+    } finally {
+      setLoadingDetails(false);
+    }
   };
+  
   const closeModal = () => {
     setOpenModalType(null);
     setCurrentUser(null);
@@ -230,18 +424,71 @@ const Seletivo: React.FC = () => {
                         sx: {
                           borderRadius: 2,
                           boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                          minWidth: 200,
                         },
                       },
                     }}
                   >
-                    <MenuItem onClick={() => applyFilter("all")}>
-                      Todos ({users.length})
+                    {/* <Typography sx={{ px: 2, py: 1, fontWeight: 600, fontSize: "0.875rem", color: "#6B7280" }}>
+                      Status
+                    </Typography>
+                    <MenuItem 
+                      onClick={() => applyFilter("all")}
+                      sx={{ 
+                        backgroundColor: filterStatus === "all" ? "#F3F4F6" : "transparent",
+                        fontWeight: filterStatus === "all" ? 600 : 400 
+                      }}
+                    >
+                      Todos
+                    </MenuItem> */}
+                    {/* <MenuItem 
+                      onClick={() => applyFilter("active")}
+                      sx={{ 
+                        backgroundColor: filterStatus === "active" ? "#F3F4F6" : "transparent",
+                        fontWeight: filterStatus === "active" ? 600 : 400 
+                      }}
+                    >
+                      Ativos
                     </MenuItem>
-                    <MenuItem onClick={() => applyFilter("active")}>
-                      Ativos ({users.filter((u) => u.allowed_city.active).length})
+                    <MenuItem 
+                      onClick={() => applyFilter("inactive")}
+                      sx={{ 
+                        backgroundColor: filterStatus === "inactive" ? "#F3F4F6" : "transparent",
+                        fontWeight: filterStatus === "inactive" ? 600 : 400 
+                      }}
+                    >
+                      Inativos
+                    </MenuItem> */}
+                    <Box sx={{ borderTop: "1px solid #E5E7EB", my: 1 }} />
+                    <Typography sx={{ px: 2, py: 1, fontWeight: 600, fontSize: "0.875rem", color: "#6B7280" }}>
+                      Ordenar por Nome
+                    </Typography>
+                    <MenuItem 
+                      onClick={() => applySortOrder("none")}
+                      sx={{ 
+                        backgroundColor: sortOrder === "none" ? "#F3F4F6" : "transparent",
+                        fontWeight: sortOrder === "none" ? 600 : 400 
+                      }}
+                    >
+                      Sem ordenação
                     </MenuItem>
-                    <MenuItem onClick={() => applyFilter("inactive")}>
-                      Inativos ({users.filter((u) => !u.allowed_city.active).length})
+                    <MenuItem 
+                      onClick={() => applySortOrder("asc")}
+                      sx={{ 
+                        backgroundColor: sortOrder === "asc" ? "#F3F4F6" : "transparent",
+                        fontWeight: sortOrder === "asc" ? 600 : 400 
+                      }}
+                    >
+                      A → Z
+                    </MenuItem>
+                    <MenuItem 
+                      onClick={() => applySortOrder("desc")}
+                      sx={{ 
+                        backgroundColor: sortOrder === "desc" ? "#F3F4F6" : "transparent",
+                        fontWeight: sortOrder === "desc" ? 600 : 400 
+                      }}
+                    >
+                      Z → A
                     </MenuItem>
                   </Menu>
                   <IconButton onClick={openDownloadMenu} {...iconButtonStyles}>
@@ -285,37 +532,39 @@ const Seletivo: React.FC = () => {
                       XLSX
                     </MenuItem>
                   </Menu>
-                  <IconButton onClick={fetchUsers} {...iconButtonStyles}>
+                  <IconButton 
+                    onClick={() => fetchUsers(page + 1, rowsPerPage, searchTerm.trim() || undefined)} 
+                    {...iconButtonStyles}
+                  >
                     <RefreshIcon />
                   </IconButton>
                 </Box>
               </Toolbar>
 
-              {loading ? (
+              {loading || loadingAddresses ? (
                 <Box display="flex" justifyContent="center" p={4}>
                   <CircularProgress {...progressStyles} />
                 </Box>
               ) : (
-                <TableContainer sx={{ maxWidth: "100%" }}>
-                  <Table size="small" sx={{ tableLayout: "fixed", width: "100%" }}>
+                <TableContainer sx={{ overflowX: "auto", width: "100%" }}>
+                  <Table size="small" sx={{ minWidth: 1200 }}>
                     <TableHead>
                       <TableRow>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 40 }}>ID</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 110 }}>CPF</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 150 }}>Nome</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 90 }}>Data Nasc.</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 110 }}>Celular</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 180 }}>Email</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 100 }}>Cidade</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 40 }}>UF</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 50 }} align="center"><PersonIcon fontSize="small" sx={{ fontSize: "1rem" }} /></TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 50 }} align="center"><HomeIcon fontSize="small" sx={{ fontSize: "1rem" }} /></TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 50 }} align="center"><PeopleIcon fontSize="small" sx={{ fontSize: "1rem" }} /></TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 50 }} align="center"><DescriptionIcon fontSize="small" sx={{ fontSize: "1rem" }} /></TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 60 }}>ID</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 130 }}>CPF</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 200 }}>Nome</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 120 }}>Data Nasc.</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 130 }}>Celular</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 240 }}>Email</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 150 }}>Cidade</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 60 }}>UF</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 150 }} align="center">
+                          Ações
+                        </TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {paginatedData.length === 0 ? (
+                      {filtered.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={12} align="center" sx={{ py: 4 }}>
                             <Typography color="#6B7280" fontSize="0.95rem">
@@ -326,7 +575,7 @@ const Seletivo: React.FC = () => {
                           </TableCell>
                         </TableRow>
                       ) : (
-                        paginatedData.map((user) => (
+                        filtered.map((user) => (
                           <TableRow
                               key={user.id}
                               {...tableRowHoverStyles}
@@ -335,11 +584,11 @@ const Seletivo: React.FC = () => {
                                 cursor: "pointer",
                               }}
                             >
-                            <TableCell sx={{ color: "#374151", fontSize: "0.875rem", py: 1.5 }}>
+                            <TableCell sx={{ color: "#374151", fontSize: "0.875rem", py: 1.5, width: 60 }}>
                               {user.id}
                             </TableCell>
-                            <TableCell sx={{ color: "#374151", fontSize: "0.875rem", py: 1.5 }}>
-                              {user.cpf}
+                            <TableCell sx={{ color: "#374151", fontSize: "0.875rem", py: 1.5, width: 130 }}>
+                              {user.cpf || "—"}
                             </TableCell>
                             <TableCell
                               sx={{
@@ -347,85 +596,95 @@ const Seletivo: React.FC = () => {
                                 fontWeight: 500,
                                 fontSize: "0.875rem",
                                 py: 1.5,
+                                width: 200,
+                                maxWidth: 200,
                                 whiteSpace: "nowrap",
                                 overflow: "hidden",
                                 textOverflow: "ellipsis",
                               }}
                             >
-                              {user.first_name} {user.last_name}
+                              {[user.first_name, user.last_name].filter(Boolean).join(" ") ||
+                                (user as any)?.name ||
+                                "—"}
                             </TableCell>
-                            <TableCell sx={{ color: "#374151", fontSize: "0.875rem", py: 1.5 }}>
-                              {user.birth_date}
+                            <TableCell sx={{ color: "#374151", fontSize: "0.875rem", py: 1.5, width: 120 }}>
+                              {user.birth_date || "—"}
                             </TableCell>
-                            <TableCell sx={{ color: "#374151", fontSize: "0.875rem", py: 1.5 }}>
-                              {user.celphone}
+                            <TableCell sx={{ color: "#374151", fontSize: "0.875rem", py: 1.5, width: 130 }}>
+                              {user.celphone || "—"}
                             </TableCell>
                             <TableCell
                               sx={{
                                 color: "#374151",
                                 fontSize: "0.875rem",
                                 py: 1.5,
+                                width: 240,
+                                maxWidth: 240,
                                 whiteSpace: "nowrap",
                                 overflow: "hidden",
                                 textOverflow: "ellipsis",
                               }}
                             >
-                              {user.email}
+                              {user.email || "—"}
                             </TableCell>
                             <TableCell
                               sx={{
                                 color: "#374151",
                                 fontSize: "0.875rem",
                                 py: 1.5,
+                                width: 150,
+                                maxWidth: 150,
                                 whiteSpace: "nowrap",
                                 overflow: "hidden",
                                 textOverflow: "ellipsis",
                               }}
                             >
-                              {user.allowed_city.localidade}
+                              {user.allowed_city?.localidade || 
+                               user.addresses?.[0]?.localidade || 
+                               addressesMap.get(user.id)?.[0]?.localidade ||
+                               "—"}
                             </TableCell>
-                            <TableCell sx={{ color: "#374151", fontSize: "0.875rem", py: 1.5 }}>
-                              {user.allowed_city.uf}
+                            <TableCell sx={{ color: "#374151", fontSize: "0.875rem", py: 1.5, width: 60 }}>
+                              {user.allowed_city?.uf || 
+                               user.addresses?.[0]?.uf || 
+                               addressesMap.get(user.id)?.[0]?.uf ||
+                               "—"}
                             </TableCell>
-                            <TableCell align="center" sx={{ py: 1.5 }}>
-                              <IconButton
-                                size="small"
-                                onClick={() => openModal("persona", user)}
-                                {...iconButtonStyles}
-                                sx={{ ...iconButtonStyles.sx, padding: "4px" }}
-                              >
-                                <PersonIcon sx={{ fontSize: "1.1rem" }} />
-                              </IconButton>
-                            </TableCell>
-                            <TableCell align="center" sx={{ py: 1.5 }}>
-                              <IconButton
-                                size="small"
-                                onClick={() => openModal("addresses", user)}
-                                {...iconButtonStyles}
-                                sx={{ ...iconButtonStyles.sx, padding: "4px" }}
-                              >
-                                <HomeIcon sx={{ fontSize: "1.1rem" }} />
-                              </IconButton>
-                            </TableCell>
-                            <TableCell align="center" sx={{ py: 1.5 }}>
-                              <IconButton
-                                size="small"
-                                onClick={() => openModal("guardians", user)}
-                                {...iconButtonStyles}
-                                sx={{ ...iconButtonStyles.sx, padding: "4px" }}
-                              >
-                                <PeopleIcon sx={{ fontSize: "1.1rem" }} />
-                              </IconButton>
-                            </TableCell>
-                            <TableCell align="center" sx={{ py: 1.5 }}>
-                              <IconButton
-                                size="small"
-                                onClick={() => openModal("registration", user)}
-                                {...iconButtonStyles}
-                                sx={{ ...iconButtonStyles.sx, padding: "4px" }}
-                              >
-                                <DescriptionIcon sx={{ fontSize: "1.1rem" }} />
-                              </IconButton>
+                            <TableCell align="center" sx={{ py: 1.5, width: 150 }}>
+                              <Box display="flex" alignItems="center" justifyContent="center" gap={1}>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => openModal("persona", user)}
+                                  {...iconButtonStyles}
+                                  sx={{ ...iconButtonStyles.sx, padding: "4px" }}
+                                >
+                                  <PersonIcon sx={{ fontSize: "1rem" }} />
+                                </IconButton>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => openModal("addresses", user)}
+                                  {...iconButtonStyles}
+                                  sx={{ ...iconButtonStyles.sx, padding: "4px" }}
+                                >
+                                  <HomeIcon sx={{ fontSize: "1rem" }} />
+                                </IconButton>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => openModal("guardians", user)}
+                                  {...iconButtonStyles}
+                                  sx={{ ...iconButtonStyles.sx, padding: "4px" }}
+                                >
+                                  <PeopleIcon sx={{ fontSize: "1rem" }} />
+                                </IconButton>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => openModal("registration", user)}
+                                  {...iconButtonStyles}
+                                  sx={{ ...iconButtonStyles.sx, padding: "4px" }}
+                                >
+                                  <DescriptionIcon sx={{ fontSize: "1rem" }} />
+                                </IconButton>
+                              </Box>
                             </TableCell>
                           </TableRow>
                         ))
@@ -434,7 +693,7 @@ const Seletivo: React.FC = () => {
                   </Table>
                   <TablePagination
                     component="div"
-                    count={filtered.length}
+                    count={pagination.totalItems}
                     page={page}
                     onPageChange={handleChangePage}
                     rowsPerPage={rowsPerPage}
@@ -487,12 +746,19 @@ const Seletivo: React.FC = () => {
           Dados de Persona
         </DialogTitle>
         <DialogContent dividers>
-          {currentUser?.personas &&
+          {loadingDetails ? (
+            <Box display="flex" justifyContent="center" p={4}>
+              <CircularProgress {...progressStyles} />
+            </Box>
+          ) : currentUser?.personas && Object.keys(currentUser.personas).length > 0 ? (
             Object.entries(currentUser.personas).map(([k, v]) => (
               <Typography key={k} sx={{ mb: 1.5, color: "#374151" }}>
-                <strong style={{ color: "#1F2937" }}>{translateLabel(k)}:</strong> {v}
+                <strong style={{ color: "#1F2937" }}>{translateLabel(k)}:</strong> {String(v)}
               </Typography>
-            ))}
+            ))
+          ) : (
+            <Typography color="#6B7280">Nenhum dado de persona disponível</Typography>
+          )}
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
           <Button
@@ -528,7 +794,11 @@ const Seletivo: React.FC = () => {
           Endereços
         </DialogTitle>
         <DialogContent dividers>
-          {currentUser?.addresses && currentUser.addresses.length > 0 ? (
+          {loadingDetails ? (
+            <Box display="flex" justifyContent="center" p={4}>
+              <CircularProgress {...progressStyles} />
+            </Box>
+          ) : currentUser?.addresses && currentUser.addresses.length > 0 ? (
             currentUser.addresses.map((a) => (
               <Box key={a.id} mb={2} pb={2} borderBottom="1px solid #E5E7EB">
                 <Typography sx={{ mb: 0.5, color: "#374151" }}>
@@ -586,7 +856,11 @@ const Seletivo: React.FC = () => {
           Dados do Guardião
         </DialogTitle>
         <DialogContent dividers>
-          {currentUser?.guardians && currentUser.guardians.length > 0 ? (
+          {loadingDetails ? (
+            <Box display="flex" justifyContent="center" p={4}>
+              <CircularProgress {...progressStyles} />
+            </Box>
+          ) : currentUser?.guardians && currentUser.guardians.length > 0 ? (
             currentUser.guardians.map((g) => (
               <Box key={g.cpf} mb={2} pb={2} borderBottom="1px solid #E5E7EB">
                 <Typography sx={{ mb: 0.5, color: "#374151" }}>
@@ -644,9 +918,13 @@ const Seletivo: React.FC = () => {
           Dados de Registro
         </DialogTitle>
         <DialogContent dividers>
-          {currentUser && (
+          {loadingDetails ? (
+            <Box display="flex" justifyContent="center" p={4}>
+              <CircularProgress {...progressStyles} />
+            </Box>
+          ) : currentUser ? (
             <>
-              {currentUser.registration_data &&
+              {currentUser.registration_data && Object.keys(currentUser.registration_data).length > 0 ? (
                 Object.entries(currentUser.registration_data).map(([k, v]) => (
                   <Typography key={k} sx={{ mb: 1.5, color: "#374151" }}>
                     <strong style={{ color: "#1F2937" }}>{translateLabel(k)}:</strong>{" "}
@@ -654,15 +932,20 @@ const Seletivo: React.FC = () => {
                       ? v
                           .replace(/_/g, " ")
                           .replace(/^./, (match) => match.toUpperCase())
-                      : v}
+                      : String(v)}
                   </Typography>
-                ))}
+                ))
+              ) : (
+                <Typography color="#6B7280" sx={{ mb: 2 }}>Nenhum dado de registro disponível</Typography>
+              )}
               {currentUser.contract && (
-                <Typography sx={{ color: "#374151" }}>
+                <Typography sx={{ color: "#374151", mt: 2, pt: 2, borderTop: "1px solid #E5E7EB" }}>
                   <strong style={{ color: "#1F2937" }}>Contrato:</strong> {currentUser.contract.status}
                 </Typography>
               )}
             </>
+          ) : (
+            <Typography color="#6B7280">Nenhum dado disponível</Typography>
           )}
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>

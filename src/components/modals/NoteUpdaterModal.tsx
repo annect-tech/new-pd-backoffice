@@ -97,12 +97,25 @@ const NoteUpdaterModal: React.FC<NoteUpdaterModalProps> = ({
                 }}
                 label="Selecione o Exame"
               >
-                {exams.map((exam) => (
-                  <MenuItem key={exam.id} value={exam.id}>
-                    {exam.user_data.user.first_name} {exam.user_data.user.last_name} -{" "}
-                    {exam.exam_scheduled_hour?.exam_date?.date || "N/A"} {exam.exam_scheduled_hour?.hour || ""}
-                  </MenuItem>
-                ))}
+                {exams.map((exam) => {
+                  const firstName = exam.user_data?.user?.first_name || "";
+                  const lastName = exam.user_data?.user?.last_name || "";
+                  const userDataId = (exam as any)?.user_data_id;
+                  const nome =
+                    firstName || lastName
+                      ? `${firstName} ${lastName}`.trim()
+                      : userDataId
+                      ? `Usuário ${userDataId}`
+                      : "Aluno não informado";
+                  const date = exam.exam_scheduled_hour?.exam_date?.date || "N/A";
+                  const hour = exam.exam_scheduled_hour?.hour || "";
+
+                  return (
+                    <MenuItem key={exam.id} value={exam.id}>
+                      {nome} - {date} {hour}
+                    </MenuItem>
+                  );
+                })}
               </Select>
             </FormControl>
 

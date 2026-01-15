@@ -18,6 +18,7 @@ import {
   Tooltip,
 } from "@mui/material";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import CloseIcon from "@mui/icons-material/Close";
 import { formatCpf, formatDate, formatPatrimony } from "../../util/formatters";
 import { VALIDATION_PATTERNS } from "../../util/constants";
 import logoDesenvolve from "../../assets/images/logo/LOGO DESENVOLVE.png";
@@ -232,21 +233,10 @@ const CreateProfileModal: React.FC<Props> = ({
     setReviewLoading(true);
     setReviewError(null);
     try {
-      // Simula criação de perfil (dados mockados)
-      // A função onCreateProfile já está mockada no AppLayout
+      // Criar perfil via API (função já integrada no AppLayout)
       await onCreateProfile();
       
-      // Adiciona ao array de perfis mockados para referência futura
-      const existingProfiles = localStorage.getItem('mock_profiles');
-      const profiles = existingProfiles ? JSON.parse(existingProfiles) : [];
-      const newProfile = {
-        id: Date.now(),
-        ...profileData,
-        created_at: new Date().toISOString(),
-      };
-      profiles.push(newProfile);
-      localStorage.setItem('mock_profiles', JSON.stringify(profiles));
-      
+      // Avançar para próximo passo após criação bem-sucedida
       setStep(dataSteps.length + 1);
     } catch (error: any) {
       let errorMessage = error.message || "Erro ao criar perfil";
@@ -294,18 +284,18 @@ const CreateProfileModal: React.FC<Props> = ({
     if (!file) return;
     setUploading(true);
     try {
-      // Simula upload de foto (dados mockados)
+      // Upload de foto via API (função já integrada no AppLayout)
       await onUploadPhoto(file);
       
-      // Simula sucesso do upload
-      console.log('Foto de perfil enviada com sucesso (mockado)');
+      console.log('Foto de perfil enviada com sucesso');
       
       // Fecha o modal após sucesso
       setTimeout(() => {
         onClose();
       }, 500);
-    } catch {
-      setError("Erro ao enviar foto");
+    } catch (error: any) {
+      const errorMessage = error?.message || "Erro ao enviar foto";
+      setError(errorMessage);
     } finally {
       setUploading(false);
     }
@@ -331,7 +321,27 @@ const CreateProfileModal: React.FC<Props> = ({
   ];
 
   return (
-    <Dialog open={open} fullWidth maxWidth="sm" disableEscapeKeyDown>
+    <Dialog 
+      open={open} 
+      fullWidth 
+      maxWidth="sm" 
+      disableEscapeKeyDown={false}
+      onClose={onClose}
+    >
+      {/* Botão de fechar temporário para testes */}
+      <IconButton
+        aria-label="fechar"
+        onClick={onClose}
+        sx={{
+          position: 'absolute',
+          right: 8,
+          top: 8,
+          zIndex: 1,
+        }}
+      >
+        <CloseIcon />
+      </IconButton>
+      
       <Box
         textAlign="center"
         pt={8}
@@ -700,7 +710,16 @@ const CreateProfileModal: React.FC<Props> = ({
                 </Typography>
               ))}
               {reviewError && (
-                <Typography color="error">{reviewError}</Typography>
+                <Box sx={{ mt: 2, p: 2, bgcolor: '#ffebee', borderRadius: 1, border: '1px solid #f44336' }}>
+                  <Typography 
+                    color="error" 
+                    variant="body2"
+                    component="div"
+                    sx={{ whiteSpace: 'pre-line' }}
+                  >
+                    {reviewError}
+                  </Typography>
+                </Box>
               )}
             </Stack>
           </Box>

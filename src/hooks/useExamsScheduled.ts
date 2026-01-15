@@ -8,19 +8,28 @@ interface SnackbarState {
   severity: "success" | "error" | "warning" | "info";
 }
 
+interface PaginationState {
+  currentPage: number;
+  itemsPerPage: number;
+  totalItems: number;
+  totalPages: number;
+}
+
 export const useExamsScheduled = () => {
   const [exams, setExams] = useState<ExamScheduled[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState<PaginationState>({
+    currentPage: 1,
+    itemsPerPage: 10,
+    totalItems: 0,
+    totalPages: 0,
+  });
   const [snackbar, setSnackbar] = useState<SnackbarState>({
     open: false,
     message: "",
     severity: "info",
   });
-  const [page, setPage] = useState(1);
-  const [size, setSize] = useState(10);
-  const [totalItems, setTotalItems] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
 
   const showSnackbar = useCallback(
     (message: string, severity: SnackbarState["severity"] = "info") => {
@@ -33,36 +42,63 @@ export const useExamsScheduled = () => {
     setSnackbar((prev) => ({ ...prev, open: false }));
   }, []);
 
-  const fetchExams = useCallback(async (pOrEvent?: any, s: number = size) => {
-    const p = typeof pOrEvent === "number" ? pOrEvent : page;
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await examsScheduledService.list(p, s);
+  const fetchExams = useCallback(
+    async (page: number = 1, size: number = 10, search?: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await examsScheduledService.list(page, size, search);
 
-      if (response.status >= 200 && response.status < 300 && response.data) {
-        const examData = Array.isArray(response.data.data) ? response.data.data : [];
-        setExams(examData);
-        setPage(response.data.currentPage || p);
-        setSize(response.data.itemsPerPage || s);
-        setTotalItems(response.data.totalItems || 0);
-        setTotalPages(response.data.totalPages || 0);
-        showSnackbar("Dados carregados com sucesso", "success");
-      } else {
+        if (response.status >= 200 && response.status < 300 && response.data) {
+          const raw = response.data as any;
+          
+          // A resposta pode vir como array direto ou como objeto com propriedade data
+          let list: any[] = [];
+          let paginationData: any = {};
+          
+          if (Array.isArray(raw)) {
+            // Se a resposta é um array direto
+            list = raw;
+            paginationData = {
+              currentPage: page,
+              itemsPerPage: size,
+              totalItems: raw.length,
+              totalPages: Math.ceil(raw.length / size),
+            };
+          } else if (Array.isArray(raw?.data)) {
+            // Se a resposta tem estrutura paginada
+            list = raw.data;
+            paginationData = {
+              currentPage: Number(raw?.currentPage ?? page),
+              itemsPerPage: Number(raw?.itemsPerPage ?? size),
+              totalItems: Number(raw?.totalItems ?? list.length),
+              totalPages: Number(raw?.totalPages ?? 0),
+            };
+          }
+
+          setExams(list);
+          setPagination(paginationData);
+        } else {
+          console.warn("[useExamsScheduled] Resposta com status inválido ou sem dados:", response);
+          setExams([]);
+          setPagination((prev) => ({ ...prev, totalItems: 0, totalPages: 0 }));
+          const errorMessage = response.message || "Erro ao carregar dados";
+          setError(errorMessage);
+          showSnackbar(errorMessage, "error");
+        }
+      } catch (err: any) {
+        console.error("[useExamsScheduled] Erro ao buscar exames:", err);
         setExams([]);
-        const errorMessage = response.message || "Erro ao carregar dados";
+        setPagination((prev) => ({ ...prev, totalItems: 0, totalPages: 0 }));
+        const errorMessage = err?.message || "Erro ao carregar dados";
         setError(errorMessage);
         showSnackbar(errorMessage, "error");
+      } finally {
+        setLoading(false);
       }
-    } catch (err: any) {
-      setExams([]);
-      const errorMessage = err.message || "Erro ao carregar dados";
-      setError(errorMessage);
-      showSnackbar(errorMessage, "error");
-    } finally {
-      setLoading(false);
-    }
-  }, [showSnackbar, page, size]);
+    },
+    [showSnackbar]
+  );
 
   const handleExportCSV = useCallback(() => {
     if (exams.length === 0) {
@@ -117,13 +153,10 @@ export const useExamsScheduled = () => {
     exams,
     loading,
     error,
+    pagination,
     snackbar,
     closeSnackbar,
     fetchExams,
-    page,
-    size,
-    totalItems,
-    totalPages,
     handleExportCSV,
     handleExportJSON,
     handleExportXLSX,

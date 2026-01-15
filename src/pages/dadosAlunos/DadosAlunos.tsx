@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   Alert,
   Box,
@@ -48,6 +48,9 @@ import {
 import AgentModal from "../../components/modals/AgentModal";
 import PsychologistModal from "../../components/modals/PsychologistModal";
 import EditStudentModal from "../../components/modals/EditStudentModal";
+import { useStudentData } from "../../hooks/useStudentData";
+import { useSelective } from "../../hooks/useSelective";
+import { studentDataService } from "../../core/http/services/studentDataService";
 
 interface StudentRow {
   id: string;
@@ -60,59 +63,29 @@ interface StudentRow {
   birth_date: string;
   username: string;
   origin: "novo" | "antigo";
+  user_data_id?: string;
 }
-
-// Dados mockados (substituir por integração futura)
-const MOCK_NEW_STUDENTS: StudentRow[] = [
-  {
-    id: "1",
-    completeName: "João Silva",
-    registration: "2025A001",
-    corp_email: "joao.silva@empresa.com",
-    monitor: "Carlos Mendes",
-    status: "Ativo",
-    cpf: "123.456.789-00",
-    birth_date: "1998-03-10",
-    username: "joao.silva",
-    origin: "novo",
-  },
-  {
-    id: "2",
-    completeName: "Maria Santos",
-    registration: "2025A002",
-    corp_email: "maria.santos@empresa.com",
-    monitor: "Ana Prado",
-    status: "Ativo",
-    cpf: "987.654.321-00",
-    birth_date: "1997-07-22",
-    username: "maria.santos",
-    origin: "novo",
-  },
-  {
-    id: "3",
-    completeName: "Pedro Oliveira",
-    registration: "2025A003",
-    corp_email: "pedro.oliveira@empresa.com",
-    monitor: "Carlos Mendes",
-    status: "Suspenso",
-    cpf: "456.789.123-00",
-    birth_date: "1999-01-15",
-    username: "pedro.oliveira",
-    origin: "novo",
-  },
-];
-
 
 const DadosAlunos: React.FC = () => {
   const navigate = useNavigate();
+  
+  // Hook para buscar dados de user_data (dados pessoais)
+  const {
+    users: userData,
+    loading: userDataLoading,
+    pagination: userDataPagination,
+    fetchUsers,
+  } = useSelective();
 
-  const [items, setItems] = useState<StudentRow[]>([...MOCK_NEW_STUDENTS]);
+  const [items, setItems] = useState<StudentRow[]>([]);
   const [oldItems, setOldItems] = useState<StudentRow[]>([]);
   const [oldLoading, setOldLoading] = useState(false);
   const [_oldError, setOldError] = useState<string | null>(null);
   const [hasFetchedOld, setHasFetchedOld] = useState(false);
-  const [loading] = useState(false);
-  const [error] = useState<string | null>(null);
+  const [studentDataMap, setStudentDataMap] = useState<Map<string, any>>(new Map());
+  const [loadingStudentData, setLoadingStudentData] = useState(false);
+  const loading = userDataLoading || loadingStudentData;
+  const error = null;
   const [viewerUrl] = useState<string | null>(null); // reservado se necessário
   const [statusAnchor, setStatusAnchor] = useState<null | HTMLElement>(null);
   const [statusFilter, setStatusFilter] = useState<
@@ -142,12 +115,86 @@ const DadosAlunos: React.FC = () => {
     { name: "Isabela Jales", value: "isabelajales@projetodesenvolve.com.br" },
   ];
   
+  // Buscar student_data (dados acadêmicos) ao montar
+  useEffect(() => {
+    const fetchStudentData = async () => {
+      setLoadingStudentData(true);
+      try {
+        // Buscar todos os student_data sem paginação para fazer o mapa completo
+        const response = await studentDataService.list(1, 1000);
+        
+        if (response.status >= 200 && response.status < 300 && response.data) {
+          const raw = response.data as any;
+          const studentDataList = Array.isArray(raw?.data) ? raw.data : [];
+          
+          // Criar mapa de user_data_id -> student_data
+          const map = new Map();
+          studentDataList.forEach((sd: any) => {
+            map.set(sd.user_data_id, sd);
+          });
+          
+          setStudentDataMap(map);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar student_data:", error);
+      } finally {
+        setLoadingStudentData(false);
+      }
+    };
+    
+    fetchStudentData();
+  }, []);
+
+  // Buscar user_data (dados pessoais) com paginação
+  useEffect(() => {
+    fetchUsers(page + 1, rowsPerPage, searchTerm.trim() || undefined);
+  }, [page, rowsPerPage, searchTerm, fetchUsers]);
+
+  // Fazer merge de user_data + student_data
+  useEffect(() => {
+    if (userData && userData.length > 0) {
+      const convertedStudents: StudentRow[] = userData.map((user) => {
+        const userId = String(user.id);
+        const studentData = studentDataMap.get(userId);
+        
+        // Nome completo
+        const completeName = [user.first_name, user.last_name]
+          .filter(Boolean)
+          .join(" ") || (user as any)?.name || "—";
+        
+        return {
+          id: userId,
+          user_data_id: userId,
+          completeName,
+          registration: studentData?.registration || "—",
+          corp_email: studentData?.corp_email || user.email || "—",
+          monitor: studentData?.monitor || "—",
+          status: studentData?.status || "Inativo",
+          cpf: user.cpf || "—",
+          birth_date: user.birth_date || "—",
+          username: user.username || "—",
+          origin: "novo" as const,
+        };
+      });
+      setItems(convertedStudents);
+    }
+  }, [userData, studentDataMap]);
 
   const combinedRows = useMemo(() => {
     return showOld ? oldItems : items;
   }, [items, oldItems, showOld]);
 
   const filteredRows = useMemo(() => {
+    // Se estiver mostrando dados novos da API, não precisa filtrar localmente
+    // pois a busca já é feita no backend
+    if (!showOld) {
+      return combinedRows.filter((row) => {
+        if (statusFilter === "all") return true;
+        return row.status === statusFilter;
+      });
+    }
+    
+    // Para dados antigos, filtrar localmente
     return combinedRows
       .filter(
         (row) =>
@@ -159,23 +206,32 @@ const DadosAlunos: React.FC = () => {
         if (statusFilter === "all") return true;
         return row.status === statusFilter;
       });
-  }, [combinedRows, searchTerm, statusFilter]);
+  }, [combinedRows, searchTerm, statusFilter, showOld]);
 
   const paginatedRows = useMemo(() => {
+    // Se estiver mostrando dados novos da API, não paginar localmente
+    if (!showOld) {
+      return filteredRows;
+    }
+    
+    // Para dados antigos, paginar localmente
     const start = page * rowsPerPage;
     return filteredRows.slice(start, start + rowsPerPage);
-  }, [filteredRows, page, rowsPerPage]);
+  }, [filteredRows, page, rowsPerPage, showOld]);
+  
+  // Total de itens para paginação
+  const totalItems = showOld ? filteredRows.length : userDataPagination.totalItems;
 
   const handleRefresh = () => {
     setStatusFilter("all");
     setSearchTerm("");
-    setItems([...MOCK_NEW_STUDENTS]);
     setOldItems([]);
     setHasFetchedOld(false);
     setOldError(null);
     setShowOld(false);
     setPage(0);
     setSelectedStudent(null);
+    fetchUsers(1, rowsPerPage);
   };
   
   const fetchOldFromApi = async () => {
@@ -323,11 +379,9 @@ const DadosAlunos: React.FC = () => {
       sx={{ 
         minHeight: "100vh", 
         display: "flex", 
-        flexDirection: "column", 
-        overflowX: "hidden", 
+        flexDirection: "column",
         width: "100%",
-        position: "relative",
-        boxSizing: "border-box",
+        overflow: "hidden",
       }}
     >
       <Box 
@@ -336,24 +390,15 @@ const DadosAlunos: React.FC = () => {
           p: { xs: 2, sm: 3, md: 4 }, 
           display: "flex", 
           flexDirection: "column", 
-          overflow: "auto", 
-          overflowX: "hidden", 
+          overflow: "auto",
           width: "100%",
-          boxSizing: "border-box",
-          position: "relative",
-          minWidth: 0,
-          maxWidth: "100%",
         }}
       >
         <Box 
           sx={{ 
+            maxWidth: 1400, 
             width: "100%", 
-            margin: "0 auto", 
-            overflowX: "hidden", 
-            boxSizing: "border-box",
-            position: "relative",
-            minWidth: 0,
-            maxWidth: "100%",
+            margin: "0 auto",
           }}
         >
           <PageHeader
@@ -366,20 +411,9 @@ const DadosAlunos: React.FC = () => {
             ]}
           />
           <Fade in timeout={1000}>
-            <Paper {...paperStyles} sx={{ ...paperStyles.sx, overflow: "hidden", width: "100%", maxWidth: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column", minWidth: 0 }}>
-              <Toolbar 
-                {...toolbarStyles} 
-                sx={{ 
-                  ...toolbarStyles.sx, 
-                  overflowX: "hidden",
-                  flexWrap: "wrap",
-                  gap: 2,
-                  boxSizing: "border-box",
-                  minWidth: 0,
-                  width: "100%",
-                }}
-              >
-                <Box display="flex" alignItems="center" sx={{ flex: 1, minWidth: { xs: "100%", sm: 240 }, maxWidth: { xs: "100%", sm: 420 } }}>
+            <Paper {...paperStyles} sx={{ ...paperStyles.sx, overflow: "hidden" }}>
+              <Toolbar {...toolbarStyles}>
+                <Box display="flex" alignItems="center" sx={{ flex: 1, minWidth: 240, maxWidth: 420 }}>
                   <SearchIcon sx={{ mr: 1, color: designSystem.colors.text.disabled }} />
                   <TextField
                     placeholder="Pesquisar por nome, matrícula ou CPF..."
@@ -390,16 +424,7 @@ const DadosAlunos: React.FC = () => {
                     {...textFieldStyles}
                   />
                 </Box>
-                <Box 
-                  display="flex" 
-                  alignItems="center" 
-                  gap={1}
-                  flexWrap="wrap"
-                  sx={{
-                    minWidth: 0,
-                    flexShrink: 1,
-                  }}
-                >
+                <Box display="flex" alignItems="center" gap={1}>
                   <IconButton {...iconButtonStyles} onClick={(e) => setStatusAnchor(e.currentTarget)}>
                     <FilterListIcon />
                   </IconButton>
@@ -468,56 +493,20 @@ const DadosAlunos: React.FC = () => {
                   <Alert severity="error">{error}</Alert>
                 </Box>
               ) : (
-                <Box 
-                  sx={{ 
-                    width: "100%", 
-                    maxWidth: "100%",
-                    overflow: "hidden", 
-                    boxSizing: "border-box", 
-                    minWidth: 0, 
-                    position: "relative",
-                    display: "block",
-                    paddingRight: "24px",
-                  }}
-                >
-                  <TableContainer 
-                    component="div"
-                    sx={{ 
-                      overflowX: "auto", 
-                      overflowY: "visible",
-                      width: "100%",
-                      maxWidth: "100%",
-                      boxSizing: "border-box",
-                      display: "block",
-                      "&::-webkit-scrollbar": {
-                        height: "8px",
-                      },
-                      "&::-webkit-scrollbar-track": {
-                        backgroundColor: designSystem.colors.background.secondary,
-                      },
-                      "&::-webkit-scrollbar-thumb": {
-                        backgroundColor: designSystem.colors.border.dark,
-                        borderRadius: "4px",
-                        "&:hover": {
-                          backgroundColor: designSystem.colors.primary.main,
-                        },
-                      },
-                    }}
-                  >
-                    {/* set a minimum table width so that when viewport is smaller a horizontal scrollbar appears inside the table container */}
-                    <Table stickyHeader size="small" sx={{ minWidth: 1320 }}>
+                <TableContainer sx={{ overflowX: "auto", width: "100%", maxWidth: "100%" }}>
+                  <Table size="small" sx={{ minWidth: 1200 }}>
                     <TableHead>
                       <TableRow>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 70 }}>ID</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 200 }}>Nome Completo</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 150 }}>Matrícula</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 200 }}>E-mail Corporativo</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 140 }}>Monitor</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 110 }}>Status</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 130 }}>CPF</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 150 }}>Data de Nascimento</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 170 }}>Agente de Sucesso</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 100 }}>Origem</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 60 }}>ID</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 180 }}>Nome Completo</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 120 }}>Matrícula</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 220 }}>E-mail Corporativo</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 120 }}>Monitor</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 100 }}>Status</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 130 }}>CPF</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 120 }}>Data de Nasc.</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 140 }}>Agente de Sucesso</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 110 }}>Origem</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -544,20 +533,20 @@ const DadosAlunos: React.FC = () => {
                               }),
                             }}
                           >
-                            <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.id}</TableCell>
-                            <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.completeName}</TableCell>
-                            <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.registration}</TableCell>
-                            <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.corp_email}</TableCell>
-                            <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.monitor}</TableCell>
-                            <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            <TableCell sx={{ width: 60, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.id}</TableCell>
+                            <TableCell sx={{ width: 180, maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.completeName}</TableCell>
+                            <TableCell sx={{ width: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.registration}</TableCell>
+                            <TableCell sx={{ width: 220, maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.corp_email}</TableCell>
+                            <TableCell sx={{ width: 120, maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.monitor}</TableCell>
+                            <TableCell sx={{ width: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                               <Typography sx={{ color: getStatusColor(row.status), fontWeight: 600 }}>
                                 {row.status}
                               </Typography>
                             </TableCell>
-                            <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.cpf}</TableCell>
-                            <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.birth_date}</TableCell>
-                            <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.username}</TableCell>
-                            <TableCell sx={{ textTransform: "capitalize", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.origin}</TableCell>
+                            <TableCell sx={{ width: 130, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.cpf}</TableCell>
+                            <TableCell sx={{ width: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.birth_date}</TableCell>
+                            <TableCell sx={{ width: 140, maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.username}</TableCell>
+                            <TableCell sx={{ width: 110, textTransform: "capitalize", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.origin}</TableCell>
                           </TableRow>
                         ))
                       )}
@@ -565,7 +554,7 @@ const DadosAlunos: React.FC = () => {
                   </Table>
                   <TablePagination
                     component="div"
-                    count={filteredRows.length}
+                    count={totalItems}
                     page={page}
                     onPageChange={handleChangePage}
                     rowsPerPage={rowsPerPage}
@@ -574,16 +563,8 @@ const DadosAlunos: React.FC = () => {
                     labelRowsPerPage="Linhas por página:"
                     labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count !== -1 ? count : `mais de ${to}`}`}
                     {...tablePaginationStyles}
-                    sx={{
-                      ...tablePaginationStyles.sx,
-                      width: "100%",
-                      maxWidth: "100%",
-                      overflowX: "auto",
-                      boxSizing: "border-box",
-                    }}
                   />
-                  </TableContainer>
-                </Box>
+                </TableContainer>
               )}
             </Paper>
           </Fade>
@@ -592,7 +573,7 @@ const DadosAlunos: React.FC = () => {
 
       {/* Componentes do pd-dados-alunos embaixo da tabela */}
       {selectedStudent && (
-        <Box sx={{ mt: 3, maxWidth: 1400, width: "100%", margin: "24px auto 0", px: { xs: 2, sm: 3, md: 4 }, overflowX: "hidden" }}>
+        <Box sx={{ mt: 3, maxWidth: 1400, width: "100%", margin: "24px auto 0", px: { xs: 2, sm: 3, md: 4 } }}>
           {/* DashboardHead - Botões de ação */}
           <Paper
             elevation={2}

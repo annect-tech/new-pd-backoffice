@@ -28,18 +28,16 @@ export const citiesService = {
    * @param search - Termo de busca opcional
    */
   list: (page: number = 1, size: number = 10, search?: string) => {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      size: size.toString(),
-    });
-
-    if (search) {
-      params.append("search", search);
-    }
-
     return httpClient.get<PaginatedResponse<City>>(
       API_URL,
-      `/admin/allowed-cities?${params.toString()}`
+      "/admin/allowed-cities",
+      {
+        queryParams: {
+          page,
+          size,
+          ...(search ? { search } : {}),
+        },
+      }
     );
   },
 

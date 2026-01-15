@@ -28,6 +28,7 @@ import {
   MoreVert as MoreVertIcon,
 } from "@mui/icons-material";
 import { useExamsScheduled } from "../../hooks/useExamsScheduled";
+import { usersService } from "../../core/http/services/usersService";
 import ScheduledStatusUpdaterModal from "../../components/modals/ScheduledStatusUpdaterModal";
 import { APP_ROUTES } from "../../util/constants";
 import PageHeader from "../../components/ui/page/PageHeader";
@@ -46,8 +47,9 @@ import {
 const ListaPresenca: React.FC = () => {
   const {
     exams,
-    loading,
+    loading: examsLoading,
     error,
+    pagination,
     snackbar,
     closeSnackbar,
     fetchExams,
@@ -66,56 +68,146 @@ const ListaPresenca: React.FC = () => {
   const [openUpdater, setOpenUpdater] = useState(false);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [usersMap, setUsersMap] = useState<Map<number, any>>(new Map());
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  
+  const loading = examsLoading || loadingUsers;
 
-  // Transform exams to rows
+  // Buscar auth_users completo ao montar (paginação múltipla)
+  useEffect(() => {
+    const fetchAllUsers = async () => {
+      setLoadingUsers(true);
+      try {
+        console.log("[ListaPresenca] Carregando usuários...");
+        
+        const allUsers: any[] = [];
+        let currentPage = 1;
+        const pageSize = 100;
+        let totalPages = 1;
+        
+        // Buscar todas as páginas
+        while (currentPage <= totalPages) {
+          const response = await usersService.listAllUsers(currentPage, pageSize);
+          
+          if (response.status >= 200 && response.status < 300 && response.data) {
+            const raw = response.data as any;
+            
+            // Atualizar totalPages na primeira chamada
+            if (currentPage === 1 && raw.totalPages) {
+              totalPages = raw.totalPages;
+              console.log(`[ListaPresenca] Total: ${raw.totalItems} usuários em ${totalPages} páginas`);
+            }
+            
+            // Extrair lista de usuários
+            const pageUsers = raw.data || raw.results || (Array.isArray(raw) ? raw : []);
+            
+            // Parar se página vazia
+            if (pageUsers.length === 0) break;
+            
+            allUsers.push(...pageUsers);
+            currentPage++;
+          } else {
+            break;
+          }
+        }
+        
+        console.log(`[ListaPresenca] ✅ ${allUsers.length} usuários carregados`);
+        
+        // Criar mapa
+        const map = new Map();
+        allUsers.forEach((user: any) => {
+          map.set(Number(user.id), user);
+        });
+        
+        setUsersMap(map);
+      } catch (error) {
+        console.error("[ListaPresenca] Erro ao buscar users:", error);
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+    
+    fetchAllUsers();
+  }, []);
+
+  // Transform exams to rows com merge de auth_users
   const rows = useMemo(() => {
-    if (!Array.isArray(exams)) {
+    if (!Array.isArray(exams) || exams.length === 0) {
       return [];
     }
-    return exams.map((exam) => ({
-      id: exam.id,
-      cpf: exam.user_data.cpf,
-      name: `${exam.user_data.user.first_name} ${exam.user_data.user.last_name}`,
-      celphone: exam.user_data.celphone || "Não informado",
-      status:
-        exam.status === "absent"
-          ? "ausente"
-          : exam.status === "scheduled"
-          ? "agendado"
-          : "presente",
-      local: exam.exam_scheduled_hour.exam_date.local.name,
-      date: exam.exam_scheduled_hour.exam_date.date,
-      hour: exam.exam_scheduled_hour.hour,
-      originalStatus: exam.status,
-    }));
-  }, [exams]);
+    
+    return exams.map((exam: any) => {
+      const userId = Number(exam.user_data_id);
+      const authUser = usersMap.get(userId);
+      
+      // Nome: username ou "—"
+      const completeName = authUser?.username || "—";
+      
+      return {
+        id: exam.id,
+        cpf: authUser?.cpf || "—",
+        name: completeName,
+        celphone: authUser?.celphone || "Não informado",
+        status:
+          exam.status === "absent"
+            ? "ausente"
+            : exam.status === "scheduled"
+            ? "agendado"
+            : "presente",
+        local: exam.exam_scheduled_hour?.exam_date?.local?.name || "—",
+        date: exam.exam_scheduled_hour?.exam_date?.date || "—",
+        hour: exam.exam_scheduled_hour?.hour || "—",
+        originalStatus: exam.status,
+      };
+    });
+  }, [exams, usersMap]);
 
-  // Filter rows
+  // Filter rows (filtro de status + busca local por nome/CPF/username)
   const filtered = useMemo(() => {
-    return rows
-      .filter(
-        (row) =>
-          row.cpf.includes(searchTerm) ||
-          row.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          row.celphone.includes(searchTerm)
-      )
-      .filter((row) => {
+    let result = rows;
+    
+    // Filtrar por status
+    if (filterStatus !== "all") {
+      result = result.filter((row) => {
         if (filterStatus === "scheduled") return row.originalStatus === "scheduled";
         if (filterStatus === "present") return row.originalStatus === "present";
         if (filterStatus === "absent") return row.originalStatus === "absent";
         return true;
       });
-  }, [rows, searchTerm, filterStatus]);
-
-  // Paginated data
-  const paginatedData = useMemo(() => {
-    const startIndex = page * rowsPerPage;
-    return filtered.slice(startIndex, startIndex + rowsPerPage);
-  }, [filtered, page, rowsPerPage]);
+    }
+    
+    // Busca local por termo
+    if (searchTerm.trim()) {
+      const search = searchTerm.trim().toLowerCase();
+      result = result.filter((row) => {
+        const exam = exams.find((e: any) => String(e.id) === String(row.id));
+        const userId = Number(exam?.user_data_id);
+        const authUser = usersMap.get(userId);
+        
+        // Buscar em: CPF, Nome, Username, Email
+        const searchableText = [
+          row.cpf,
+          row.name,
+          authUser?.username,
+          authUser?.email,
+          row.celphone,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        
+        return searchableText.includes(search);
+      });
+    }
+    
+    return result;
+  }, [rows, filterStatus, searchTerm, exams, usersMap]);
 
   useEffect(() => {
-    fetchExams();
-  }, [fetchExams]);
+    // Buscar sem termo de pesquisa - faremos filtro local
+    fetchExams(page + 1, rowsPerPage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, rowsPerPage]);
 
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
@@ -198,7 +290,7 @@ const ListaPresenca: React.FC = () => {
                 <Box display="flex" alignItems="center" sx={{ flex: 1, maxWidth: 500 }}>
                   <SearchIcon sx={{ mr: 1, color: designSystem.colors.text.disabled }} />
                   <TextField
-                    placeholder="Pesquisar por CPF, nome, celular..."
+                    placeholder="Pesquisar por username, email..."
                     variant="standard"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -277,7 +369,10 @@ const ListaPresenca: React.FC = () => {
                       XLSX
                     </MenuItem>
                   </Menu>
-                  <IconButton onClick={fetchExams} {...iconButtonStyles}>
+                  <IconButton 
+                    onClick={() => fetchExams(page + 1, rowsPerPage)} 
+                    {...iconButtonStyles}
+                  >
                     <RefreshIcon />
                   </IconButton>
                   <IconButton onClick={openGeneralMenu} {...iconButtonStyles}>
@@ -345,7 +440,7 @@ const ListaPresenca: React.FC = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {paginatedData.length === 0 ? (
+                      {filtered.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
                             <Typography color={designSystem.colors.text.disabled} fontSize="0.95rem">
@@ -356,7 +451,7 @@ const ListaPresenca: React.FC = () => {
                           </TableCell>
                         </TableRow>
                       ) : (
-                        paginatedData.map((row) => (
+                        filtered.map((row) => (
                           <TableRow
                             key={row.id}
                             {...tableRowHoverStyles}
@@ -398,7 +493,7 @@ const ListaPresenca: React.FC = () => {
                   </Table>
                   <TablePagination
                     component="div"
-                    count={filtered.length}
+                    count={pagination.totalItems}
                     page={page}
                     onPageChange={handleChangePage}
                     rowsPerPage={rowsPerPage}
@@ -437,7 +532,7 @@ const ListaPresenca: React.FC = () => {
         exams={exams}
         onClose={() => {
           setOpenUpdater(false);
-          fetchExams();
+          fetchExams(page + 1, rowsPerPage);
         }}
       />
     </Box>

@@ -110,12 +110,23 @@ const Header: React.FC<HeaderProps> = () => {
             }}
           >
             <MenuItem
+              onClick={handleProfileClick}
+              sx={{
+                py: 0.75,
+                px: 2,
+                fontSize: "0.8125rem",
+                color: "#000000",
+              }}
+            >
+              Meu Perfil
+            </MenuItem>
+            <MenuItem
               onClick={handleLogout}
               sx={{
                 py: 0.75,
                 px: 2,
                 fontSize: "0.8125rem",
-                color: "#0000000",
+                color: "#000000",
               }}
             >
               Sair

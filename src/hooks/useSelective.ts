@@ -8,18 +8,27 @@ interface SnackbarState {
   severity: "success" | "error" | "warning" | "info";
 }
 
+interface PaginationState {
+  currentPage: number;
+  itemsPerPage: number;
+  totalItems: number;
+  totalPages: number;
+}
+
 export const useSelective = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(false);
+  const [pagination, setPagination] = useState<PaginationState>({
+    currentPage: 1,
+    itemsPerPage: 10,
+    totalItems: 0,
+    totalPages: 0,
+  });
   const [snackbar, setSnackbar] = useState<SnackbarState>({
     open: false,
     message: "",
     severity: "info",
   });
-  const [page, setPage] = useState(1);
-  const [size, setSize] = useState(10);
-  const [totalItems, setTotalItems] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
 
   const showSnackbar = useCallback(
     (message: string, severity: SnackbarState["severity"] = "info") => {
@@ -33,38 +42,52 @@ export const useSelective = () => {
   }, []);
 
   const fetchUsers = useCallback(
-    async (pOrEvent?: any, s: number = size) => {
-      const p = typeof pOrEvent === "number" ? pOrEvent : page;
+    async (page: number = 1, size: number = 10, search?: string) => {
       setLoading(true);
       try {
-        const response = await selectiveService.list(p, s);
+        const response = await selectiveService.list(page, size, search);
 
         if (response.status >= 200 && response.status < 300 && response.data) {
-          // Garantir que response.data.data é um array
-          const userData = Array.isArray(response.data.data) ? response.data.data : [];
-          setUsers(userData);
-          setPage(response.data.currentPage || p);
-          setSize(response.data.itemsPerPage || s);
-          setTotalItems(response.data.totalItems || 0);
-          setTotalPages(response.data.totalPages || 0);
-          showSnackbar("Dados carregados com sucesso", "success");
+          const raw = response.data as any;
+          // Tentar diferentes formatos de resposta
+          let list: any[] = [];
+          if (Array.isArray(raw?.data)) {
+            list = raw.data;
+          } else if (Array.isArray(raw)) {
+            list = raw;
+          } else if (raw?.data && typeof raw.data === 'object' && !Array.isArray(raw.data)) {
+            // Se data for um objeto, pode ser que os dados estejam em outra propriedade
+            list = [];
+          }
+
+          setUsers(list);
+          setPagination({
+            currentPage: Number(raw?.currentPage ?? raw?.page ?? page),
+            itemsPerPage: Number(raw?.itemsPerPage ?? raw?.size ?? size),
+            totalItems: Number(raw?.totalItems ?? raw?.total ?? list.length),
+            totalPages: Number(raw?.totalPages ?? Math.ceil((raw?.totalItems ?? raw?.total ?? list.length) / (raw?.itemsPerPage ?? raw?.size ?? size))),
+          });
         } else {
-          // Em caso de erro, limpar os usuários para um array vazio
           setUsers([]);
-          showSnackbar(response.message || "Erro ao carregar dados", "error");
+          setPagination((prev) => ({ ...prev, totalItems: 0, totalPages: 0 }));
+          showSnackbar(
+            response.message || "Erro ao buscar usuários",
+            "error"
+          );
         }
       } catch (error: any) {
-        // Em caso de exceção, limpar os usuários para um array vazio
+        console.error("Erro ao buscar usuários:", error);
         setUsers([]);
+        setPagination((prev) => ({ ...prev, totalItems: 0, totalPages: 0 }));
         showSnackbar(
-          error.message || "Erro ao carregar dados",
+          error?.message || "Erro ao buscar usuários",
           "error"
         );
       } finally {
         setLoading(false);
       }
     },
-    [showSnackbar, page, size]
+    [showSnackbar]
   );
 
   const handleExportCSV = useCallback(() => {
@@ -75,14 +98,14 @@ export const useSelective = () => {
 
     const headers = ["ID", "CPF", "Nome", "Data Nasc.", "Celular", "Email", "Cidade", "UF"];
     const rows = users.map((u) => [
-      u.id,
-      u.cpf,
-      `${u.first_name} ${u.last_name}`,
-      u.birth_date,
-      u.celphone,
-      u.email,
-      u.allowed_city.localidade,
-      u.allowed_city.uf,
+      u.id || "",
+      u.cpf || "",
+      [u.first_name, u.last_name].filter(Boolean).join(" ") || "",
+      u.birth_date || "",
+      u.celphone || "",
+      u.email || "",
+      u.allowed_city?.localidade || u.addresses?.[0]?.localidade || "",
+      u.allowed_city?.uf || u.addresses?.[0]?.uf || "",
     ]);
 
     const csvContent = [headers, ...rows]
@@ -120,13 +143,10 @@ export const useSelective = () => {
   return {
     users,
     loading,
+    pagination,
     snackbar,
     closeSnackbar,
     fetchUsers,
-    page,
-    size,
-    totalItems,
-    totalPages,
     handleExportCSV,
     handleExportJSON,
     handleExportXLSX,

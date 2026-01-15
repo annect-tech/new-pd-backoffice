@@ -10,13 +10,13 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 
-interface PdfViewModaProps {
+interface PdfViewModalProps {
   open: boolean;
   documentUrl: string | null;
   onClose: () => void;
 }
 
-const PdfViewModa: React.FC<PdfViewModaProps> = ({
+const PdfViewModal: React.FC<PdfViewModalProps> = ({
   open,
   documentUrl,
   onClose,
@@ -78,6 +78,6 @@ const PdfViewModa: React.FC<PdfViewModaProps> = ({
   );
 };
 
-export default PdfViewModa;
+export default PdfViewModal;
 
 

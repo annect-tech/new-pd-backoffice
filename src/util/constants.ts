@@ -17,6 +17,7 @@ export const APP_ROUTES = {
   HOME: "/",
   DASHBOARD: "/dashboard",
   LOGIN: "/login",
+  UNAUTHORIZED: "/nao-autorizado",
   // REGISTER: "/register", // Removido - não existe no backend
   // Rotas dos Cards
   SELECTIVE: "/seletivo",
@@ -29,6 +30,7 @@ export const APP_ROUTES = {
   STUDENT_CREATE: "/cadastro-alunos",
   RETENTION: "/retencao",
   CITIES: "/cidades",
+  TENANT_CITIES: "/tenant-cities",
   CONTRACTS: "/contratos",
   EXAM_DATES: "/datas-prova",
   DOCUMENTS: "/documentos",

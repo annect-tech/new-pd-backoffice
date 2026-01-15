@@ -19,18 +19,16 @@ export const enemResultsService = {
    * @param search - Termo de busca opcional
    */
   list: (page: number = 1, size: number = 10, search?: string) => {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      size: size.toString(),
-    });
-
-    if (search) {
-      params.append("search", search);
-    }
-
     return httpClient.get<PaginatedResponse<EnemResult>>(
       API_URL,
-      `/admin/enem-results?${params.toString()}`
+      "/admin/enem-results",
+      {
+        queryParams: {
+          page,
+          size,
+          ...(search ? { search } : {}),
+        },
+      }
     );
   },
 

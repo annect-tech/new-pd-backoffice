@@ -11,9 +11,22 @@ interface SnackbarState {
   severity: "success" | "error" | "warning" | "info";
 }
 
+interface PaginationState {
+  currentPage: number;
+  itemsPerPage: number;
+  totalItems: number;
+  totalPages: number;
+}
+
 export const useCities = () => {
   const [cities, setCities] = useState<City[]>([]);
   const [loading, setLoading] = useState(false);
+  const [pagination, setPagination] = useState<PaginationState>({
+    currentPage: 1,
+    itemsPerPage: 10,
+    totalItems: 0,
+    totalPages: 0,
+  });
   const [snackbar, setSnackbar] = useState<SnackbarState>({
     open: false,
     message: "",
@@ -32,18 +45,25 @@ export const useCities = () => {
   }, []);
 
   const fetchCities = useCallback(
-    async (pOrEvent?: any, size: number = 100, search?: string) => {
-      // if called as an event handler (onClick), the first arg will be an event
-      const page = typeof pOrEvent === "number" ? pOrEvent : 1;
+    async (page: number = 1, size: number = 10, search?: string) => {
       setLoading(true);
       try {
         const response = await citiesService.list(page, size, search);
 
         if (response.status >= 200 && response.status < 300 && response.data) {
-          const cityData = Array.isArray(response.data.data) ? response.data.data : [];
-          setCities(cityData);
+          const raw = response.data as any;
+          const list = Array.isArray(raw?.data) ? raw.data : Array.isArray(raw) ? raw : [];
+
+          setCities(list);
+          setPagination({
+            currentPage: Number(raw?.currentPage ?? page),
+            itemsPerPage: Number(raw?.itemsPerPage ?? size),
+            totalItems: Number(raw?.totalItems ?? list.length),
+            totalPages: Number(raw?.totalPages ?? 0),
+          });
         } else {
           setCities([]);
+          setPagination((prev) => ({ ...prev, totalItems: 0, totalPages: 0 }));
           showSnackbar(
             response.message || "Erro ao buscar cidades",
             "error"
@@ -51,6 +71,7 @@ export const useCities = () => {
         }
       } catch (error: any) {
         setCities([]);
+        setPagination((prev) => ({ ...prev, totalItems: 0, totalPages: 0 }));
         showSnackbar(error?.message || "Erro ao buscar cidades", "error");
       } finally {
         setLoading(false);
@@ -67,7 +88,7 @@ export const useCities = () => {
         if (response.status >= 200 && response.status < 300) {
           showSnackbar("Cidade criada com sucesso!", "success");
           // Recarregar lista após criar
-          await fetchCities();
+          await fetchCities(pagination.currentPage, pagination.itemsPerPage);
         } else {
           showSnackbar(
             response.message || "Erro ao criar cidade",
@@ -78,7 +99,7 @@ export const useCities = () => {
         showSnackbar(error?.message || "Erro ao criar cidade", "error");
       }
     },
-    [showSnackbar, fetchCities]
+    [showSnackbar, fetchCities, pagination]
   );
 
   const updateCity = useCallback(
@@ -89,7 +110,7 @@ export const useCities = () => {
         if (response.status >= 200 && response.status < 300) {
           showSnackbar("Cidade atualizada com sucesso!", "success");
           // Recarregar lista após atualizar
-          await fetchCities();
+          await fetchCities(pagination.currentPage, pagination.itemsPerPage);
         } else {
           showSnackbar(
             response.message || "Erro ao atualizar cidade",
@@ -100,12 +121,13 @@ export const useCities = () => {
         showSnackbar(error?.message || "Erro ao atualizar cidade", "error");
       }
     },
-    [showSnackbar, fetchCities]
+    [showSnackbar, fetchCities, pagination]
   );
 
   return {
     cities,
     loading,
+    pagination,
     snackbar,
     closeSnackbar,
     fetchCities,

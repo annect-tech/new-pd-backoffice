@@ -21,10 +21,12 @@ export const useAcademicMerit = () => {
     severity: "info",
   });
 
-  const [page, setPage] = useState(1);
-  const [size, setSize] = useState(10);
-  const [totalItems, setTotalItems] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    itemsPerPage: 10,
+    totalItems: 0,
+    totalPages: 0,
+  });
 
   const showSnackbar = useCallback(
     (message: string, severity: SnackbarState["severity"] = "info") => {
@@ -37,65 +39,90 @@ export const useAcademicMerit = () => {
     setSnackbar((prev) => ({ ...prev, open: false }));
   }, []);
 
-  const fetchMerits = useCallback(async (pOrEvent?: any, s: number = size) => {
-    const p = typeof pOrEvent === "number" ? pOrEvent : page;
+  const fetchMerits = useCallback(async (page: number = 1, size: number = 10, status?: string) => {
+    // Garantir que os parâmetros são números
+    const pageNum = typeof page === 'number' ? page : 1;
+    const sizeNum = typeof size === 'number' ? size : 10;
+    
     setLoading(true);
     setError(null);
     try {
+      console.log("[useAcademicMerit] fetchMerits - página:", pageNum, "tamanho:", sizeNum, "status:", status || "pending");
       // Use paginated list filtered by pending status
-      const response = await academicMeritService.list(p, s, "pending");
+      const response = await academicMeritService.list(pageNum, sizeNum, status || "pending");
+      
+      console.log("[useAcademicMerit] Resposta fetchMerits:", {
+        status: response.status,
+        hasData: !!response.data,
+        dataType: typeof response.data,
+      });
 
       if (response.status >= 200 && response.status < 300 && response.data) {
-        const meritData = Array.isArray(response.data.data) ? response.data.data : [];
-        setMerits(meritData);
-        setPage(response.data.currentPage || p);
-        setSize(response.data.itemsPerPage || s);
-        setTotalItems(response.data.totalItems || 0);
-        setTotalPages(response.data.totalPages || 0);
+        const raw = response.data as any;
+        const list = Array.isArray(raw?.data) ? raw.data : Array.isArray(raw) ? raw : [];
+        
+        setMerits(list);
+        setPagination({
+          currentPage: Number(raw?.currentPage ?? page),
+          itemsPerPage: Number(raw?.itemsPerPage ?? size),
+          totalItems: Number(raw?.totalItems ?? list.length),
+          totalPages: Number(raw?.totalPages ?? 0),
+        });
         setCurrentIndex(0);
-        showSnackbar("Dados carregados com sucesso", "success");
-        return;
+      } else {
+        setMerits([]);
+        setPagination((prev) => ({ ...prev, totalItems: 0, totalPages: 0 }));
+        const errorMessage = response.message || "Erro ao carregar documentos";
+        setError(errorMessage);
+        showSnackbar(errorMessage, "error");
       }
-
-      setMerits([]);
-      const errorMessage = response.message || "Erro ao carregar documentos";
-      setError(errorMessage);
-      showSnackbar(errorMessage, "error");
     } catch (err: any) {
       setMerits([]);
-      const errorMessage = err.message || "Erro ao carregar documentos";
+      setPagination((prev) => ({ ...prev, totalItems: 0, totalPages: 0 }));
+      const errorMessage = err?.message || "Erro ao carregar documentos";
       setError(errorMessage);
       showSnackbar(errorMessage, "error");
     } finally {
       setLoading(false);
     }
-  }, [page, size, showSnackbar]);
+  }, [showSnackbar]);
 
-  const fetchAllMerits = useCallback(async () => {
+  const fetchAllMerits = useCallback(async (page: number = 1, size: number = 1000) => {
+    // Garantir que os parâmetros são números
+    const pageNum = typeof page === 'number' ? page : 1;
+    const sizeNum = typeof size === 'number' ? size : 1000;
+    
     setLoading(true);
     setError(null);
     try {
-      const response = await academicMeritService.listAll();
-
+      const response = await academicMeritService.list(pageNum, sizeNum);
+      
       if (response.status >= 200 && response.status < 300 && response.data) {
-        // A resposta agora é PaginatedResponse, então precisamos acessar response.data.data
-        const meritData = Array.isArray(response.data.data) 
-          ? response.data.data 
-          : Array.isArray(response.data) 
-          ? response.data 
-          : [];
-        setAllMerits(meritData);
-        showSnackbar("Dados carregados com sucesso", "success");
-        return;
+        const raw = response.data as any;
+        
+        // A API pode retornar:
+        // 1. Objeto com { data: [...], currentPage, itemsPerPage, ... } (PaginatedResponse)
+        // 2. Array direto [...]
+        let list: AcademicMerit[] = [];
+        
+        if (Array.isArray(raw)) {
+          // Caso 2: Array direto
+          list = raw;
+        } else if (raw?.data && Array.isArray(raw.data)) {
+          // Caso 1: Objeto PaginatedResponse
+          list = raw.data;
+        }
+        
+        setAllMerits(list);
+      } else {
+        setAllMerits([]);
+        const errorMessage = response.message || "Erro ao carregar documentos";
+        setError(errorMessage);
+        showSnackbar(errorMessage, "error");
       }
-
-      setAllMerits([]);
-      const errorMessage = response.message || "Erro ao carregar documentos";
-      setError(errorMessage);
-      showSnackbar(errorMessage, "error");
     } catch (err: any) {
       setAllMerits([]);
-      const errorMessage = err.message || "Erro ao carregar documentos";
+      const errorMessage = err?.message || "Erro ao carregar documentos";
       setError(errorMessage);
       showSnackbar(errorMessage, "error");
     } finally {
@@ -131,7 +158,7 @@ export const useAcademicMerit = () => {
       if (response.status >= 200 && response.status < 300) {
         showSnackbar("Documento aprovado com sucesso", "success");
         // Refresh list
-        await fetchMerits();
+        await fetchMerits(pagination.currentPage, pagination.itemsPerPage, "pending");
       } else {
         const errorMessage = response.message || "Erro ao aprovar documento";
         setError(errorMessage);
@@ -156,7 +183,7 @@ export const useAcademicMerit = () => {
       if (response.status >= 200 && response.status < 300) {
         showSnackbar("Documento reprovado com sucesso", "success");
         // Refresh list
-        await fetchMerits();
+        await fetchMerits(pagination.currentPage, pagination.itemsPerPage, "pending");
       } else {
         const errorMessage = response.message || "Erro ao reprovar documento";
         setError(errorMessage);
@@ -169,7 +196,37 @@ export const useAcademicMerit = () => {
     } finally {
       setActionLoading(false);
     }
-  }, [currentMerit, fetchMerits, showSnackbar]);
+  }, [currentMerit, fetchMerits, pagination, showSnackbar]);
+
+  /**
+   * Obtém detalhes de um documento de mérito acadêmico específico
+   */
+  const fetchMeritById = useCallback(
+    async (id: string | number) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await academicMeritService.getById(id);
+
+        if (response.status >= 200 && response.status < 300 && response.data) {
+          return response.data;
+        } else {
+          const errorMessage = response.message || "Erro ao buscar documento";
+          setError(errorMessage);
+          showSnackbar(errorMessage, "error");
+          return null;
+        }
+      } catch (err: any) {
+        const errorMessage = err.message || "Erro ao buscar documento";
+        setError(errorMessage);
+        showSnackbar(errorMessage, "error");
+        return null;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [showSnackbar]
+  );
 
   return {
     loading,
@@ -179,6 +236,7 @@ export const useAcademicMerit = () => {
     currentIndex,
     currentMerit,
     allMerits,
+    pagination,
     snackbar,
     closeSnackbar,
     approveCurrent,
@@ -187,10 +245,7 @@ export const useAcademicMerit = () => {
     prev,
     fetchMerits,
     fetchAllMerits,
-    page,
-    size,
-    totalItems,
-    totalPages,
+    fetchMeritById,
   };
 };
 

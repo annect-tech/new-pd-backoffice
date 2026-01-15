@@ -2,7 +2,7 @@ import { type ReactNode, useEffect } from "react";
 import { useAppSelector, useAppDispatch } from "../store/hooks";
 import { useNavigate } from "react-router";
 import { APP_ROUTES } from "../../util/constants";
-import { isTokenExpired, decodeJWT } from "../../utils/jwt";
+import { isTokenExpired, decodeJWT } from "../../util/jwt";
 import { clearCredentials } from "../store/slices/authSlice";
 
 interface AuthMiddlewareProps {

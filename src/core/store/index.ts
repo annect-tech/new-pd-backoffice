@@ -79,7 +79,8 @@ httpClient.setOnUnauthorized(async () => {
   console.log("[store] onUnauthorized chamado, refreshToken:", refreshToken);
   if (!refreshToken) {
     console.warn("[store] refreshToken ausente, limpando credenciais");
-    return store.dispatch(clearCredentials());
+    store.dispatch(clearCredentials());
+    return;
   }
   try {
     // Usar novo formato: { refreshToken: string }
@@ -88,6 +89,11 @@ httpClient.setOnUnauthorized(async () => {
     if (res.status === 200 && res.data) {
       // Usar novo campo: accessToken (não access)
       store.dispatch(setAccessToken(res.data.accessToken));
+      // Atualizar também o refreshToken se vier na resposta
+      if (res.data.refreshToken) {
+        // Note: não temos ação para atualizar refreshToken, mas o setAccessToken já atualiza o httpClient
+        console.log("[store] Novo refreshToken também recebido");
+      }
       console.log("[store] Novo accessToken definido");
     } else {
       console.warn("[store] refreshToken falhou, limpando credenciais");

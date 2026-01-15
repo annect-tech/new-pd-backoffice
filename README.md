@@ -1,19 +1,30 @@
-# mockup-web
+# PD Backoffice
 
-> Projeto de mockup web para demonstração de layout responsivo e funcionalidades de autenticação com persistência.
+> Sistema de backoffice para gerenciamento do processo seletivo e administração de candidatos.
 
-**URL do projeto:** [https://github.com/Fer-Magalhaes/mockup-web](https://github.com/Fer-Magalhaes/mockup-web)
+**Backend API:** `http://186.248.135.172:31535`
+
+---
+
+## 📚 Documentação
+
+Para informações sobre integrações, rotas da API e status de implementação, consulte:
+- **[GUIA_INTEGRACAO.md](./GUIA_INTEGRACAO.md)** - Guia completo de integração frontend-backend
+- **[ALL_ROUTES_API_DOCUMENTATION.md](./ALL_ROUTES_API_DOCUMENTATION.md)** - Referência de todas as rotas disponíveis
 
 ---
 
 ## 📖 Descrição
 
-O **mockup‑web** é um **boilerplate** front‑end completo e opinionated, desenvolvido com **Vite**, **React**, **TypeScript** e **Material‑UI**, que serve como base para aplicações que exigem:
+O **PD Backoffice** é uma aplicação administrativa desenvolvida com **Vite**, **React**, **TypeScript** e **Material-UI**, para gerenciamento completo do processo seletivo, incluindo:
 
-* **Autenticação robusta** (login, registro, renovação de token), com gerenciamento de sessão seguro.
-* **Estrutura modular** e escalável, separando lógica de UI, estado, serviços HTTP e contextos de negócio.
-* **Persistência criptografada** de dados sensíveis em `localStorage` via `redux-persist-transform-encrypt`.
-* **Internacionalização** utilizando `react-i18next` (pré-configurado com PT-BR).
+* **Gerenciamento de Candidatos**: Listagem, busca e visualização de dados de candidatos
+* **Documentação**: Upload, validação e gerenciamento de documentos (RG, comprovante de endereço, histórico escolar)
+* **Provas e Avaliações**: Gerenciamento de notas, horários e resultados de provas
+* **Mérito Acadêmico**: Aprovação/rejeição de documentos de mérito
+* **Cidades e Locais**: Gerenciamento de cidades permitidas e locais de prova
+* **Autenticação JWT**: Login seguro com renovação automática de tokens
+* **Arquitetura em Camadas**: Separação clara entre UI (pages), lógica (hooks) e comunicação HTTP (services)
 
 ### 🔍 Detalhes de implementação
 
