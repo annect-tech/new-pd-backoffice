@@ -214,7 +214,6 @@ export const httpClient = {
         responseData = json;
       }
       
-      
       return {
         status: res.status,
         message: message,

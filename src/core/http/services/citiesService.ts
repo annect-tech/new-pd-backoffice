@@ -3,9 +3,15 @@ import { httpClient } from "../httpClient";
 const API_URL = import.meta.env.VITE_API_URL as string || "http://186.248.135.172:31535";
 
 export interface CityDataPayload {
-  localidade: string;
+  cidade: string;
   uf: string;
   active: boolean;
+  rua?: string;
+  numero?: string;
+  complemento?: string;
+  bairro?: string;
+  cnpj?: string;
+  tenant_city_id?: string;
 }
 
 export interface City extends CityDataPayload {

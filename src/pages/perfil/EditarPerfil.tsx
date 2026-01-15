@@ -19,58 +19,15 @@ import {
 } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router';
 import { APP_ROUTES } from '../../util/constants';
-
-interface UserProfile {
-  id: number;
-  profile_photo?: string;
-  bio?: string;
-  cpf: string;
-  personal_email: string;
-  birth_date: string;
-  hire_date?: string;
-  occupation?: string;
-  department?: string;
-  equipment_patrimony?: string;
-  work_location?: string;
-  manager?: string;
-  created_at: string;
-  user_display: {
-    username: string;
-    first_name: string;
-    last_name: string;
-    email: string;
-  };
-}
-
-// Dados mockados
-const MOCK_PROFILE: UserProfile = {
-  id: 1,
-  profile_photo: 'https://i.pravatar.cc/150?img=1',
-  bio: 'Profissional dedicado com experiência em gestão de projetos e desenvolvimento de equipes. Apaixonado por tecnologia e inovação.',
-  cpf: '123.456.789-00',
-  personal_email: 'usuario@example.com',
-  birth_date: '1990-05-15',
-  hire_date: '2020-01-10',
-  occupation: 'Desenvolvedor Full Stack',
-  department: 'Tecnologia',
-  equipment_patrimony: 'EQ-2020-001',
-  work_location: 'Escritório Central',
-  manager: 'João Silva',
-  created_at: '2020-01-10T10:00:00Z',
-  user_display: {
-    username: 'usuario.teste',
-    first_name: 'João',
-    last_name: 'Silva',
-    email: 'usuario@example.com',
-  },
-};
+import { usersService, type UserProfileResponse } from '../../core/http/services/usersService';
 
 const EditarPerfil: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' | 'warning' });
+  const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     bio: '',
@@ -89,25 +46,48 @@ const EditarPerfil: React.FC = () => {
   });
 
   useEffect(() => {
-    // Simula carregamento de dados
-    setTimeout(() => {
-      setFormData({
-        bio: MOCK_PROFILE.bio || '',
-        first_name: MOCK_PROFILE.user_display.first_name,
-        last_name: MOCK_PROFILE.user_display.last_name,
-        cpf: MOCK_PROFILE.cpf,
-        personal_email: MOCK_PROFILE.personal_email,
-        birth_date: MOCK_PROFILE.birth_date,
-        hire_date: MOCK_PROFILE.hire_date || '',
-        occupation: MOCK_PROFILE.occupation || '',
-        department: MOCK_PROFILE.department || '',
-        equipment_patrimony: MOCK_PROFILE.equipment_patrimony || '',
-        work_location: MOCK_PROFILE.work_location || '',
-        manager: MOCK_PROFILE.manager || '',
-        profile_photo: MOCK_PROFILE.profile_photo || '',
-      });
-      setLoading(false);
-    }, 500);
+    const fetchUserProfile = async () => {
+      if (!id) {
+        setError('ID do usuário não fornecido');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const response = await usersService.getProfileById(id);
+        
+        if (response.status === 200 && response.data) {
+          const profile = response.data;
+          setFormData({
+            bio: profile.bio || '',
+            first_name: profile.user_display?.first_name || '',
+            last_name: profile.user_display?.last_name || '',
+            cpf: profile.cpf || '',
+            personal_email: profile.personal_email || '',
+            birth_date: profile.birth_date || '',
+            hire_date: profile.hire_date || '',
+            occupation: profile.occupation || '',
+            department: profile.department || '',
+            equipment_patrimony: profile.equipment_patrimony || '',
+            work_location: profile.work_location || '',
+            manager: profile.manager || '',
+            profile_photo: profile.profile_photo || '',
+          });
+        } else {
+          setError(response.message || 'Erro ao carregar perfil do usuário');
+        }
+      } catch (err: any) {
+        console.error('Erro ao buscar perfil:', err);
+        setError(err.message || 'Erro ao carregar perfil do usuário');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserProfile();
   }, [id]);
 
   const handleChange = (field: string, value: string) => {
@@ -130,18 +110,22 @@ const EditarPerfil: React.FC = () => {
     setSaving(true);
 
     try {
-      // Simula salvamento
+      // TODO: Implementar chamada real à API quando o endpoint de update estiver disponível
+      // Por enquanto, apenas mostra mensagem de aviso
+      console.warn('Endpoint de atualização de perfil ainda não implementado no backend');
+      
+      // Simula salvamento (remover quando API estiver pronta)
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       setSnackbar({
         open: true,
-        message: 'Perfil atualizado com sucesso!',
-        severity: 'success',
+        message: 'Atenção: Endpoint de atualização ainda não implementado. Nenhuma alteração foi salva.',
+        severity: 'warning',
       });
 
       setTimeout(() => {
         navigate(`/usuario/${id}`);
-      }, 1500);
+      }, 2000);
     } catch (error) {
       setSnackbar({
         open: true,
@@ -161,6 +145,19 @@ const EditarPerfil: React.FC = () => {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="40vh">
         <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box p={2}>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+        <Button variant="contained" onClick={() => navigate(APP_ROUTES.USERS_LIST)}>
+          Voltar para lista de usuários
+        </Button>
       </Box>
     );
   }

@@ -272,15 +272,12 @@ const ResultadoProvas: React.FC = () => {
       return;
     }
 
-    const headers = ["CPF", "Nome", "Score", "Status", "Local", "Data", "Hora"];
+    const headers = ["CPF", "Nome", "Score", "Status"];
     const csvRows = rows.map((row) => [
       row.cpf,
       row.name,
       row.score?.toString() || "N/A",
       row.status,
-      row.local,
-      row.date,
-      row.hour,
     ]);
 
     const csvContent = [headers, ...csvRows]
@@ -455,10 +452,10 @@ const ResultadoProvas: React.FC = () => {
                     <TableHead>
                       <TableRow>
                         <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 120 }}>
-                          CPF
+                          ID Resultado
                         </TableCell>
                         <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 200 }}>
-                          Nome
+                          ID Usuário
                         </TableCell>
                         <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 100 }}>
                           Score
@@ -466,24 +463,12 @@ const ResultadoProvas: React.FC = () => {
                         <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 150 }}>
                           Status
                         </TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 200 }}>
-                          Local
-                        </TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 150 }}>
-                          Data
-                        </TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 150 }}>
-                          Hora
-                        </TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 100 }} align="center">
-                          Ações
-                        </TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {paginatedData.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={8} align="center" sx={{ py: 3 }}>
+                          <TableCell colSpan={4} align="center" sx={{ py: 3 }}>
                             <Typography color="textSecondary">
                               {searchTerm || filterStatus !== "all"
                                 ? "Nenhum resultado encontrado"
@@ -507,18 +492,6 @@ const ResultadoProvas: React.FC = () => {
                               >
                                 {row.status}
                               </Typography>
-                            </TableCell>
-                            <TableCell>{row.local}</TableCell>
-                            <TableCell>{row.date}</TableCell>
-                            <TableCell>{row.hour}</TableCell>
-                            <TableCell align="center">
-                              <IconButton
-                                {...iconButtonStyles}
-                                size="small"
-                                onClick={(e) => handleOpenRowMenu(e, row.id)}
-                              >
-                                <MoreVertIcon fontSize="small" />
-                              </IconButton>
                             </TableCell>
                           </TableRow>
                         ))

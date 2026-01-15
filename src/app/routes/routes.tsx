@@ -13,6 +13,7 @@ import DadosAlunos from "../../pages/dadosAlunos/DadosAlunos";
 import CadastroAlunos from "../../pages/cadastroAlunos/CadastroAlunos";
 import Retencao from "../../pages/retencao/Retencao";
 import Cidades from "../../pages/cidades/Cidades";
+import DiagnosticoCidades from "../../pages/cidades/DiagnosticoCidades";
 import TenantCities from "../../pages/tenantCities/TenantCities";
 import Contratos from "../../pages/contratos/Contratos";
 import Documentos from "../../pages/documentos/Documentos";
@@ -60,6 +61,14 @@ export const AppRoutes = () => (
         element={
           <RoleGuard allowedRoles={["ADMIN", "ADMIN_MASTER"]}>
             <Cidades />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path="/diagnostico-cidades"
+        element={
+          <RoleGuard allowedRoles={["ADMIN", "ADMIN_MASTER"]}>
+            <DiagnosticoCidades />
           </RoleGuard>
         }
       />

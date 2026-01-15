@@ -35,6 +35,7 @@ import {
   Image as ImageIcon,
   PictureAsPdf as PictureAsPdfIcon,
 } from "@mui/icons-material";
+import { useNavigate } from "react-router";
 import { useCities } from "../../hooks/useCities";
 import { APP_ROUTES } from "../../util/constants";
 import PageHeader from "../../components/ui/page/PageHeader";
@@ -46,16 +47,21 @@ import {
   tableRowHoverStyles,
   iconButtonStyles,
   textFieldStyles,
-  primaryButtonStyles,
   progressStyles,
   tablePaginationStyles,
 } from "../../styles/designSystem";
 
 // Definindo tipos localmente para evitar problemas de importação
 interface CityDataPayload {
-  localidade: string;
+  cidade: string;
   uf: string;
   active: boolean;
+  rua?: string;
+  numero?: string;
+  complemento?: string;
+  bairro?: string;
+  cnpj?: string;
+  tenant_city_id?: string;
 }
 
 interface City extends CityDataPayload {
@@ -65,6 +71,7 @@ interface City extends CityDataPayload {
 type Mode = "create" | "edit";
 
 const Cidades: React.FC = () => {
+  const navigate = useNavigate();
   const {
     cities,
     loading,
@@ -80,9 +87,15 @@ const Cidades: React.FC = () => {
   const [mode, setMode] = useState<Mode>("create");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<CityDataPayload>({
-    localidade: "",
+    cidade: "",
     uf: "",
     active: true,
+    rua: "",
+    numero: "",
+    complemento: "",
+    bairro: "",
+    cnpj: "",
+    tenant_city_id: "",
   });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [page, setPage] = useState(0);
@@ -111,13 +124,29 @@ const Cidades: React.FC = () => {
     setMode(m);
     if (m === "edit" && city) {
       setForm({
-        localidade: city.localidade,
+        cidade: city.cidade,
         uf: city.uf,
         active: city.active,
+        rua: city.rua || "",
+        numero: city.numero || "",
+        complemento: city.complemento || "",
+        bairro: city.bairro || "",
+        cnpj: city.cnpj || "",
+        tenant_city_id: city.tenant_city_id || "",
       });
       setEditingId(city.id);
     } else {
-      setForm({ localidade: "", uf: "", active: true });
+      setForm({ 
+        cidade: "", 
+        uf: "", 
+        active: true,
+        rua: "",
+        numero: "",
+        complemento: "",
+        bairro: "",
+        cnpj: "",
+        tenant_city_id: "",
+      });
       setEditingId(null);
     }
     setLogoFile(null);
@@ -261,9 +290,17 @@ const Cidades: React.FC = () => {
                     <RefreshIcon />
                   </IconButton>
                   <Button
+                    variant="outlined"
+                    onClick={() => navigate(APP_ROUTES.TENANT_CITIES)}
+                    sx={{ whiteSpace: "nowrap" }}
+                  >
+                    Tenant Cities
+                  </Button>
+                  <Button
+                    variant="outlined"
                     startIcon={<AddIcon />}
                     onClick={() => handleOpen("create")}
-                    {...primaryButtonStyles}
+                    sx={{ whiteSpace: "nowrap" }}
                   >
                     Adicionar
                   </Button>
@@ -307,7 +344,7 @@ const Cidades: React.FC = () => {
                               {city.id}
                             </TableCell>
                             <TableCell sx={{ color: designSystem.colors.text.primary, fontWeight: 500, fontSize: "0.875rem", py: 1.5 }}>
-                              {city.localidade}
+                              {city.cidade}
                             </TableCell>
                             <TableCell sx={{ color: designSystem.colors.text.secondary, fontSize: "0.875rem", py: 1.5 }}>
                               {city.uf}
@@ -403,10 +440,11 @@ const Cidades: React.FC = () => {
             fullWidth
             label="Cidade"
             margin="normal"
-            value={form.localidade}
+            value={form.cidade}
             onChange={(e) =>
-              setForm((f) => ({ ...f, localidade: e.target.value }))
+              setForm((f) => ({ ...f, cidade: e.target.value }))
             }
+            required
             sx={{
               mb: 2,
               "& .MuiOutlinedInput-root": {
@@ -430,6 +468,7 @@ const Cidades: React.FC = () => {
             onChange={(e) =>
               setForm((f) => ({ ...f, uf: e.target.value.toUpperCase() }))
             }
+            required
             slotProps={{
               htmlInput: { maxLength: 2 },
             }}
@@ -448,6 +487,132 @@ const Cidades: React.FC = () => {
               },
             }}
           />
+          
+          {mode === "create" && (
+            <>
+              <TextField
+                fullWidth
+                label="Rua"
+                margin="normal"
+                value={form.rua}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, rua: e.target.value }))
+                }
+                required
+                sx={{
+                  mb: 2,
+                  "& .MuiOutlinedInput-root": {
+                    "&:hover fieldset": {
+                      borderColor: designSystem.colors.primary.main,
+                    },
+                    "&.Mui-focused fieldset": {
+                      borderColor: designSystem.colors.primary.main,
+                    },
+                  },
+                  "& .MuiInputLabel-root.Mui-focused": {
+                    color: designSystem.colors.primary.main,
+                  },
+                }}
+              />
+              <TextField
+                fullWidth
+                label="Número"
+                margin="normal"
+                value={form.numero}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, numero: e.target.value }))
+                }
+                required
+                sx={{
+                  mb: 2,
+                  "& .MuiOutlinedInput-root": {
+                    "&:hover fieldset": {
+                      borderColor: designSystem.colors.primary.main,
+                    },
+                    "&.Mui-focused fieldset": {
+                      borderColor: designSystem.colors.primary.main,
+                    },
+                  },
+                  "& .MuiInputLabel-root.Mui-focused": {
+                    color: designSystem.colors.primary.main,
+                  },
+                }}
+              />
+              <TextField
+                fullWidth
+                label="Complemento"
+                margin="normal"
+                value={form.complemento}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, complemento: e.target.value }))
+                }
+                required
+                sx={{
+                  mb: 2,
+                  "& .MuiOutlinedInput-root": {
+                    "&:hover fieldset": {
+                      borderColor: designSystem.colors.primary.main,
+                    },
+                    "&.Mui-focused fieldset": {
+                      borderColor: designSystem.colors.primary.main,
+                    },
+                  },
+                  "& .MuiInputLabel-root.Mui-focused": {
+                    color: designSystem.colors.primary.main,
+                  },
+                }}
+              />
+              <TextField
+                fullWidth
+                label="Bairro"
+                margin="normal"
+                value={form.bairro}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, bairro: e.target.value }))
+                }
+                required
+                sx={{
+                  mb: 2,
+                  "& .MuiOutlinedInput-root": {
+                    "&:hover fieldset": {
+                      borderColor: designSystem.colors.primary.main,
+                    },
+                    "&.Mui-focused fieldset": {
+                      borderColor: designSystem.colors.primary.main,
+                    },
+                  },
+                  "& .MuiInputLabel-root.Mui-focused": {
+                    color: designSystem.colors.primary.main,
+                  },
+                }}
+              />
+              <TextField
+                fullWidth
+                label="CNPJ"
+                margin="normal"
+                value={form.cnpj}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, cnpj: e.target.value }))
+                }
+                required
+                sx={{
+                  mb: 2,
+                  "& .MuiOutlinedInput-root": {
+                    "&:hover fieldset": {
+                      borderColor: designSystem.colors.primary.main,
+                    },
+                    "&.Mui-focused fieldset": {
+                      borderColor: designSystem.colors.primary.main,
+                    },
+                  },
+                  "& .MuiInputLabel-root.Mui-focused": {
+                    color: designSystem.colors.primary.main,
+                  },
+                }}
+              />
+            </>
+          )}
+          
           <FormControlLabel
             control={
               <Switch
@@ -586,19 +751,13 @@ const Cidades: React.FC = () => {
         <DialogActions sx={{ p: 2 }}>
           <Button
             onClick={handleClose}
-            sx={{
-              color: designSystem.colors.primary.main,
-              fontWeight: 600,
-              "&:hover": {
-                backgroundColor: designSystem.colors.primary.lightest,
-              },
-            }}
+            variant="text"
           >
             Cancelar
           </Button>
           <Button
             onClick={handleSave}
-            {...primaryButtonStyles}
+            variant="outlined"
           >
             Salvar
           </Button>

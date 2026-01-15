@@ -3,15 +3,11 @@ import { contractsService } from "../core/http/services/contractsService";
 
 // Definindo tipos localmente (também definidos no serviço)
 interface Contract {
-  id: number;
+  id: string;
   status: string;
-  user_data: {
-    cpf: string;
-    user: {
-      first_name: string;
-      last_name: string;
-    };
-  };
+  user_data_id: string;
+  student_name: string;
+  student_email: string;
 }
 
 interface SnackbarState {

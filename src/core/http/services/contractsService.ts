@@ -3,15 +3,11 @@ import { httpClient } from "../httpClient";
 const API_URL = import.meta.env.VITE_API_URL as string || "http://186.248.135.172:31535";
 
 export interface Contract {
-  id: number;
+  id: string;
   status: string;
-  user_data: {
-    cpf: string;
-    user: {
-      first_name: string;
-      last_name: string;
-    };
-  };
+  user_data_id: string;
+  student_name: string;
+  student_email: string;
 }
 
 export interface PaginatedResponse<T> {

@@ -1,15 +1,12 @@
-import React, { useEffect, type MouseEvent, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   Box,
   Paper,
   Toolbar,
   IconButton,
-  Menu,
-  MenuItem,
   Typography,
   CircularProgress,
   Alert,
-  Chip,
   Fade,
   Table,
   TableBody,
@@ -22,7 +19,6 @@ import {
   Snackbar,
 } from "@mui/material";
 import {
-  MoreVert as MoreVertIcon,
   Refresh as RefreshIcon,
 } from "@mui/icons-material";
 import SearchIcon from "@mui/icons-material/Search";
@@ -43,7 +39,6 @@ import {
 const Contratos: React.FC = () => {
   const { contracts, loading, error, fetchContracts, snackbar, closeSnackbar } = useContracts();
 
-  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -52,39 +47,47 @@ const Contratos: React.FC = () => {
     fetchContracts();
   }, [fetchContracts]);
 
-  const openMenu = (e: MouseEvent<HTMLElement>) => {
-    setMenuAnchor(e.currentTarget);
-  };
-
-  const closeMenu = () => {
-    setMenuAnchor(null);
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "ativo":
-        return "success";
-      case "pendente":
-        return "warning";
-      case "cancelado":
-        return "error";
-      default:
-        return "default";
+  const getStatusColor = (status: string): string => {
+    const statusLower = status.toLowerCase();
+    if (statusLower === "enviado") {
+      return "#4CAF50"; // Verde
+    } else if (statusLower === "pronto para enviar" || statusLower === "pendente") {
+      return "#FF9800"; // Laranja
+    } else if (statusLower === "cancelado") {
+      return "#F44336"; // Vermelho
+    } else if (statusLower === "rascunho") {
+      return "#9E9E9E"; // Cinza
+    } else {
+      return "#9E9E9E"; // Cinza padrão
     }
+  };
+
+  // Traduzir status para português
+  const translateStatus = (status: string): string => {
+    const statusMap: Record<string, string> = {
+      'SENT': 'Enviado',
+      'ReadyToSend': 'Pronto para enviar',
+      'Cancelled': 'Cancelado',
+      'CANCELLED': 'Cancelado',
+      'PENDING': 'Pendente',
+      'DRAFT': 'Rascunho',
+    };
+    return statusMap[status] || status;
   };
 
   const rows = Array.isArray(contracts) ? contracts.map((contract) => ({
     id: contract.id,
-    cpf: contract.user_data.cpf,
-    name: `${contract.user_data.user.first_name} ${contract.user_data.user.last_name}`,
-    status: contract.status,
+    email: contract.student_email || "N/A",
+    name: contract.student_name || "Nome não disponível",
+    status: translateStatus(contract.status || "desconhecido"),
+    statusOriginal: contract.status || "desconhecido", // Manter o original para filtros
   })) : [];
 
   const filteredRows = useMemo(() => {
     return rows.filter(
       (row) =>
         row.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        row.cpf.includes(searchTerm) ||
+        row.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
         row.status.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [rows, searchTerm]);
@@ -132,7 +135,7 @@ const Contratos: React.FC = () => {
           <PageHeader
             title="Contratos"
             subtitle="Gerencie e visualize todos os contratos cadastrados."
-            description="Esta página permite gerenciar e visualizar todos os CONTRATOS cadastrados no sistema. Você pode visualizar informações sobre CPF, nome do contratante e status do contrato (ativo, pendente ou cancelado). Utilize o menu de ações para acessar funcionalidades específicas de cada contrato."
+            description="Esta página permite gerenciar e visualizar todos os CONTRATOS cadastrados no sistema. Você pode visualizar informações sobre nome do estudante, email e status do contrato (enviado, pronto para enviar, cancelado). Utilize o menu de ações para acessar funcionalidades específicas de cada contrato."
             breadcrumbs={[
               { label: "Dashboard", path: APP_ROUTES.DASHBOARD },
               { label: "Contratos" },
@@ -156,7 +159,7 @@ const Contratos: React.FC = () => {
                 <Box display="flex" alignItems="center" sx={{ flex: 1, minWidth: 240, maxWidth: 420 }}>
                   <SearchIcon sx={{ mr: 1, color: designSystem.colors.text.disabled }} />
                   <TextField
-                    placeholder="Pesquisar por CPF, nome, email..."
+                    placeholder="Pesquisar por nome, email, status..."
                     variant="standard"
                     fullWidth
                     value={searchTerm}
@@ -180,14 +183,15 @@ const Contratos: React.FC = () => {
                   <Alert severity="error">{error}</Alert>
                 </Box>
               ) : (
-                <TableContainer sx={{ overflowX: "auto", width: "100%" }}>
+                <>
+                  <TableContainer sx={{ overflowX: "auto", width: "100%" }}>
                   <Table stickyHeader size="small" sx={{ minWidth: 700 }}>
                     <TableHead>
                       <TableRow>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 150 }}>CPF</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 80 }}>ID</TableCell>
                         <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 250 }}>Nome</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 200 }}>Email</TableCell>
                         <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 150 }} align="center">Status</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 100 }} align="center">Ações</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -203,33 +207,23 @@ const Contratos: React.FC = () => {
                         paginatedRows.map((row) => (
                           <TableRow key={row.id} {...tableRowHoverStyles}>
                             <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                              {row.cpf}
+                              {row.id}
                             </TableCell>
                             <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                               {row.name}
                             </TableCell>
-                            <TableCell align="center">
-                              <Chip
-                                label={row.status}
-                                color={getStatusColor(row.status) as any}
-                                size="small"
-                              />
+                            <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {row.email}
                             </TableCell>
                             <TableCell align="center">
-                              <IconButton
-                                size="small"
-                                onClick={(e) => openMenu(e)}
+                              <Typography
                                 sx={{
-                                  color: designSystem.colors.text.disabled,
-                                  padding: "4px",
-                                  "&:hover": {
-                                    backgroundColor: designSystem.colors.primary.lighter,
-                                    color: designSystem.colors.primary.main,
-                                  },
+                                  color: getStatusColor(row.status),
+                                  fontWeight: 600,
                                 }}
                               >
-                                <MoreVertIcon fontSize="small" />
-                              </IconButton>
+                                {row.status}
+                              </Typography>
                             </TableCell>
                           </TableRow>
                         ))
@@ -248,24 +242,9 @@ const Contratos: React.FC = () => {
                     labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count !== -1 ? count : `mais de ${to}`}`}
                     {...tablePaginationStyles}
                   />
-                </TableContainer>
+                  </TableContainer>
+                </>
               )}
-
-              <Menu
-                anchorEl={menuAnchor}
-                open={Boolean(menuAnchor)}
-                onClose={closeMenu}
-                slotProps={{
-                  paper: {
-                    sx: {
-                      borderRadius: 2,
-                      boxShadow: designSystem.shadows.medium,
-                    },
-                  },
-                }}
-              >
-                <MenuItem onClick={closeMenu}>Fechar</MenuItem>
-              </Menu>
             </Paper>
           </Fade>
         </Box>

@@ -41,7 +41,6 @@ import {
   tableRowHoverStyles,
   iconButtonStyles,
   textFieldStyles,
-  primaryButtonStyles,
   progressStyles,
   tablePaginationStyles,
 } from "../../styles/designSystem";
@@ -182,22 +181,22 @@ const TenantCities: React.FC = () => {
                     sx={textFieldStyles}
                   />
                 </Box>
-                <Button
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  onClick={() => handleOpen("create")}
-                  sx={primaryButtonStyles}
-                >
-                  Nova Tenant City
-                </Button>
                 <IconButton
                   onClick={() =>
                     fetchTenantCities(page + 1, rowsPerPage, searchTerm.trim() || undefined)
                   }
-                  sx={iconButtonStyles}
+                  {...iconButtonStyles}
                 >
                   <RefreshIcon />
                 </IconButton>
+                <Button
+                  variant="outlined"
+                  startIcon={<AddIcon />}
+                  onClick={() => handleOpen("create")}
+                  sx={{ whiteSpace: "nowrap" }}
+                >
+                  Nova Tenant City
+                </Button>
               </Toolbar>
 
               {loading ? (
@@ -306,10 +305,12 @@ const TenantCities: React.FC = () => {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose}>Cancelar</Button>
+          <Button onClick={handleClose} variant="text">
+            Cancelar
+          </Button>
           <Button
             onClick={handleSubmit}
-            variant="contained"
+            variant="outlined"
           >
             {mode === "create" ? "Criar" : "Salvar"}
           </Button>

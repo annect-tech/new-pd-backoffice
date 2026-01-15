@@ -299,37 +299,61 @@ export default function UserList() {
                           </Box>
                         </Box>
                         <Box display="flex" gap={1.5}>
-                          <Button
-                            variant="outlined"
-                            onClick={() => navigate(`/usuario/${user.id}`)}
-                            sx={{
-                              borderColor: designSystem.colors.primary.main,
-                              color: designSystem.colors.primary.main,
-                              fontWeight: 500,
-                              fontSize: "0.875rem",
-                              "&:hover": {
-                                borderColor: designSystem.colors.primary.dark,
-                                backgroundColor: designSystem.colors.primary.lightest,
-                              },
-                            }}
+                          <Tooltip 
+                            title={!user.profile?.id ? "Usuário não possui perfil criado" : ""}
+                            arrow
                           >
-                            Ver Perfil
-                          </Button>
-                          <Button
-                            variant="contained"
-                            onClick={() => navigate(`/usuario/${user.id}/editar`)}
-                            sx={{
-                              backgroundColor: designSystem.colors.primary.main,
-                              color: "#FFFFFF",
-                              fontWeight: 500,
-                              fontSize: "0.875rem",
-                              "&:hover": {
-                                backgroundColor: designSystem.colors.primary.dark,
-                              },
-                            }}
+                            <span>
+                              <Button
+                                variant="outlined"
+                                onClick={() => user.profile?.id && navigate(`/usuario/${user.profile.id}`)}
+                                disabled={!user.profile?.id}
+                                sx={{
+                                  borderColor: designSystem.colors.primary.main,
+                                  color: designSystem.colors.primary.main,
+                                  fontWeight: 500,
+                                  fontSize: "0.875rem",
+                                  "&:hover": {
+                                    borderColor: designSystem.colors.primary.dark,
+                                    backgroundColor: designSystem.colors.primary.lightest,
+                                  },
+                                  "&.Mui-disabled": {
+                                    borderColor: designSystem.colors.border.main,
+                                    color: designSystem.colors.text.disabled,
+                                  },
+                                }}
+                              >
+                                Ver Perfil
+                              </Button>
+                            </span>
+                          </Tooltip>
+                          <Tooltip 
+                            title={!user.profile?.id ? "Usuário não possui perfil criado" : ""}
+                            arrow
                           >
-                            Editar
-                          </Button>
+                            <span>
+                              <Button
+                                variant="contained"
+                                onClick={() => user.profile?.id && navigate(`/usuario/${user.profile.id}/editar`)}
+                                disabled={!user.profile?.id}
+                                sx={{
+                                  backgroundColor: designSystem.colors.primary.main,
+                                  color: "#FFFFFF",
+                                  fontWeight: 500,
+                                  fontSize: "0.875rem",
+                                  "&:hover": {
+                                    backgroundColor: designSystem.colors.primary.dark,
+                                  },
+                                  "&.Mui-disabled": {
+                                    backgroundColor: designSystem.colors.border.main,
+                                    color: designSystem.colors.text.disabled,
+                                  },
+                                }}
+                              >
+                                Editar
+                              </Button>
+                            </span>
+                          </Tooltip>
                         </Box>
                       </Paper>
                     ))}
