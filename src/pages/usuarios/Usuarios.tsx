@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
-import { APP_ROUTES } from '../../util/constants';
+import { useState } from "react";
+import { useNavigate } from "react-router";
+import { APP_ROUTES } from "../../util/constants";
 import {
   Box,
   Avatar,
@@ -8,196 +8,413 @@ import {
   Paper,
   Button,
   CircularProgress,
-  useTheme,
   Stack,
-} from '@mui/material';
-
-// Interface baseada no código fornecido
-interface UserProfileResponse {
-  id: number;
-  profile_photo?: string;
-  user_display: {
-    first_name: string;
-    last_name: string;
-    email: string;
-    username?: string;
-  };
-}
-
-// Dados mockados
-const MOCK_USERS: UserProfileResponse[] = [
-  {
-    id: 1,
-    profile_photo: 'https://i.pravatar.cc/150?img=1',
-    user_display: {
-      first_name: 'João',
-      last_name: 'Silva',
-      email: 'joao.silva@example.com',
-      username: 'joao.silva',
-    },
-  },
-  {
-    id: 2,
-    profile_photo: 'https://i.pravatar.cc/150?img=2',
-    user_display: {
-      first_name: 'Maria',
-      last_name: 'Santos',
-      email: 'maria.santos@example.com',
-      username: 'maria.santos',
-    },
-  },
-  {
-    id: 3,
-    profile_photo: 'https://i.pravatar.cc/150?img=3',
-    user_display: {
-      first_name: 'Pedro',
-      last_name: 'Oliveira',
-      email: 'pedro.oliveira@example.com',
-      username: 'pedro.oliveira',
-    },
-  },
-  {
-    id: 4,
-    profile_photo: 'https://i.pravatar.cc/150?img=4',
-    user_display: {
-      first_name: 'Ana',
-      last_name: 'Costa',
-      email: 'ana.costa@example.com',
-      username: 'ana.costa',
-    },
-  },
-  {
-    id: 5,
-    profile_photo: 'https://i.pravatar.cc/150?img=5',
-    user_display: {
-      first_name: 'Carlos',
-      last_name: 'Ferreira',
-      email: 'carlos.ferreira@example.com',
-      username: 'carlos.ferreira',
-    },
-  },
-  {
-    id: 6,
-    profile_photo: 'https://i.pravatar.cc/150?img=6',
-    user_display: {
-      first_name: 'Juliana',
-      last_name: 'Almeida',
-      email: 'juliana.almeida@example.com',
-      username: 'juliana.almeida',
-    },
-  },
-];
+  Fade,
+  TextField,
+  IconButton,
+  Alert,
+  Chip,
+  Switch,
+  FormControlLabel,
+  Tooltip,
+  Snackbar,
+} from "@mui/material";
+import { Search as SearchIcon, Refresh as RefreshIcon, Add as AddIcon } from "@mui/icons-material";
+import PageHeader from "../../components/ui/page/PageHeader";
+import {
+  designSystem,
+  paperStyles,
+  progressStyles,
+} from "../../styles/designSystem";
+import { useUsers } from "../../hooks/useUsers";
+import { useAuth } from "../../hooks/useAuth";
+import CreateUserModal from "../../components/modals/CreateUserModal";
+import type { CreateUserPayload } from "../../core/http/services/usersService";
 
 export default function UserList() {
-  const [users, setUsers] = useState<UserProfileResponse[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [createModalOpen, setCreateModalOpen] = useState(false);
   const navigate = useNavigate();
-  const theme = useTheme();
+  const { user: currentUser } = useAuth();
+  const { users, loading, error, refetch, createUser, creating, toggleUserActive, toggling, snackbar, closeSnackbar } = useUsers(1, 100);
 
-  useEffect(() => {
-    // Simula carregamento de dados
-    setTimeout(() => {
-      setUsers(MOCK_USERS);
-      setLoading(false);
-    }, 500);
-  }, []);
+  const filteredUsers = users.filter((user) => {
+    const firstName = user.first_name || "";
+    const lastName = user.last_name || "";
+    const fullName = `${firstName} ${lastName}`.toLowerCase();
+    const email = user.email?.toLowerCase() || "";
+    const username = user.username?.toLowerCase() || "";
+    const search = searchTerm.toLowerCase();
 
-  if (loading)
-    return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="40vh"
-      >
-        <CircularProgress />
-      </Box>
-    );
+    return fullName.includes(search) || email.includes(search) || username.includes(search);
+  });
+
+  const getUserDisplayName = (user: typeof users[0]) => {
+    if (user.profile?.user_display) {
+      return `${user.profile.user_display.first_name} ${user.profile.user_display.last_name}`;
+    }
+    if (user.first_name && user.last_name) {
+      return `${user.first_name} ${user.last_name}`;
+    }
+    return user.username || user.email || "Usuário sem nome";
+  };
+
+  const getUserEmail = (user: typeof users[0]) => {
+    return user.profile?.user_display?.email || user.email || "";
+  };
+
+  const getUserPhoto = (user: typeof users[0]) => {
+    return user.profile?.profile_photo || undefined;
+  };
+
+  const getUserUsername = (user: typeof users[0]) => {
+    return user.profile?.user_display?.username || user.username || "";
+  };
+
+  const handleCreateUser = async (payload: CreateUserPayload) => {
+    try {
+      const result = await createUser(payload);
+      if (result) {
+        setCreateModalOpen(false);
+      }
+    } catch (error: any) {
+      // O erro já foi tratado no useUsers e será exibido no modal
+      // Apenas re-lançar para que o modal possa capturá-lo
+      throw error;
+    }
+  };
+
+  const handleToggleActive = async (email: string, currentStatus: boolean) => {
+    await toggleUserActive(email, !currentStatus);
+  };
+
+  const handleViewProfile = (user: typeof users[0]) => {
+    if (!user.profile?.id) return;
+    
+    // Se o perfil é do próprio usuário logado, redireciona para "Meu Perfil"
+    if (currentUser?.id && user.id === currentUser.id) {
+      navigate(APP_ROUTES.MY_PROFILE);
+    } else {
+      // Caso contrário, redireciona para a página de visualização de perfil de outro usuário
+      navigate(`/usuario/${user.profile.id}`);
+    }
+  };
+
+  const handleEditProfile = (user: typeof users[0]) => {
+    if (!user.profile?.id) return;
+    
+    // Se o perfil é do próprio usuário logado, redireciona para "Meu Perfil" (que tem modo de edição)
+    if (currentUser?.id && user.id === currentUser.id) {
+      navigate(APP_ROUTES.MY_PROFILE);
+    } else {
+      // Caso contrário, redireciona para a página de edição de perfil de outro usuário
+      navigate(`/usuario/${user.profile.id}/editar`);
+    }
+  };
 
   return (
-    <Paper
-      elevation={2}
+    <Box
       sx={{
-        width: '90vw',
-        maxWidth: 1200,
-        margin: '32px auto',
-        padding: 4,
-        borderRadius: 5,
-        backgroundColor: theme.palette.background.default,
-        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
       }}
     >
-      <Box width="100%" mb={2}>
-        <Button
-          variant="outlined"
-          color="primary"
-          onClick={() => navigate(APP_ROUTES.HOME)}
+      {/* Conteúdo Principal */}
+      <Box
+        sx={{
+          flex: 1,
+          p: { xs: 2, sm: 3, md: 4 },
+          display: "flex",
+          flexDirection: "column",
+          overflow: "auto",
+        }}
+      >
+        <Box
+          sx={{
+            maxWidth: 1400,
+            width: "100%",
+            margin: "0 auto",
+          }}
         >
-          Voltar para Home
-        </Button>
+          {/* Header da Página */}
+          <PageHeader
+            title="Usuários"
+            subtitle="Gerencie os perfis de usuários do sistema."
+            description="Esta página permite visualizar todos os usuários cadastrados no sistema. Você pode ver os perfis completos, editar informações e pesquisar por nome, email ou username."
+            breadcrumbs={[
+              { label: "Dashboard", path: APP_ROUTES.DASHBOARD },
+              { label: "Usuários" },
+            ]}
+          />
+
+          {/* Container de Conteúdo */}
+          <Fade in timeout={1000}>
+            <Paper {...paperStyles}>
+              {/* Toolbar de Pesquisa */}
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 2,
+                  p: 3,
+                  backgroundColor: designSystem.colors.background.primary,
+                  borderBottom: `1px solid ${designSystem.colors.border.main}`,
+                }}
+              >
+                <Box display="flex" alignItems="center" sx={{ flex: 1, maxWidth: 500 }}>
+                  <SearchIcon sx={{ mr: 1, color: designSystem.colors.text.disabled }} />
+                  <TextField
+                    placeholder="Pesquisar por nome, email ou username..."
+                    variant="standard"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    fullWidth
+                    sx={{
+                      "& .MuiInput-underline:before": {
+                        borderBottomColor: designSystem.colors.border.light,
+                      },
+                      "& .MuiInput-underline:hover:before": {
+                        borderBottomColor: designSystem.colors.border.dark,
+                      },
+                      "& .MuiInput-underline:after": {
+                        borderBottomColor: designSystem.colors.primary.main,
+                      },
+                      "& input": {
+                        color: designSystem.colors.text.primary,
+                      },
+                    }}
+                  />
+                </Box>
+                <Box display="flex" gap={1}>
+                  <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    onClick={() => setCreateModalOpen(true)}
+                    sx={{
+                      backgroundColor: designSystem.colors.primary.main,
+                      color: "#FFFFFF",
+                      fontWeight: 500,
+                      fontSize: "0.875rem",
+                      "&:hover": {
+                        backgroundColor: designSystem.colors.primary.dark,
+                      },
+                    }}
+                  >
+                    Novo Usuário
+                  </Button>
+                  <IconButton
+                    onClick={refetch}
+                    sx={{
+                      color: designSystem.colors.text.disabled,
+                      "&:hover": {
+                        backgroundColor: designSystem.colors.primary.lightest,
+                        color: designSystem.colors.primary.main,
+                      },
+                    }}
+                  >
+                    <RefreshIcon />
+                  </IconButton>
+                </Box>
+              </Box>
+
+              {/* Lista de Usuários */}
+              <Box sx={{ p: 3 }}>
+                {error && (
+                  <Alert severity="error" sx={{ mb: 2 }}>
+                    {error}
+                  </Alert>
+                )}
+                {loading ? (
+                  <Box display="flex" justifyContent="center" p={4}>
+                    <CircularProgress {...progressStyles} />
+                  </Box>
+                ) : filteredUsers.length === 0 ? (
+                  <Box display="flex" justifyContent="center" p={4}>
+                    <Typography color={designSystem.colors.text.disabled} fontSize="0.95rem">
+                      {searchTerm
+                        ? "Nenhum usuário encontrado"
+                        : "Nenhum usuário disponível"}
+                    </Typography>
+                  </Box>
+                ) : (
+                  <Stack spacing={2}>
+                    {filteredUsers.map((user) => (
+                      <Paper
+                        key={user.id}
+                        elevation={0}
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          padding: 2.5,
+                          borderRadius: 2,
+                          backgroundColor: designSystem.colors.background.secondary,
+                          border: `1px solid ${designSystem.colors.border.main}`,
+                          transition: `all ${designSystem.transitions.fast}`,
+                          "&:hover": {
+                            backgroundColor: designSystem.colors.primary.lightest,
+                            borderColor: designSystem.colors.primary.main,
+                            boxShadow: designSystem.shadows.small,
+                          },
+                        }}
+                      >
+                        <Avatar
+                          src={getUserPhoto(user)}
+                          alt={getUserDisplayName(user)}
+                          sx={{
+                            width: 64,
+                            height: 64,
+                            marginRight: 3,
+                            border: `3px solid ${designSystem.colors.background.primary}`,
+                            boxShadow: designSystem.shadows.small,
+                          }}
+                        >
+                          {getUserDisplayName(user).charAt(0).toUpperCase()}
+                        </Avatar>
+                        <Box flex={1} minWidth={0}>
+                          <Typography
+                            variant="h6"
+                            fontWeight={600}
+                            color={designSystem.colors.text.primary}
+                            noWrap
+                            sx={{ fontSize: "1.1rem" }}
+                          >
+                            {getUserDisplayName(user)}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            color={designSystem.colors.text.disabled}
+                            noWrap
+                            sx={{ fontSize: "0.875rem" }}
+                          >
+                            {getUserEmail(user)}
+                          </Typography>
+                          {getUserUsername(user) && (
+                            <Typography
+                              variant="caption"
+                              color={designSystem.colors.text.tertiary}
+                              sx={{ fontSize: "0.8rem" }}
+                            >
+                              @{getUserUsername(user)}
+                            </Typography>
+                          )}
+                          <Box display="flex" alignItems="center" gap={1} mt={0.5}>
+                            <Chip
+                              label={user.is_active !== false ? "Ativo" : "Inativo"}
+                              size="small"
+                              color={user.is_active !== false ? "success" : "default"}
+                              sx={{
+                                fontSize: "0.75rem",
+                                height: "20px",
+                              }}
+                            />
+                            <Tooltip title={user.is_active !== false ? "Desativar usuário" : "Ativar usuário"}>
+                              <FormControlLabel
+                                control={
+                                  <Switch
+                                    checked={user.is_active !== false}
+                                    onChange={() => handleToggleActive(user.email, user.is_active !== false)}
+                                    disabled={toggling}
+                                    size="small"
+                                  />
+                                }
+                                label=""
+                                sx={{ m: 0 }}
+                              />
+                            </Tooltip>
+                          </Box>
+                        </Box>
+                        <Box display="flex" gap={1.5}>
+                          <Tooltip 
+                            title={!user.profile?.id ? "Usuário não possui perfil criado" : ""}
+                            arrow
+                          >
+                            <span>
+                              <Button
+                                variant="outlined"
+                                onClick={() => handleViewProfile(user)}
+                                disabled={!user.profile?.id}
+                                sx={{
+                                  borderColor: designSystem.colors.primary.main,
+                                  color: designSystem.colors.primary.main,
+                                  fontWeight: 500,
+                                  fontSize: "0.875rem",
+                                  "&:hover": {
+                                    borderColor: designSystem.colors.primary.dark,
+                                    backgroundColor: designSystem.colors.primary.lightest,
+                                  },
+                                  "&.Mui-disabled": {
+                                    borderColor: designSystem.colors.border.main,
+                                    color: designSystem.colors.text.disabled,
+                                  },
+                                }}
+                              >
+                                {currentUser?.id && user.id === currentUser.id ? "Meu Perfil" : "Ver Perfil"}
+                              </Button>
+                            </span>
+                          </Tooltip>
+                          <Tooltip 
+                            title={!user.profile?.id ? "Usuário não possui perfil criado" : ""}
+                            arrow
+                          >
+                            <span>
+                              <Button
+                                variant="contained"
+                                onClick={() => handleEditProfile(user)}
+                                disabled={!user.profile?.id}
+                                sx={{
+                                  backgroundColor: designSystem.colors.primary.main,
+                                  color: "#FFFFFF",
+                                  fontWeight: 500,
+                                  fontSize: "0.875rem",
+                                  "&:hover": {
+                                    backgroundColor: designSystem.colors.primary.dark,
+                                  },
+                                  "&.Mui-disabled": {
+                                    backgroundColor: designSystem.colors.border.main,
+                                    color: designSystem.colors.text.disabled,
+                                  },
+                                }}
+                              >
+                                Editar
+                              </Button>
+                            </span>
+                          </Tooltip>
+                        </Box>
+                      </Paper>
+                    ))}
+                  </Stack>
+                )}
+              </Box>
+            </Paper>
+          </Fade>
+        </Box>
       </Box>
-      <Typography variant="h4" fontWeight="bold" color="text.secondary" mb={4}>
-        Lista de Perfis de Usuários
-      </Typography>
-      <Stack spacing={3}>
-        {users.map((user) => (
-          <Paper
-            key={user.id}
-            elevation={1}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              padding: 2,
-              borderRadius: 3,
-              backgroundColor: 'lightgray',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-            }}
-          >
-            <Avatar
-              src={user.profile_photo}
-              alt={user.user_display.first_name}
-              sx={{
-                width: 72,
-                height: 72,
-                marginRight: 3,
-                border: '3px solid #fff',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-              }}
-            />
-            <Box flex={1} minWidth={0}>
-              <Typography
-                variant="h6"
-                fontWeight={600}
-                color="text.primary"
-                noWrap
-              >
-                {user.user_display.first_name} {user.user_display.last_name}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" noWrap>
-                {user.user_display.email}
-              </Typography>
-            </Box>
-            <Box display="flex" gap={2}>
-              <Button
-                variant="outlined"
-                color="primary"
-                onClick={() => navigate(`/usuario/${user.id}`)}
-                sx={{ borderRadius: 2, fontWeight: 500 }}
-              >
-                Ver Perfil
-              </Button>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={() => navigate(`/usuario/${user.id}/editar`)}
-                sx={{ borderRadius: 2, fontWeight: 500 }}
-              >
-                Editar Perfil
-              </Button>
-            </Box>
-          </Paper>
-        ))}
-      </Stack>
-    </Paper>
+
+      {/* Modal de Criação de Usuário */}
+      <CreateUserModal
+        open={createModalOpen}
+        loading={creating}
+        onCreateUser={handleCreateUser}
+        onClose={() => setCreateModalOpen(false)}
+      />
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={closeSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={closeSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </Box>
   );
 }

@@ -23,8 +23,7 @@ import {
   TableHead,
   TableRow,
   TablePagination,
-  Breadcrumbs,
-  Link,
+  Fade,
 } from "@mui/material";
 import {
   FilterList as FilterListIcon,
@@ -35,18 +34,29 @@ import {
   Description as DescriptionIcon,
   Refresh as RefreshIcon,
   Search as SearchIcon,
-  NavigateNext as NavigateNextIcon,
 } from "@mui/icons-material";
-import { useNavigate } from "react-router";
 import { useSelective } from "../../hooks/useSelective";
-import type { UserProfile } from "../../interfaces/userProfile";
+import { selectiveService } from "../../core/http/services/selectiveService";
+import type { UserProfile, Address } from "../../interfaces/userProfile";
 import { APP_ROUTES } from "../../util/constants";
+import PageHeader from "../../components/ui/page/PageHeader";
+import {
+  designSystem,
+  paperStyles,
+  toolbarStyles,
+  tableHeadStyles,
+  tableRowHoverStyles,
+  iconButtonStyles,
+  textFieldStyles,
+  progressStyles,
+  tablePaginationStyles,
+} from "../../styles/designSystem";
 
 const Seletivo: React.FC = () => {
-  const navigate = useNavigate();
   const {
     users,
     loading,
+    pagination,
     snackbar,
     closeSnackbar,
     fetchUsers,
@@ -56,9 +66,12 @@ const Seletivo: React.FC = () => {
   } = useSelective();
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState<
-    "all" | "active" | "inactive"
-  >("all");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  // const [filterStatus, setFilterStatus] = useState<
+  //   "all" | "active" | "inactive"
+  // >("all");
+  const filterStatus = "all"; // Filtro de status desabilitado por enquanto
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc" | "none">("none");
   const [filterAnchor, setFilterAnchor] = useState<null | HTMLElement>(null);
   const [downloadAnchor, setDownloadAnchor] = useState<null | HTMLElement>(
     null
@@ -69,36 +82,174 @@ const Seletivo: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [addressesMap, setAddressesMap] = useState<Map<number, Address[]>>(new Map());
+  const [loadingAddresses, setLoadingAddresses] = useState(false);
 
-  // Filter users
+  // Enriquecer usuários com dados de endereço do mapa
+  const enrichedUsers = useMemo(() => {
+    if (!Array.isArray(users)) {
+      return [];
+    }
+    
+    return users.map((user) => {
+      // Se o usuário já tem endereços, retornar como está
+      if (user.addresses && user.addresses.length > 0) {
+        return user;
+      }
+      
+      // Caso contrário, buscar do mapa de endereços
+      const userAddresses = addressesMap.get(user.id);
+      if (userAddresses && userAddresses.length > 0) {
+        return {
+          ...user,
+          addresses: userAddresses,
+        };
+      }
+      
+      return user;
+    });
+  }, [users, addressesMap]);
+
+  // Filter and sort users
   const filtered = useMemo(() => {
-    return users
-      .filter((u) => u.first_name.toLowerCase() !== "admin")
-      .filter(
-        (u) =>
-          u.cpf.includes(searchTerm) ||
-          u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          `${u.first_name} ${u.last_name}`
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          u.email.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-      .filter((u) => {
-        if (filterStatus === "active") return u.allowed_city.active;
-        if (filterStatus === "inactive") return !u.allowed_city.active;
+    if (!Array.isArray(enrichedUsers)) {
+      return [];
+    }
+    
+    if (enrichedUsers.length === 0) {
+      return [];
+    }
+    
+    let result = [...enrichedUsers];
+    
+    // Filtrar admin
+    result = result.filter((u) => {
+      const firstName = (u?.first_name || "").toLowerCase();
+      return firstName !== "admin";
+    });
+    
+    if (debouncedSearchTerm && debouncedSearchTerm.trim()) {
+      const searchLower = debouncedSearchTerm.trim().toLowerCase();
+      
+      result = result.filter((u) => {
+        // Buscar em CPF
+        const cpf = (u.cpf || "").toLowerCase();
+        if (cpf.includes(searchLower)) return true;
+        
+        // Buscar em celular
+        const celphone = (u.celphone || "").toLowerCase();
+        if (celphone.includes(searchLower)) return true;
+        
+        // Buscar em email
+        const email = (u.email || "").toLowerCase();
+        if (email.includes(searchLower)) return true;
+        
+        // Buscar em nome completo
+        const fullName = [u.first_name, u.last_name].filter(Boolean).join(" ").toLowerCase();
+        if (fullName.includes(searchLower)) return true;
+        
+        // Buscar em name (fallback)
+        const name = ((u as any).name || "").toLowerCase();
+        if (name.includes(searchLower)) return true;
+        
+        return false;
+      });
+    }
+    
+    // Aplicar filtro de status
+    if (filterStatus !== "all") {
+      result = result.filter((u) => {
+        if (!u?.allowed_city) {
+          return filterStatus === "inactive";
+        }
+        if (filterStatus === "active") {
+          return u.allowed_city.active === true;
+        }
+        if (filterStatus === "inactive") {
+          return u.allowed_city.active === false || u.allowed_city.active === null;
+        }
         return true;
       });
-  }, [users, searchTerm, filterStatus]);
-
-  // Paginated data
-  const paginatedData = useMemo(() => {
-    const startIndex = page * rowsPerPage;
-    return filtered.slice(startIndex, startIndex + rowsPerPage);
-  }, [filtered, page, rowsPerPage]);
+    }
+    
+    if (sortOrder !== "none") {
+      result.sort((a, b) => {
+        // Usar a mesma lógica de nome da tabela
+        const getFullName = (user: any) => {
+          return [user.first_name, user.last_name].filter(Boolean).join(" ") || user.name || "";
+        };
+        
+        const nameA = getFullName(a).trim().toLowerCase();
+        const nameB = getFullName(b).trim().toLowerCase();
+        
+        const comparison = nameA.localeCompare(nameB, 'pt-BR');
+        const finalResult = sortOrder === "asc" ? comparison : -comparison;
+        
+        return finalResult;
+      });
+    }
+    
+    return result;
+  }, [enrichedUsers, filterStatus, sortOrder, debouncedSearchTerm]);
 
   useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+    const fetchUsersDetails = async () => {
+      if (!users || users.length === 0) return;
+      
+      setLoadingAddresses(true);
+      try {
+        const map = new Map<number, Address[]>();
+        
+        // Buscar dados completos de cada usuário em paralelo
+        const promises = users.map(async (user) => {
+          try {
+            const response = await selectiveService.getById(user.id);
+            
+            if (response.status >= 200 && response.status < 300 && response.data) {
+              const fullUser = response.data;
+              
+              // Se o usuário tem endereços, adicionar ao mapa
+              if (fullUser.addresses && fullUser.addresses.length > 0) {
+                map.set(user.id, fullUser.addresses);
+              }
+            }
+          } catch {
+          }
+        });
+        
+        await Promise.all(promises);
+        
+        setAddressesMap(map);
+      } catch {
+      } finally {
+        setLoadingAddresses(false);
+      }
+    };
+    
+    fetchUsersDetails();
+  }, [users]);
+
+  // Debounce do searchTerm
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Resetar página quando o termo de pesquisa mudar
+  useEffect(() => {
+    setPage(0);
+  }, [debouncedSearchTerm]);
+
+  // Buscar dados quando página ou rowsPerPage mudarem
+  // Não enviamos o searchTerm ao backend, pois filtramos localmente
+  useEffect(() => {
+    fetchUsers(page + 1, rowsPerPage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, rowsPerPage]);
 
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
@@ -116,18 +267,38 @@ const Seletivo: React.FC = () => {
   const openDownloadMenu = (e: React.MouseEvent<HTMLElement>) =>
     setDownloadAnchor(e.currentTarget);
   const closeFilterMenu = () => setFilterAnchor(null);
-  const applyFilter = (status: "all" | "active" | "inactive") => {
-    setFilterStatus(status);
+  // const applyFilter = (status: "all" | "active" | "inactive") => {
+  //   setFilterStatus(status);
+  //   closeFilterMenu();
+  // };
+  const applySortOrder = (order: "asc" | "desc" | "none") => {
+    setSortOrder(order);
     closeFilterMenu();
   };
 
-  const openModal = (
+  const openModal = async (
     type: "persona" | "addresses" | "guardians" | "registration",
     user: UserProfile
   ) => {
-    setCurrentUser(user);
+    setLoadingDetails(true);
     setOpenModalType(type);
+    
+    try {
+      // Buscar dados completos do usuário
+      const response = await selectiveService.getById(user.id);
+      
+      if (response.status >= 200 && response.status < 300 && response.data) {
+        setCurrentUser(response.data);
+      } else {
+        setCurrentUser(user);
+      }
+    } catch {
+      setCurrentUser(user);
+    } finally {
+      setLoadingDetails(false);
+    }
   };
+  
   const closeModal = () => {
     setOpenModalType(null);
     setCurrentUser(null);
@@ -157,370 +328,357 @@ const Seletivo: React.FC = () => {
   };
 
   return (
-    <Box p={2}>
-      {/* Breadcrumb */}
-      <Breadcrumbs
-        aria-label="breadcrumb"
-        separator={<NavigateNextIcon fontSize="small" />}
-        sx={{ mb: 3 }}
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {/* Conteúdo Principal */}
+      <Box
+        sx={{
+          flex: 1,
+          p: { xs: 2, sm: 3, md: 4 },
+          display: "flex",
+          flexDirection: "column",
+          overflow: "auto",
+        }}
       >
-        <Link
-          component="button"
-          variant="body1"
-          onClick={() => navigate(APP_ROUTES.DASHBOARD)}
+        <Box
           sx={{
-            color: "#A650F0",
-            textDecoration: "none",
-            cursor: "pointer",
-            "&:hover": {
-              textDecoration: "underline",
-            },
+            maxWidth: 1400,
+            width: "100%",
+            margin: "0 auto",
           }}
         >
-          Dashboard
-        </Link>
-        <Typography color="text.primary">Seletivo</Typography>
-      </Breadcrumbs>
+          <PageHeader
+            title="Seletivo"
+            subtitle="Gerencie e visualize todos os candidatos do processo seletivo."
+            description="Pesquise candidatos por CPF, nome ou email, filtre por status (ativos/inativos), exporte os dados em diferentes formatos (CSV, JSON, XLSX) e visualize informações detalhadas de cada candidato, incluindo dados de persona, endereços, guardiões e informações de registro."
+            breadcrumbs={[
+              { label: "Dashboard", path: APP_ROUTES.DASHBOARD },
+              { label: "Seletivo" },
+            ]}
+          />
 
-      {/* Título e Texto Explicativo */}
-      <Box sx={{ mb: 3 }}>
-        <Typography
-          variant="h4"
-          sx={{
-            color: "#A650F0",
-            fontWeight: 600,
-            mb: 2,
-          }}
-        >
-          Seletivo
-        </Typography>
-        <Paper
-          elevation={1}
-          sx={{
-            p: 2,
-            backgroundColor: "#F3E5F5",
-            borderRadius: 2,
-            borderLeft: "4px solid #A650F0",
-          }}
-        >
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
-            <strong>Seletivo</strong>
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Esta página permite gerenciar e visualizar todos os CANDIDATOS do processo seletivo.
-            Você pode pesquisar candidatos por CPF, nome ou email, filtrar por status (ativos/inativos),
-            exportar os dados em diferentes formatos (CSV, JSON, XLSX) e visualizar informações detalhadas
-            de cada candidato, incluindo dados de persona, endereços, guardiões e informações de registro.
-            Utilize os ícones nas colunas da tabela para acessar informações específicas de cada candidato.
-          </Typography>
-        </Paper>
-      </Box>
-
-      <Paper elevation={2} sx={{ borderRadius: 2, overflow: "hidden" }}>
-        <Toolbar sx={{ display: "flex", justifyContent: "space-between", gap: 2 }}>
-          <Box display="flex" alignItems="center" sx={{ flex: 1, maxWidth: 400 }}>
-            <SearchIcon sx={{ mr: 1, color: "#A650F0" }} />
-            <TextField
-              placeholder="Pesquisar por CPF, nome, email..."
-              variant="standard"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              fullWidth
-              sx={{
-                "& .MuiInput-underline:before": {
-                  borderBottomColor: "#A650F0",
-                },
-                "& .MuiInput-underline:hover:before": {
-                  borderBottomColor: "#A650F0",
-                },
-                "& .MuiInput-underline:after": {
-                  borderBottomColor: "#A650F0",
-                },
-              }}
-            />
-          </Box>
-          <Box>
-            <IconButton onClick={openFilterMenu}>
-              <FilterListIcon />
-            </IconButton>
-            <Menu
-              anchorEl={filterAnchor}
-              open={Boolean(filterAnchor)}
-              onClose={closeFilterMenu}
-            >
-              <MenuItem onClick={() => applyFilter("all")}>
-                Todos ({users.length})
-              </MenuItem>
-              <MenuItem onClick={() => applyFilter("active")}>
-                Ativos ({users.filter((u) => u.allowed_city.active).length})
-              </MenuItem>
-              <MenuItem onClick={() => applyFilter("inactive")}>
-                Inativos ({users.filter((u) => !u.allowed_city.active).length})
-              </MenuItem>
-            </Menu>
-            <IconButton onClick={openDownloadMenu}>
-              <DownloadIcon />
-            </IconButton>
-            <Menu
-              anchorEl={downloadAnchor}
-              open={Boolean(downloadAnchor)}
-              onClose={() => setDownloadAnchor(null)}
-            >
-              <MenuItem
-                onClick={() => {
-                  handleExportCSV();
-                  setDownloadAnchor(null);
-                }}
-              >
-                CSV
-              </MenuItem>
-              <MenuItem
-                onClick={() => {
-                  handleExportJSON();
-                  setDownloadAnchor(null);
-                }}
-              >
-                JSON
-              </MenuItem>
-              <MenuItem
-                onClick={() => {
-                  handleExportXLSX();
-                  setDownloadAnchor(null);
-                }}
-              >
-                XLSX
-              </MenuItem>
-            </Menu>
-            <IconButton onClick={fetchUsers}>
-              <RefreshIcon />
-            </IconButton>
-          </Box>
-        </Toolbar>
-
-        {loading ? (
-          <Box display="flex" justifyContent="center" p={4}>
-            <CircularProgress />
-          </Box>
-        ) : (
-          <TableContainer>
-            <Table stickyHeader>
-              <TableHead>
-                <TableRow>
-                  <TableCell
-                    sx={{
-                      backgroundColor: "#A650F0",
-                      color: "#FFFFFF",
-                      fontWeight: 600,
-                      minWidth: 50,
-                    }}
-                  >
-                    ID
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      backgroundColor: "#A650F0",
-                      color: "#FFFFFF",
-                      fontWeight: 600,
-                      minWidth: 120,
-                    }}
-                  >
-                    CPF
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      backgroundColor: "#A650F0",
-                      color: "#FFFFFF",
-                      fontWeight: 600,
-                      minWidth: 200,
-                    }}
-                  >
-                    Nome
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      backgroundColor: "#A650F0",
-                      color: "#FFFFFF",
-                      fontWeight: 600,
-                      minWidth: 120,
-                    }}
-                  >
-                    Data Nasc.
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      backgroundColor: "#A650F0",
-                      color: "#FFFFFF",
-                      fontWeight: 600,
-                      minWidth: 120,
-                    }}
-                  >
-                    Celular
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      backgroundColor: "#A650F0",
-                      color: "#FFFFFF",
-                      fontWeight: 600,
-                      minWidth: 200,
-                    }}
-                  >
-                    Email
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      backgroundColor: "#A650F0",
-                      color: "#FFFFFF",
-                      fontWeight: 600,
-                      minWidth: 100,
-                    }}
-                  >
-                    Cidade
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      backgroundColor: "#A650F0",
-                      color: "#FFFFFF",
-                      fontWeight: 600,
-                      minWidth: 50,
-                    }}
-                  >
-                    UF
-                  </TableCell>
-                  <TableCell
-                    align="center"
-                    sx={{
-                      backgroundColor: "#A650F0",
-                      color: "#FFFFFF",
-                      fontWeight: 600,
-                      minWidth: 80,
-                    }}
-                  >
-                    Persona
-                  </TableCell>
-                  <TableCell
-                    align="center"
-                    sx={{
-                      backgroundColor: "#A650F0",
-                      color: "#FFFFFF",
-                      fontWeight: 600,
-                      minWidth: 100,
-                    }}
-                  >
-                    Endereços
-                  </TableCell>
-                  <TableCell
-                    align="center"
-                    sx={{
-                      backgroundColor: "#A650F0",
-                      color: "#FFFFFF",
-                      fontWeight: 600,
-                      minWidth: 100,
-                    }}
-                  >
-                    Guardião
-                  </TableCell>
-                  <TableCell
-                    align="center"
-                    sx={{
-                      backgroundColor: "#A650F0",
-                      color: "#FFFFFF",
-                      fontWeight: 600,
-                      minWidth: 80,
-                    }}
-                  >
-                    Registro
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {paginatedData.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={12} align="center" sx={{ py: 3 }}>
-                      <Typography color="textSecondary">
-                        {searchTerm || filterStatus !== "all"
-                          ? "Nenhum resultado encontrado"
-                          : "Nenhum dado disponível"}
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  paginatedData.map((user) => (
-                    <TableRow
-                      key={user.id}
-                      hover
-                      sx={{
-                        "&:nth-of-type(even)": {
-                          backgroundColor: "#F9F9F9",
+          {/* Tabela de Dados */}
+          <Fade in timeout={1000}>
+            <Paper {...paperStyles}>
+              <Toolbar {...toolbarStyles}>
+                <Box display="flex" alignItems="center" sx={{ flex: 1, maxWidth: 500 }}>
+                  <SearchIcon sx={{ mr: 1, color: designSystem.colors.text.disabled }} />
+                  <TextField
+                    placeholder="Pesquisar por CPF, nome, email..."
+                    variant="standard"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    fullWidth
+                    {...textFieldStyles}
+                  />
+                </Box>
+                <Box display="flex" gap={1}>
+                  <IconButton onClick={openFilterMenu} {...iconButtonStyles}>
+                    <FilterListIcon />
+                  </IconButton>
+                  <Menu
+                    anchorEl={filterAnchor}
+                    open={Boolean(filterAnchor)}
+                    onClose={closeFilterMenu}
+                    slotProps={{
+                      paper: {
+                        sx: {
+                          borderRadius: 2,
+                          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                          minWidth: 200,
                         },
-                        "&:hover": {
-                          backgroundColor: "#F3E5F5",
-                        },
+                      },
+                    }}
+                  >
+                    {/* <Typography sx={{ px: 2, py: 1, fontWeight: 600, fontSize: "0.875rem", color: "#6B7280" }}>
+                      Status
+                    </Typography>
+                    <MenuItem 
+                      onClick={() => applyFilter("all")}
+                      sx={{ 
+                        backgroundColor: filterStatus === "all" ? "#F3F4F6" : "transparent",
+                        fontWeight: filterStatus === "all" ? 600 : 400 
                       }}
                     >
-                      <TableCell>{user.id}</TableCell>
-                      <TableCell>{user.cpf}</TableCell>
-                      <TableCell>
-                        {user.first_name} {user.last_name}
-                      </TableCell>
-                      <TableCell>{user.birth_date}</TableCell>
-                      <TableCell>{user.celphone}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>{user.allowed_city.localidade}</TableCell>
-                      <TableCell>{user.allowed_city.uf}</TableCell>
-                      <TableCell align="center">
-                        <IconButton
-                          size="small"
-                          onClick={() => openModal("persona", user)}
-                        >
-                          <PersonIcon fontSize="small" />
-                        </IconButton>
-                      </TableCell>
-                      <TableCell align="center">
-                        <IconButton
-                          size="small"
-                          onClick={() => openModal("addresses", user)}
-                        >
-                          <HomeIcon fontSize="small" />
-                        </IconButton>
-                      </TableCell>
-                      <TableCell align="center">
-                        <IconButton
-                          size="small"
-                          onClick={() => openModal("guardians", user)}
-                        >
-                          <PeopleIcon fontSize="small" />
-                        </IconButton>
-                      </TableCell>
-                      <TableCell align="center">
-                        <IconButton
-                          size="small"
-                          onClick={() => openModal("registration", user)}
-                        >
-                          <DescriptionIcon fontSize="small" />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-            <TablePagination
-              component="div"
-              count={filtered.length}
-              page={page}
-              onPageChange={handleChangePage}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              rowsPerPageOptions={[5, 10, 25, 50]}
-              labelRowsPerPage="Linhas por página:"
-              labelDisplayedRows={({ from, to, count }) =>
-                `${from}-${to} de ${count !== -1 ? count : `mais de ${to}`}`
-              }
-            />
-          </TableContainer>
-        )}
-      </Paper>
+                      Todos
+                    </MenuItem> */}
+                    {/* <MenuItem 
+                      onClick={() => applyFilter("active")}
+                      sx={{ 
+                        backgroundColor: filterStatus === "active" ? "#F3F4F6" : "transparent",
+                        fontWeight: filterStatus === "active" ? 600 : 400 
+                      }}
+                    >
+                      Ativos
+                    </MenuItem>
+                    <MenuItem 
+                      onClick={() => applyFilter("inactive")}
+                      sx={{ 
+                        backgroundColor: filterStatus === "inactive" ? "#F3F4F6" : "transparent",
+                        fontWeight: filterStatus === "inactive" ? 600 : 400 
+                      }}
+                    >
+                      Inativos
+                    </MenuItem> */}
+                    <Box sx={{ borderTop: "1px solid #E5E7EB", my: 1 }} />
+                    <Typography sx={{ px: 2, py: 1, fontWeight: 600, fontSize: "0.875rem", color: "#6B7280" }}>
+                      Ordenar por Nome
+                    </Typography>
+                    <MenuItem 
+                      onClick={() => applySortOrder("none")}
+                      sx={{ 
+                        backgroundColor: sortOrder === "none" ? "#F3F4F6" : "transparent",
+                        fontWeight: sortOrder === "none" ? 600 : 400 
+                      }}
+                    >
+                      Sem ordenação
+                    </MenuItem>
+                    <MenuItem 
+                      onClick={() => applySortOrder("asc")}
+                      sx={{ 
+                        backgroundColor: sortOrder === "asc" ? "#F3F4F6" : "transparent",
+                        fontWeight: sortOrder === "asc" ? 600 : 400 
+                      }}
+                    >
+                      A → Z
+                    </MenuItem>
+                    <MenuItem 
+                      onClick={() => applySortOrder("desc")}
+                      sx={{ 
+                        backgroundColor: sortOrder === "desc" ? "#F3F4F6" : "transparent",
+                        fontWeight: sortOrder === "desc" ? 600 : 400 
+                      }}
+                    >
+                      Z → A
+                    </MenuItem>
+                  </Menu>
+                  <IconButton onClick={openDownloadMenu} {...iconButtonStyles}>
+                    <DownloadIcon />
+                  </IconButton>
+                  <Menu
+                    anchorEl={downloadAnchor}
+                    open={Boolean(downloadAnchor)}
+                    onClose={() => setDownloadAnchor(null)}
+                    slotProps={{
+                      paper: {
+                        sx: {
+                          borderRadius: 2,
+                          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                        },
+                      },
+                    }}
+                  >
+                    <MenuItem
+                      onClick={() => {
+                        handleExportCSV();
+                        setDownloadAnchor(null);
+                      }}
+                    >
+                      CSV
+                    </MenuItem>
+                    <MenuItem
+                      onClick={() => {
+                        handleExportJSON();
+                        setDownloadAnchor(null);
+                      }}
+                    >
+                      JSON
+                    </MenuItem>
+                    <MenuItem
+                      onClick={() => {
+                        handleExportXLSX();
+                        setDownloadAnchor(null);
+                      }}
+                    >
+                      XLSX
+                    </MenuItem>
+                  </Menu>
+                  <IconButton 
+                    onClick={() => fetchUsers(page + 1, rowsPerPage, searchTerm.trim() || undefined)} 
+                    {...iconButtonStyles}
+                  >
+                    <RefreshIcon />
+                  </IconButton>
+                </Box>
+              </Toolbar>
 
+              {loading || loadingAddresses ? (
+                <Box display="flex" justifyContent="center" p={4}>
+                  <CircularProgress {...progressStyles} />
+                </Box>
+              ) : (
+                <TableContainer sx={{ overflowX: "auto", width: "100%" }}>
+                  <Table size="small" sx={{ minWidth: 1200 }}>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 60 }}>ID</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 130 }}>CPF</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 200 }}>Nome</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 120 }}>Data Nasc.</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 130 }}>Celular</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 240 }}>Email</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 150 }}>Cidade</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 60 }}>UF</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 150 }} align="center">
+                          Ações
+                        </TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {filtered.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={12} align="center" sx={{ py: 4 }}>
+                            <Typography color="#6B7280" fontSize="0.95rem">
+                              {searchTerm || filterStatus !== "all"
+                                ? "Nenhum resultado encontrado"
+                                : "Nenhum dado disponível"}
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        filtered.map((user) => (
+                          <TableRow
+                              key={user.id}
+                              {...tableRowHoverStyles}
+                              sx={{
+                                ...tableRowHoverStyles.sx,
+                                cursor: "pointer",
+                              }}
+                            >
+                            <TableCell sx={{ color: "#374151", fontSize: "0.875rem", py: 1.5, width: 60 }}>
+                              {user.id}
+                            </TableCell>
+                            <TableCell sx={{ color: "#374151", fontSize: "0.875rem", py: 1.5, width: 130 }}>
+                              {user.cpf || "—"}
+                            </TableCell>
+                            <TableCell
+                              sx={{
+                                color: "#1F2937",
+                                fontWeight: 500,
+                                fontSize: "0.875rem",
+                                py: 1.5,
+                                width: 200,
+                                maxWidth: 200,
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                              }}
+                            >
+                              {[user.first_name, user.last_name].filter(Boolean).join(" ") ||
+                                (user as any)?.name ||
+                                "—"}
+                            </TableCell>
+                            <TableCell sx={{ color: "#374151", fontSize: "0.875rem", py: 1.5, width: 120 }}>
+                              {user.birth_date || "—"}
+                            </TableCell>
+                            <TableCell sx={{ color: "#374151", fontSize: "0.875rem", py: 1.5, width: 130 }}>
+                              {user.celphone || "—"}
+                            </TableCell>
+                            <TableCell
+                              sx={{
+                                color: "#374151",
+                                fontSize: "0.875rem",
+                                py: 1.5,
+                                width: 240,
+                                maxWidth: 240,
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                              }}
+                            >
+                              {user.email || "—"}
+                            </TableCell>
+                            <TableCell
+                              sx={{
+                                color: "#374151",
+                                fontSize: "0.875rem",
+                                py: 1.5,
+                                width: 150,
+                                maxWidth: 150,
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                              }}
+                            >
+                              {user.allowed_city?.localidade || 
+                               user.addresses?.[0]?.localidade || 
+                               addressesMap.get(user.id)?.[0]?.localidade ||
+                               "—"}
+                            </TableCell>
+                            <TableCell sx={{ color: "#374151", fontSize: "0.875rem", py: 1.5, width: 60 }}>
+                              {user.allowed_city?.uf || 
+                               user.addresses?.[0]?.uf || 
+                               addressesMap.get(user.id)?.[0]?.uf ||
+                               "—"}
+                            </TableCell>
+                            <TableCell align="center" sx={{ py: 1.5, width: 150 }}>
+                              <Box display="flex" alignItems="center" justifyContent="center" gap={1}>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => openModal("persona", user)}
+                                  {...iconButtonStyles}
+                                  sx={{ ...iconButtonStyles.sx, padding: "4px" }}
+                                >
+                                  <PersonIcon sx={{ fontSize: "1rem" }} />
+                                </IconButton>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => openModal("addresses", user)}
+                                  {...iconButtonStyles}
+                                  sx={{ ...iconButtonStyles.sx, padding: "4px" }}
+                                >
+                                  <HomeIcon sx={{ fontSize: "1rem" }} />
+                                </IconButton>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => openModal("guardians", user)}
+                                  {...iconButtonStyles}
+                                  sx={{ ...iconButtonStyles.sx, padding: "4px" }}
+                                >
+                                  <PeopleIcon sx={{ fontSize: "1rem" }} />
+                                </IconButton>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => openModal("registration", user)}
+                                  {...iconButtonStyles}
+                                  sx={{ ...iconButtonStyles.sx, padding: "4px" }}
+                                >
+                                  <DescriptionIcon sx={{ fontSize: "1rem" }} />
+                                </IconButton>
+                              </Box>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                  <TablePagination
+                    component="div"
+                    count={pagination.totalItems}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    rowsPerPage={rowsPerPage}
+                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    rowsPerPageOptions={[5, 10, 25, 50]}
+                    labelRowsPerPage="Linhas por página:"
+                    labelDisplayedRows={({ from, to, count }) =>
+                      `${from}-${to} de ${count !== -1 ? count : `mais de ${to}`}`
+                    }
+                    {...tablePaginationStyles}
+                  />
+                </TableContainer>
+              )}
+            </Paper>
+          </Fade>
+        </Box>
+      </Box>
+
+      {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}
@@ -542,18 +700,45 @@ const Seletivo: React.FC = () => {
         onClose={closeModal}
         fullWidth
         maxWidth="sm"
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: 3,
+            },
+          },
+        }}
       >
-        <DialogTitle>Persona Data</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 600, color: "#1F2937" }}>
+          Dados de Persona
+        </DialogTitle>
         <DialogContent dividers>
-          {currentUser?.personas &&
+          {loadingDetails ? (
+            <Box display="flex" justifyContent="center" p={4}>
+              <CircularProgress {...progressStyles} />
+            </Box>
+          ) : currentUser?.personas && Object.keys(currentUser.personas).length > 0 ? (
             Object.entries(currentUser.personas).map(([k, v]) => (
-              <Typography key={k} sx={{ mb: 1 }}>
-                <strong>{translateLabel(k)}:</strong> {v}
+              <Typography key={k} sx={{ mb: 1.5, color: "#374151" }}>
+                <strong style={{ color: "#1F2937" }}>{translateLabel(k)}:</strong> {String(v)}
               </Typography>
-            ))}
+            ))
+          ) : (
+            <Typography color="#6B7280">Nenhum dado de persona disponível</Typography>
+          )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={closeModal}>Fechar</Button>
+        <DialogActions sx={{ p: 2 }}>
+          <Button
+            onClick={closeModal}
+            sx={{
+              color: "#A650F0",
+              fontWeight: 600,
+              "&:hover": {
+                backgroundColor: "#FAF5FF",
+              },
+            }}
+          >
+            Fechar
+          </Button>
         </DialogActions>
       </Dialog>
 
@@ -563,35 +748,59 @@ const Seletivo: React.FC = () => {
         onClose={closeModal}
         fullWidth
         maxWidth="sm"
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: 3,
+            },
+          },
+        }}
       >
-        <DialogTitle>Endereços</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 600, color: "#1F2937" }}>
+          Endereços
+        </DialogTitle>
         <DialogContent dividers>
-          {currentUser?.addresses && currentUser.addresses.length > 0 ? (
+          {loadingDetails ? (
+            <Box display="flex" justifyContent="center" p={4}>
+              <CircularProgress {...progressStyles} />
+            </Box>
+          ) : currentUser?.addresses && currentUser.addresses.length > 0 ? (
             currentUser.addresses.map((a) => (
-              <Box key={a.id} mb={2}>
-                <Typography>
-                  <strong>CEP:</strong> {a.cep}
+              <Box key={a.id} mb={2} pb={2} borderBottom="1px solid #E5E7EB">
+                <Typography sx={{ mb: 0.5, color: "#374151" }}>
+                  <strong style={{ color: "#1F2937" }}>CEP:</strong> {a.cep}
                 </Typography>
-                <Typography>
-                  <strong>Logradouro:</strong> {a.logradouro}
+                <Typography sx={{ mb: 0.5, color: "#374151" }}>
+                  <strong style={{ color: "#1F2937" }}>Logradouro:</strong> {a.logradouro}
                 </Typography>
-                <Typography>
-                  <strong>Complemento:</strong> {a.complemento || "—"}
+                <Typography sx={{ mb: 0.5, color: "#374151" }}>
+                  <strong style={{ color: "#1F2937" }}>Complemento:</strong> {a.complemento || "—"}
                 </Typography>
-                <Typography>
-                  <strong>Bairro:</strong> {a.bairro}
+                <Typography sx={{ mb: 0.5, color: "#374151" }}>
+                  <strong style={{ color: "#1F2937" }}>Bairro:</strong> {a.bairro}
                 </Typography>
-                <Typography>
-                  <strong>Cidade:</strong> {a.localidade} ({a.uf})
+                <Typography sx={{ color: "#374151" }}>
+                  <strong style={{ color: "#1F2937" }}>Cidade:</strong> {a.localidade} ({a.uf})
                 </Typography>
               </Box>
             ))
           ) : (
-            <Typography>Nenhum endereço cadastrado</Typography>
+            <Typography color="#6B7280">Nenhum endereço cadastrado</Typography>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={closeModal}>Fechar</Button>
+        <DialogActions sx={{ p: 2 }}>
+          <Button
+            onClick={closeModal}
+            sx={{
+              color: "#A650F0",
+              fontWeight: 600,
+              "&:hover": {
+                backgroundColor: "#FAF5FF",
+              },
+            }}
+          >
+            Fechar
+          </Button>
         </DialogActions>
       </Dialog>
 
@@ -601,35 +810,59 @@ const Seletivo: React.FC = () => {
         onClose={closeModal}
         fullWidth
         maxWidth="sm"
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: 3,
+            },
+          },
+        }}
       >
-        <DialogTitle>Dados do Guardião</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 600, color: "#1F2937" }}>
+          Dados do Guardião
+        </DialogTitle>
         <DialogContent dividers>
-          {currentUser?.guardians && currentUser.guardians.length > 0 ? (
+          {loadingDetails ? (
+            <Box display="flex" justifyContent="center" p={4}>
+              <CircularProgress {...progressStyles} />
+            </Box>
+          ) : currentUser?.guardians && currentUser.guardians.length > 0 ? (
             currentUser.guardians.map((g) => (
-              <Box key={g.cpf} mb={2}>
-                <Typography>
-                  <strong>Relacionamento:</strong> {g.relationship}
+              <Box key={g.cpf} mb={2} pb={2} borderBottom="1px solid #E5E7EB">
+                <Typography sx={{ mb: 0.5, color: "#374151" }}>
+                  <strong style={{ color: "#1F2937" }}>Relacionamento:</strong> {g.relationship}
                 </Typography>
-                <Typography>
-                  <strong>Nome:</strong> {g.name}
+                <Typography sx={{ mb: 0.5, color: "#374151" }}>
+                  <strong style={{ color: "#1F2937" }}>Nome:</strong> {g.name}
                 </Typography>
-                <Typography>
-                  <strong>CPF:</strong> {g.cpf}
+                <Typography sx={{ mb: 0.5, color: "#374151" }}>
+                  <strong style={{ color: "#1F2937" }}>CPF:</strong> {g.cpf}
                 </Typography>
-                <Typography>
-                  <strong>Celular:</strong> {g.cellphone}
+                <Typography sx={{ mb: 0.5, color: "#374151" }}>
+                  <strong style={{ color: "#1F2937" }}>Celular:</strong> {g.cellphone}
                 </Typography>
-                <Typography>
-                  <strong>Email:</strong> {g.email}
+                <Typography sx={{ color: "#374151" }}>
+                  <strong style={{ color: "#1F2937" }}>Email:</strong> {g.email}
                 </Typography>
               </Box>
             ))
           ) : (
-            <Typography>Nenhum guardião cadastrado</Typography>
+            <Typography color="#6B7280">Nenhum guardião cadastrado</Typography>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={closeModal}>Fechar</Button>
+        <DialogActions sx={{ p: 2 }}>
+          <Button
+            onClick={closeModal}
+            sx={{
+              color: "#A650F0",
+              fontWeight: 600,
+              "&:hover": {
+                backgroundColor: "#FAF5FF",
+              },
+            }}
+          >
+            Fechar
+          </Button>
         </DialogActions>
       </Dialog>
 
@@ -639,32 +872,61 @@ const Seletivo: React.FC = () => {
         onClose={closeModal}
         fullWidth
         maxWidth="sm"
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: 3,
+            },
+          },
+        }}
       >
-        <DialogTitle>Dados de Registro</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 600, color: "#1F2937" }}>
+          Dados de Registro
+        </DialogTitle>
         <DialogContent dividers>
-          {currentUser && (
+          {loadingDetails ? (
+            <Box display="flex" justifyContent="center" p={4}>
+              <CircularProgress {...progressStyles} />
+            </Box>
+          ) : currentUser ? (
             <>
-              {currentUser.registration_data &&
+              {currentUser.registration_data && Object.keys(currentUser.registration_data).length > 0 ? (
                 Object.entries(currentUser.registration_data).map(([k, v]) => (
-                  <Typography key={k}>
-                    <strong>{translateLabel(k)}:</strong>{" "}
+                  <Typography key={k} sx={{ mb: 1.5, color: "#374151" }}>
+                    <strong style={{ color: "#1F2937" }}>{translateLabel(k)}:</strong>{" "}
                     {typeof v === "string"
                       ? v
                           .replace(/_/g, " ")
                           .replace(/^./, (match) => match.toUpperCase())
-                      : v}
+                      : String(v)}
                   </Typography>
-                ))}
+                ))
+              ) : (
+                <Typography color="#6B7280" sx={{ mb: 2 }}>Nenhum dado de registro disponível</Typography>
+              )}
               {currentUser.contract && (
-                <Typography>
-                  <strong>Contrato:</strong> {currentUser.contract.status}
+                <Typography sx={{ color: "#374151", mt: 2, pt: 2, borderTop: "1px solid #E5E7EB" }}>
+                  <strong style={{ color: "#1F2937" }}>Contrato:</strong> {currentUser.contract.status}
                 </Typography>
               )}
             </>
+          ) : (
+            <Typography color="#6B7280">Nenhum dado disponível</Typography>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={closeModal}>Fechar</Button>
+        <DialogActions sx={{ p: 2 }}>
+          <Button
+            onClick={closeModal}
+            sx={{
+              color: "#A650F0",
+              fontWeight: 600,
+              "&:hover": {
+                backgroundColor: "#FAF5FF",
+              },
+            }}
+          >
+            Fechar
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

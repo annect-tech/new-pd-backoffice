@@ -1,16 +1,16 @@
 import React, { useState } from 'react'
-import { Box, Typography, TextField, Button, Alert, InputAdornment, IconButton } from '@mui/material'
-import AuthCard from '../../components/ui/cards/AuthCard'
+import { Box, Typography, TextField, Button, Alert, InputAdornment, IconButton, Link } from '@mui/material'
 import { useAuth } from '../../hooks/useAuth'
 import { useNavigate } from 'react-router'
 import Visibility from '@mui/icons-material/Visibility'
 import VisibilityOff from '@mui/icons-material/VisibilityOff'
 import { APP_ROUTES } from '../../util/constants'
+import AuthPromotionalSection from '../../components/auth/SideAuthSection'
 
 export default function Login() {
   const { login, loading, error } = useAuth()
   const navigate = useNavigate()
-  const [email, setEmail] = useState('')
+  const [credential, setCredential] = useState('') // Renomeado de email
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
@@ -19,90 +19,171 @@ export default function Login() {
     e.preventDefault()
     setFormError(null)
     try {
-      await login({ email, password })
-      navigate(APP_ROUTES.HOME)
+      await login({ credential, password }) // Usar credential
+      navigate(APP_ROUTES.DASHBOARD) // Redirecionar para dashboard
     } catch (err: any) {
       setFormError(err.message || 'Erro ao fazer login')
     }
   }
 
   return (
-    <Box>
-      <Box
-        sx={{
-          flex: 1,
-          display: { xs: 'none', md: 'flex' },
-          alignItems: 'center',
-          justifyContent: 'center',
-          bgcolor: 'primary.main',
-        }}
-      >
-       
-      </Box>
+    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+      {/* Seção promocional lateral */}
+      <AuthPromotionalSection />
+
+      {/* Seção do formulário */}
       <Box
         sx={{
           flex: 1,
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          p: 2,
+          p: 3,
+          bgcolor: '#fff',
         }}
       >
-        <AuthCard>
-          <Typography variant="h5" fontWeight={700} mb={2} align="center">
-            Entrar na plataforma
-          </Typography>
+        <Box
+          sx={{
+            width: '100%',
+            maxWidth: 400,
+          }}
+        >
+          {/* Título minimalista */}
+          <Box sx={{ mb: 5 }}>
+            <Typography
+              variant="h4"
+              fontWeight={600}
+              color="#1a1a1a"
+              sx={{ mb: 0.5 }}
+            >
+              Entrar
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Acesse sua conta
+            </Typography>
+          </Box>
+
+          {/* Formulário */}
           <form onSubmit={handleSubmit}>
+            {/* Mensagem de erro */}
+            {(formError || error) && (
+              <Alert
+                severity="error"
+                sx={{
+                  mb: 3,
+                  borderRadius: 1,
+                  border: '1px solid #fee',
+                  bgcolor: '#fef2f2',
+                }}
+              >
+                {formError || error}
+              </Alert>
+            )}
+
             <TextField
               label="E-mail"
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
+              type="text"
+              value={credential}
+              onChange={e => setCredential(e.target.value)}
               fullWidth
-              margin="normal"
               required
               autoFocus
+              variant="outlined"
+              sx={{
+                mb: 2.5,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 1.5,
+                  bgcolor: '#fafafa',
+                  '&:hover': {
+                    bgcolor: '#f5f5f5',
+                  },
+                  '&.Mui-focused': {
+                    bgcolor: '#fff',
+                  },
+                },
+              }}
             />
+
             <TextField
               label="Senha"
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={e => setPassword(e.target.value)}
               fullWidth
-              margin="normal"
               required
+              variant="outlined"
+              sx={{
+                mb: 2.5,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 1.5,
+                  bgcolor: '#fafafa',
+                  '&:hover': {
+                    bgcolor: '#f5f5f5',
+                  },
+                  '&.Mui-focused': {
+                    bgcolor: '#fff',
+                  },
+                },
+              }}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
-                    <IconButton onClick={() => setShowPassword(v => !v)} edge="end">
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    <IconButton
+                      onClick={() => setShowPassword(v => !v)}
+                      edge="end"
+                      size="small"
+                    >
+                      {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
                     </IconButton>
                   </InputAdornment>
                 ),
               }}
             />
-            {(formError || error) && (
-              <Alert severity="error" sx={{ mt: 2 }}>
-                {formError || error}
-              </Alert>
-            )}
+
+            {/* Link esqueci a senha */}
+            {/* <Box sx={{ textAlign: 'right', mb: 3 }}>
+              <Link
+                href="#"
+                underline="hover"
+                sx={{
+                  fontSize: '0.875rem',
+                  color: 'text.secondary',
+                  '&:hover': {
+                    color: 'primary.main',
+                  },
+                }}
+              >
+                Esqueceu a senha?
+              </Link>
+            </Box> */}
+
+            {/* Botão de login */}
             <Button
               type="submit"
               variant="contained"
               color="primary"
               fullWidth
-              sx={{ mt: 3, mb: 1, py: 1.5, fontWeight: 600 }}
+              size="large"
               disabled={loading}
+              sx={{
+                py: 1.5,
+                fontWeight: 600,
+                fontSize: '0.9375rem',
+                textTransform: 'none',
+                borderRadius: 1.5,
+                boxShadow: 'none',
+                '&:hover': {
+                  boxShadow: 'none',
+                },
+              }}
             >
               {loading ? 'Entrando...' : 'Entrar'}
             </Button>
-            <Box sx={{ textAlign: 'center', mt: 2 }}>
-              <Button variant="text" color="primary" onClick={() => navigate(APP_ROUTES.REGISTER)}>
-                Não tem uma conta? Cadastre-se
-              </Button>
-            </Box>
+            {/* Registro removido - não existe no backend */}
+            {/* Apenas administradores podem criar usuários */}
           </form>
-        </AuthCard>
+        </Box>
       </Box>
     </Box>
   )

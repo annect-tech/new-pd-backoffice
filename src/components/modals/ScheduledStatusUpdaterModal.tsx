@@ -50,8 +50,7 @@ const ScheduledStatusUpdaterModal: React.FC<ScheduledStatusUpdaterModalProps> = 
         setNewStatus("scheduled");
         setSuccess(false);
       }, 1500);
-    } catch (error) {
-      console.error("Erro ao atualizar status:", error);
+    } catch {
     } finally {
       setLoading(false);
     }
@@ -96,12 +95,21 @@ const ScheduledStatusUpdaterModal: React.FC<ScheduledStatusUpdaterModalProps> = 
                 onChange={(e) => setSelectedExam(e.target.value as number)}
                 label="Selecione o Exame"
               >
-                {exams.map((exam) => (
-                  <MenuItem key={exam.id} value={exam.id}>
-                    {exam.user_data.user.first_name} {exam.user_data.user.last_name} -{" "}
-                    {exam.exam_scheduled_hour.exam_date.date} {exam.exam_scheduled_hour.hour}
-                  </MenuItem>
-                ))}
+                {exams
+                  .filter((exam) => exam.user_data?.user) // Filtrar apenas exames com user_data válido
+                  .map((exam) => {
+                    const firstName = exam.user_data?.user?.first_name || "";
+                    const lastName = exam.user_data?.user?.last_name || "";
+                    const name = [firstName, lastName].filter(Boolean).join(" ") || "Nome não disponível";
+                    const date = exam.exam_scheduled_hour?.exam_date?.date || "—";
+                    const hour = exam.exam_scheduled_hour?.hour || "—";
+                    
+                    return (
+                      <MenuItem key={exam.id} value={exam.id}>
+                        {name} - {date} {hour}
+                      </MenuItem>
+                    );
+                  })}
               </Select>
             </FormControl>
 

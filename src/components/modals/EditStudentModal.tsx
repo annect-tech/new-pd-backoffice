@@ -119,7 +119,6 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({
       onSave(updatedStudent);
       onClose();
     } catch (error: any) {
-      console.error("Erro ao atualizar aluno:", error);
       onError(error.message || "Erro ao atualizar aluno.");
     } finally {
       setLoading(false);

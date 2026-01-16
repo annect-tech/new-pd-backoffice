@@ -1,244 +1,269 @@
-import React, { useEffect, type MouseEvent, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   Box,
   Paper,
   Toolbar,
   IconButton,
-  Menu,
-  MenuItem,
   Typography,
   CircularProgress,
   Alert,
-  Breadcrumbs,
-  Link,
-  Chip,
+  Fade,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TablePagination,
+  TextField,
+  Snackbar,
 } from "@mui/material";
 import {
-  MoreVert as MoreVertIcon,
   Refresh as RefreshIcon,
-  NavigateNext as NavigateNextIcon,
 } from "@mui/icons-material";
-import { DataGrid } from "@mui/x-data-grid";
-import { useNavigate } from "react-router";
+import SearchIcon from "@mui/icons-material/Search";
 import { useContracts } from "../../hooks/useContracts";
-import { getTableConfig } from "../../util/constants";
 import { APP_ROUTES } from "../../util/constants";
+import PageHeader from "../../components/ui/page/PageHeader";
+import {
+  designSystem,
+  paperStyles,
+  iconButtonStyles,
+  progressStyles,
+  tableHeadStyles,
+  tableRowHoverStyles,
+  tablePaginationStyles,
+  textFieldStyles,
+} from "../../styles/designSystem";
 
 const Contratos: React.FC = () => {
-  const navigate = useNavigate();
-  const { contracts, loading, error, fetchContracts } = useContracts();
+  const { contracts, loading, error, fetchContracts, snackbar, closeSnackbar } = useContracts();
 
-  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   useEffect(() => {
     fetchContracts();
   }, [fetchContracts]);
 
-  const openMenu = (e: MouseEvent<HTMLElement>) => {
-    setMenuAnchor(e.currentTarget);
-  };
-
-  const closeMenu = () => {
-    setMenuAnchor(null);
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "ativo":
-        return "success";
-      case "pendente":
-        return "warning";
-      case "cancelado":
-        return "error";
-      default:
-        return "default";
+  const getStatusColor = (status: string): string => {
+    const statusLower = status.toLowerCase();
+    if (statusLower === "enviado") {
+      return "#4CAF50"; // Verde
+    } else if (statusLower === "pronto para enviar" || statusLower === "pendente") {
+      return "#FF9800"; // Laranja
+    } else if (statusLower === "cancelado") {
+      return "#F44336"; // Vermelho
+    } else if (statusLower === "rascunho") {
+      return "#9E9E9E"; // Cinza
+    } else {
+      return "#9E9E9E"; // Cinza padrão
     }
   };
 
-  const columns: any[] = [
-    { 
-      field: "cpf", 
-      headerName: "CPF", 
-      width: 150,
-      headerAlign: "center",
-      align: "center",
-    },
-    { 
-      field: "name", 
-      headerName: "Nome", 
-      width: 250,
-      headerAlign: "center",
-      align: "left",
-    },
-    { 
-      field: "status", 
-      headerName: "Status", 
-      width: 150,
-      headerAlign: "center",
-      align: "center",
-      renderCell: (params: any) => (
-        <Chip
-          label={params.value}
-          color={getStatusColor(params.value) as any}
-          size="small"
-        />
-      ),
-    },
-    {
-      field: "actions",
-      headerName: "Ações",
-      width: 100,
-      renderCell: () => (
-        <IconButton 
-          size="small" 
-          onClick={(e) => openMenu(e)}
-          sx={{ color: "#A650F0" }}
-        >
-          <MoreVertIcon fontSize="small" />
-        </IconButton>
-      ),
-      align: "center",
-      headerAlign: "center",
-      sortable: false,
-      filterable: false,
-    },
-  ];
+  // Traduzir status para português
+  const translateStatus = (status: string): string => {
+    const statusMap: Record<string, string> = {
+      'SENT': 'Enviado',
+      'ReadyToSend': 'Pronto para enviar',
+      'Cancelled': 'Cancelado',
+      'CANCELLED': 'Cancelado',
+      'PENDING': 'Pendente',
+      'DRAFT': 'Rascunho',
+    };
+    return statusMap[status] || status;
+  };
 
-  const rows = contracts.map((contract) => ({
+  const rows = Array.isArray(contracts) ? contracts.map((contract) => ({
     id: contract.id,
-    cpf: contract.user_data.cpf,
-    name: `${contract.user_data.user.first_name} ${contract.user_data.user.last_name}`,
-    status: contract.status,
-  }));
+    email: contract.student_email || "N/A",
+    name: contract.student_name || "Nome não disponível",
+    status: translateStatus(contract.status || "desconhecido"),
+    statusOriginal: contract.status || "desconhecido", // Manter o original para filtros
+  })) : [];
+
+  const filteredRows = useMemo(() => {
+    return rows.filter(
+      (row) =>
+        row.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        row.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        row.status.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [rows, searchTerm]);
+
+  const paginatedRows = useMemo(() => {
+    const start = page * rowsPerPage;
+    return filteredRows.slice(start, start + rowsPerPage);
+  }, [filteredRows, page, rowsPerPage]);
+
+  const handleChangePage = (_event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   return (
-    <Box p={2}>
-      {/* Breadcrumb */}
-      <Breadcrumbs
-        aria-label="breadcrumb"
-        separator={<NavigateNextIcon fontSize="small" />}
-        sx={{ mb: 3 }}
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {/* Conteúdo Principal */}
+      <Box
+        sx={{
+          flex: 1,
+          p: { xs: 2, sm: 3, md: 4 },
+          display: "flex",
+          flexDirection: "column",
+          overflow: "auto",
+        }}
       >
-        <Link
-          component="button"
-          variant="body1"
-          onClick={() => navigate(APP_ROUTES.DASHBOARD)}
+        <Box
           sx={{
-            color: "#A650F0",
-            textDecoration: "none",
-            cursor: "pointer",
-            "&:hover": {
-              textDecoration: "underline",
-            },
+            maxWidth: 1400,
+            width: "100%",
+            margin: "0 auto",
           }}
         >
-          Dashboard
-        </Link>
-        <Typography color="text.primary">Contratos</Typography>
-      </Breadcrumbs>
+          {/* Header da Página */}
+          <PageHeader
+            title="Contratos"
+            subtitle="Gerencie e visualize todos os contratos cadastrados."
+            description="Esta página permite gerenciar e visualizar todos os CONTRATOS cadastrados no sistema. Você pode visualizar informações sobre nome do estudante, email e status do contrato (enviado, pronto para enviar, cancelado). Utilize o menu de ações para acessar funcionalidades específicas de cada contrato."
+            breadcrumbs={[
+              { label: "Dashboard", path: APP_ROUTES.DASHBOARD },
+              { label: "Contratos" },
+            ]}
+          />
 
-      {/* Título e Texto Explicativo */}
-      <Box sx={{ mb: 3 }}>
-        <Typography
-          variant="h4"
-          sx={{
-            color: "#A650F0",
-            fontWeight: 600,
-            mb: 2,
-          }}
-        >
-          Contratos Cadastrados
-        </Typography>
-        <Paper
-          elevation={1}
-          sx={{
-            p: 2,
-            backgroundColor: "#F3E5F5",
-            borderRadius: 2,
-            borderLeft: "4px solid #A650F0",
-          }}
-        >
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
-            <strong>Contratos Cadastrados</strong>
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Esta página permite gerenciar e visualizar todos os CONTRATOS cadastrados no sistema.
-            Você pode visualizar informações sobre CPF, nome do contratante e status do contrato (ativo, pendente ou cancelado).
-            Utilize o menu de ações para acessar funcionalidades específicas de cada contrato.
-          </Typography>
-        </Paper>
+          {/* Tabela de Dados */}
+          <Fade in timeout={1000}>
+            <Paper {...paperStyles}>
+              <Toolbar
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 2,
+                  p: 3,
+                  backgroundColor: designSystem.colors.background.primary,
+                  borderBottom: `1px solid ${designSystem.colors.border.main}`,
+                }}
+              >
+                <Box display="flex" alignItems="center" sx={{ flex: 1, minWidth: 240, maxWidth: 420 }}>
+                  <SearchIcon sx={{ mr: 1, color: designSystem.colors.text.disabled }} />
+                  <TextField
+                    placeholder="Pesquisar por nome, email, status..."
+                    variant="standard"
+                    fullWidth
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    {...textFieldStyles}
+                  />
+                </Box>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <IconButton onClick={fetchContracts} {...iconButtonStyles}>
+                    <RefreshIcon />
+                  </IconButton>
+                </Box>
+              </Toolbar>
+
+              {loading ? (
+                <Box display="flex" justifyContent="center" p={4}>
+                  <CircularProgress {...progressStyles} />
+                </Box>
+              ) : error ? (
+                <Box p={2}>
+                  <Alert severity="error">{error}</Alert>
+                </Box>
+              ) : (
+                <>
+                  <TableContainer sx={{ overflowX: "auto", width: "100%" }}>
+                  <Table stickyHeader size="small" sx={{ minWidth: 700 }}>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 80 }}>ID</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 250 }}>Nome</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 200 }}>Email</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 150 }} align="center">Status</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {paginatedRows.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={4} align="center" sx={{ py: 3 }}>
+                            <Typography color="textSecondary">
+                              {searchTerm ? "Nenhum resultado encontrado" : "Nenhum contrato disponível"}
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        paginatedRows.map((row) => (
+                          <TableRow key={row.id} {...tableRowHoverStyles}>
+                            <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {row.id}
+                            </TableCell>
+                            <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {row.name}
+                            </TableCell>
+                            <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {row.email}
+                            </TableCell>
+                            <TableCell align="center">
+                              <Typography
+                                sx={{
+                                  color: getStatusColor(row.status),
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {row.status}
+                              </Typography>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                  <TablePagination
+                    component="div"
+                    count={filteredRows.length}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    rowsPerPage={rowsPerPage}
+                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    rowsPerPageOptions={[5, 10, 25, 50]}
+                    labelRowsPerPage="Linhas por página:"
+                    labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count !== -1 ? count : `mais de ${to}`}`}
+                    {...tablePaginationStyles}
+                  />
+                  </TableContainer>
+                </>
+              )}
+            </Paper>
+          </Fade>
+        </Box>
       </Box>
 
-      <Paper elevation={2} sx={{ borderRadius: 2, overflow: "hidden" }}>
-        <Toolbar 
-          sx={{ 
-            display: "flex", 
-            justifyContent: "space-between",
-            backgroundColor: "#A650F0",
-            color: "white",
-          }}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={closeSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={closeSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
         >
-          <Typography variant="h6" sx={{ color: "white" }}>
-            Contratos Cadastrados
-          </Typography>
-          <IconButton 
-            onClick={fetchContracts}
-            sx={{ color: "white" }}
-            title="Atualizar lista"
-          >
-            <RefreshIcon />
-          </IconButton>
-        </Toolbar>
-
-        {loading ? (
-          <Box display="flex" justifyContent="center" p={4}>
-            <CircularProgress />
-          </Box>
-        ) : error ? (
-          <Box p={2}>
-            <Alert severity="error">{error}</Alert>
-          </Box>
-        ) : (
-          <Box sx={{ height: 500, width: "100%" }}>
-            <DataGrid
-              rows={rows}
-              columns={columns}
-              disableRowSelectionOnClick
-              getRowClassName={(params) =>
-                params.indexRelativeToCurrentPage % 2 === 0 ? "even" : "odd"
-              }
-              {...getTableConfig()}
-              sx={{
-                "& .MuiDataGrid-columnHeaders": {
-                  backgroundColor: "#A650F0",
-                  color: "white",
-                  "& .MuiDataGrid-columnHeaderTitle": {
-                    fontWeight: 600,
-                  },
-                },
-                "& .even": {
-                  backgroundColor: "#F5F5F5",
-                },
-                "& .odd": {
-                  backgroundColor: "white",
-                },
-                "& .MuiDataGrid-row:hover": {
-                  backgroundColor: "#E1BEE7",
-                  cursor: "pointer",
-                },
-              }}
-            />
-          </Box>
-        )}
-
-        <Menu
-          anchorEl={menuAnchor}
-          open={Boolean(menuAnchor)}
-          onClose={closeMenu}
-        >
-          <MenuItem onClick={closeMenu}>Fechar</MenuItem>
-        </Menu>
-      </Paper>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

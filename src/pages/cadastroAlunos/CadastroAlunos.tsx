@@ -11,25 +11,20 @@ import {
   Select,
   Tooltip,
   Typography,
-  Breadcrumbs,
-  Link,
   Alert,
   Snackbar,
   Divider,
-  Card,
-  CardContent,
+  Fade,
 } from "@mui/material";
 import {
-  NavigateNext as NavigateNextIcon,
   Person as PersonIcon,
-  Email as EmailIcon,
   Badge as BadgeIcon,
   School as SchoolIcon,
-  Assignment as AssignmentIcon,
-  Info as InfoIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router";
 import { APP_ROUTES } from "../../util/constants";
+import PageHeader from "../../components/ui/page/PageHeader";
+import { designSystem, primaryButtonStyles, paperStyles } from "../../styles/designSystem";
 
 // Funções utilitárias para CPF
 const formatCPF = (value: string): string => {
@@ -121,6 +116,28 @@ const validateForm = (values: FormValues): Record<string, string> => {
 
 const CadastroAlunos: React.FC = () => {
   const navigate = useNavigate();
+  
+  // Estilos compartilhados para inputs seguindo o design system
+  const inputFocusSx = {
+    "& .MuiOutlinedInput-root": {
+      "&:hover fieldset": {
+        borderColor: designSystem.colors.primary.main,
+      },
+      "&.Mui-focused fieldset": {
+        borderColor: designSystem.colors.primary.main,
+        borderWidth: "2px",
+      },
+      "& fieldset": {
+        borderColor: designSystem.colors.border.main,
+      },
+    },
+    "& .MuiInputLabel-root.Mui-focused": {
+      color: designSystem.colors.primary.main,
+    },
+    "& .MuiInputBase-input": {
+      color: designSystem.colors.text.primary,
+    },
+  };
   const [isFetching, setIsFetching] = useState(false);
   const [cpfFetchError, setCpfFetchError] = useState<string | null>(null);
   const [cpfDisplay, setCpfDisplay] = useState("");
@@ -292,462 +309,364 @@ const CadastroAlunos: React.FC = () => {
   };
 
   return (
-    <Box p={2}>
-      <Breadcrumbs
-        aria-label="breadcrumb"
-        separator={<NavigateNextIcon fontSize="small" />}
-        sx={{ mb: 3 }}
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {/* Conteúdo Principal */}
+      <Box
+        sx={{
+          flex: 1,
+          p: { xs: 2, sm: 3, md: 4 },
+          display: "flex",
+          flexDirection: "column",
+          overflow: "auto",
+        }}
       >
-        <Link
-          component="button"
-          variant="body1"
-          onClick={() => navigate(APP_ROUTES.DASHBOARD)}
+        <Box
           sx={{
-            color: "#A650F0",
-            textDecoration: "none",
-            cursor: "pointer",
-            "&:hover": { textDecoration: "underline" },
+            maxWidth: 1400,
+            width: "100%",
+            margin: "0 auto",
           }}
         >
-          Dashboard
-        </Link>
-        <Link
-          component="button"
-          variant="body1"
-          onClick={() => navigate(APP_ROUTES.STUDENTS)}
-          sx={{
-            color: "#A650F0",
-            textDecoration: "none",
-            cursor: "pointer",
-            "&:hover": { textDecoration: "underline" },
-          }}
-        >
-          Dados de Alunos
-        </Link>
-        <Typography color="text.primary">Cadastro de Alunos</Typography>
-      </Breadcrumbs>
+          {/* Header da Página */}
+          <PageHeader
+            title="Cadastro de Alunos"
+            subtitle="Cadastre um novo aluno no sistema."
+            description="Cadastre um novo aluno no sistema baseando-se em um candidato pré existente. Informe o CPF de um candidato já aprovado em algum método para cadastrá-lo como aluno. O sistema buscará automaticamente os dados do candidato e preencherá os campos de matrícula e e-mail corporativo."
+            breadcrumbs={[
+              { label: "Dashboard", path: APP_ROUTES.DASHBOARD },
+              { label: "Dados de Alunos", path: APP_ROUTES.STUDENTS },
+              { label: "Cadastro de Alunos" },
+            ]}
+          />
 
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" sx={{ color: "#A650F0", fontWeight: 600, mb: 2 }}>
-          Cadastro de Alunos
-        </Typography>
-        <Paper
-          elevation={1}
-          sx={{
-            p: 2,
-            backgroundColor: "#F3E5F5",
-            borderRadius: 2,
-            borderLeft: "4px solid #A650F0",
-          }}
-        >
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
-            <strong>Cadastro de Alunos</strong>
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Cadastre um novo aluno no sistema baseando-se em um candidato pré existente. Informe o CPF de um candidato já aprovado em algum método
-            para cadastrá-lo como aluno. O sistema buscará automaticamente os dados do candidato e preencherá
-            os campos de matrícula e e-mail corporativo.
-          </Typography>
+          <Fade in timeout={1000}>
+            <Box sx={{ maxWidth: 900, mx: "auto" }}>
+              {formError && (
+                <Alert 
+                  severity="error" 
+                  sx={{ 
+                    mb: 3, 
+                    borderRadius: designSystem.borderRadius.medium,
+                    backgroundColor: designSystem.colors.error.light,
+                    color: designSystem.colors.error.main,
+                  }}
+                >
+                  {formError}
+                </Alert>
+              )}
+
+              <Paper 
+                {...paperStyles}
+                sx={{
+                  ...paperStyles.sx,
+                  backgroundColor: designSystem.colors.background.primary,
+                }}
+              >
+                <Box component="form" onSubmit={onSubmit} noValidate sx={{ p: { xs: 3, sm: 4, md: 5 } }}>
+                  {/* Seção: Dados do Candidato */}
+                  <Box sx={{ mb: 4 }}>
+                    <Typography 
+                      variant="h6" 
+                      fontWeight={600} 
+                      sx={{ 
+                        color: designSystem.colors.text.primary,
+                        mb: 3,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1.5,
+                      }}
+                    >
+                      <BadgeIcon sx={{ color: designSystem.colors.primary.main, fontSize: 24 }} />
+                      Dados do Candidato
+                    </Typography>
+
+                    <Tooltip
+                      title="Informe o CPF de um candidato já aprovado em algum método para cadastrá-lo como aluno."
+                      arrow
+                      placement="top"
+                    >
+                      <TextField
+                        label="CPF"
+                        fullWidth
+                        value={cpfDisplay}
+                        onChange={handleCpfChange}
+                        onBlur={onCpfBlur}
+                        error={!!errors.cpf || !!cpfFetchError}
+                        helperText={errors.cpf ?? cpfFetchError ?? "Digite o CPF do candidato aprovado"}
+                        placeholder="000.000.000-00"
+                        disabled={isFetching}
+                        InputProps={{
+                          endAdornment: isFetching ? (
+                            <CircularProgress 
+                              size={20} 
+                              sx={{ color: designSystem.colors.primary.main }} 
+                            />
+                          ) : null,
+                        }}
+                        sx={inputFocusSx}
+                      />
+                    </Tooltip>
+                  </Box>
+
+                  <Divider sx={{ my: 4, borderColor: designSystem.colors.border.main }} />
+
+                  {/* Seção: Informações Acadêmicas */}
+                  <Box sx={{ mb: 4 }}>
+                    <Typography 
+                      variant="h6" 
+                      fontWeight={600} 
+                      sx={{ 
+                        color: designSystem.colors.text.primary,
+                        mb: 3,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1.5,
+                      }}
+                    >
+                      <SchoolIcon sx={{ color: designSystem.colors.primary.main, fontSize: 24 }} />
+                      Informações Acadêmicas
+                    </Typography>
+
+                    <Box 
+                      display="grid" 
+                      gap={3}
+                      sx={{
+                        gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+                      }}
+                    >
+                      <TextField
+                        label="Matrícula"
+                        fullWidth
+                        value={formValues.registration}
+                        onChange={(e) => handleFieldChange("registration", e.target.value)}
+                        error={!!errors.registration}
+                        helperText={errors.registration}
+                        sx={inputFocusSx}
+                      />
+
+                      <TextField
+                        label="E-mail Corporativo"
+                        fullWidth
+                        value={formValues.corp_email}
+                        onChange={(e) => handleFieldChange("corp_email", e.target.value)}
+                        error={!!errors.corp_email}
+                        helperText={errors.corp_email}
+                        type="email"
+                        sx={inputFocusSx}
+                      />
+                    </Box>
+                  </Box>
+
+                  <Divider sx={{ my: 4, borderColor: designSystem.colors.border.main }} />
+
+                  {/* Seção: Configurações do Aluno */}
+                  <Box sx={{ mb: 4 }}>
+                    <Typography 
+                      variant="h6" 
+                      fontWeight={600} 
+                      sx={{ 
+                        color: designSystem.colors.text.primary,
+                        mb: 3,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1.5,
+                      }}
+                    >
+                      <PersonIcon sx={{ color: designSystem.colors.primary.main, fontSize: 24 }} />
+                      Configurações do Aluno
+                    </Typography>
+
+                    <Box 
+                      display="grid" 
+                      gap={3}
+                      sx={{
+                        gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+                      }}
+                    >
+                      <FormControl fullWidth error={!!errors.monitor}>
+                        <InputLabel
+                          sx={{
+                            color: designSystem.colors.text.secondary,
+                            "&.Mui-focused": {
+                              color: designSystem.colors.primary.main,
+                            },
+                          }}
+                        >
+                          Agente de Sucesso
+                        </InputLabel>
+                        <Select
+                          label="Agente de Sucesso"
+                          value={monitorOpt}
+                          onChange={handleMonitorChange}
+                          sx={{
+                            "& .MuiOutlinedInput-notchedOutline": {
+                              borderColor: designSystem.colors.border.main,
+                            },
+                            "&:hover .MuiOutlinedInput-notchedOutline": {
+                              borderColor: designSystem.colors.primary.main,
+                            },
+                            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                              borderColor: designSystem.colors.primary.main,
+                              borderWidth: "2px",
+                            },
+                            "& .MuiSelect-select": {
+                              color: designSystem.colors.text.primary,
+                            },
+                          }}
+                        >
+                          {MOCK_MONITORS.map((m) => (
+                            <MenuItem key={m.id} value={m.username}>
+                              {m.first_name} {m.last_name}
+                            </MenuItem>
+                          ))}
+                          <MenuItem value="Outro">Outro</MenuItem>
+                        </Select>
+                        {errors.monitor && (
+                          <Typography 
+                            variant="caption" 
+                            color="error" 
+                            sx={{ mt: 0.5, ml: 1.75 }}
+                          >
+                            {errors.monitor}
+                          </Typography>
+                        )}
+                      </FormControl>
+
+                      <FormControl fullWidth error={!!errors.status}>
+                        <InputLabel
+                          sx={{
+                            color: designSystem.colors.text.secondary,
+                            "&.Mui-focused": {
+                              color: designSystem.colors.primary.main,
+                            },
+                          }}
+                        >
+                          Status
+                        </InputLabel>
+                        <Select
+                          label="Status"
+                          value={statusOpt}
+                          onChange={handleStatusChange}
+                          sx={{
+                            "& .MuiOutlinedInput-notchedOutline": {
+                              borderColor: designSystem.colors.border.main,
+                            },
+                            "&:hover .MuiOutlinedInput-notchedOutline": {
+                              borderColor: designSystem.colors.primary.main,
+                            },
+                            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                              borderColor: designSystem.colors.primary.main,
+                              borderWidth: "2px",
+                            },
+                            "& .MuiSelect-select": {
+                              color: designSystem.colors.text.primary,
+                            },
+                          }}
+                        >
+                          {statusOptions.map((opt) => (
+                            <MenuItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </MenuItem>
+                          ))}
+                          <MenuItem value="Outro">Outro</MenuItem>
+                        </Select>
+                        {errors.status && (
+                          <Typography 
+                            variant="caption" 
+                            color="error" 
+                            sx={{ mt: 0.5, ml: 1.75 }}
+                          >
+                            {errors.status}
+                          </Typography>
+                        )}
+                      </FormControl>
+
+                      {monitorOpt === "Outro" && (
+                        <TextField
+                          label="Outro Monitor"
+                          fullWidth
+                          value={monitorOther}
+                          onChange={handleMonitorOtherChange}
+                          error={!!errors.monitor}
+                          helperText={errors.monitor}
+                          sx={inputFocusSx}
+                        />
+                      )}
+
+                      {statusOpt === "Outro" && (
+                        <TextField
+                          label="Outro Status"
+                          fullWidth
+                          value={statusOther}
+                          onChange={handleStatusOtherChange}
+                          error={!!errors.status}
+                          helperText={errors.status}
+                          sx={inputFocusSx}
+                        />
+                      )}
+                    </Box>
+                  </Box>
+
+                  <Divider sx={{ my: 4, borderColor: designSystem.colors.border.main }} />
+
+                  {/* Botões de Ação */}
+                  <Box 
+                    display="flex" 
+                    gap={2} 
+                    justifyContent="flex-end" 
+                    sx={{
+                      flexDirection: { xs: "column-reverse", sm: "row" },
+                    }}
+                  >
+                    <Button
+                      onClick={() => navigate(APP_ROUTES.STUDENTS)}
+                      sx={{
+                        color: designSystem.colors.primary.main,
+                        fontWeight: 600,
+                        textTransform: "none",
+                        minWidth: { xs: "100%", sm: 140 },
+                        "&:hover": {
+                          backgroundColor: designSystem.colors.primary.lightest,
+                        },
+                      }}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={isFetching}
+                      {...primaryButtonStyles}
+                      sx={{
+                        ...primaryButtonStyles.sx,
+                        textTransform: "none",
+                        minWidth: { xs: "100%", sm: 180 },
+                        "&:disabled": {
+                          backgroundColor: designSystem.colors.primary.light,
+                          color: designSystem.colors.background.primary,
+                        },
+                      }}
+                    >
+                      {isFetching ? (
+                        <>
+                          <CircularProgress size={18} sx={{ mr: 1 }} color="inherit" />
+                          Processando...
+                        </>
+                      ) : (
+                        "Cadastrar Aluno"
+                      )}
+                    </Button>
+                  </Box>
+          </Box>
         </Paper>
       </Box>
-
-      <Box sx={{ maxWidth: 900, mx: "auto" }}>
-        {formError && (
-          <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
-            {formError}
-          </Alert>
-        )}
-
-        <Paper
-          elevation={3}
-          sx={{
-            borderRadius: 3,
-            overflow: "hidden",
-            background: "linear-gradient(135deg, #ffffff 0%, #f8f5ff 100%)",
-            border: "1px solid #E1BEE7",
-          }}
-        >
-          {/* Header do Formulário */}
-          <Box
-            sx={{
-              background: "linear-gradient(135deg, #A650F0 0%, #8B3DD9 100%)",
-              p: 3,
-              color: "white",
-            }}
-          >
-            <Box display="flex" alignItems="center" gap={2}>
-              <PersonIcon sx={{ fontSize: 40 }} />
-              <Box>
-                <Typography variant="h5" fontWeight={700}>
-                  Novo Cadastro de Aluno
-                </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
-                  Preencha os dados abaixo para cadastrar um novo aluno
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
-
-          <Box component="form" onSubmit={onSubmit} noValidate sx={{ p: 4 }}>
-            {/* Seção: Dados do Candidato */}
-            <Card
-              elevation={0}
-              sx={{
-                mb: 3,
-                border: "1px solid #E1BEE7",
-                borderRadius: 2,
-                backgroundColor: "#FAFAFA",
-              }}
-            >
-              <CardContent>
-                <Box display="flex" alignItems="center" gap={1} mb={3}>
-                  <InfoIcon sx={{ color: "#A650F0", fontSize: 24 }} />
-                  <Typography variant="h6" fontWeight={600} sx={{ color: "#A650F0" }}>
-                    Dados do Candidato
-                  </Typography>
-                </Box>
-
-                <Box>
-                  <Tooltip
-                    title="Informe o CPF de um candidato já aprovado em algum método para cadastrá-lo como aluno."
-                    arrow
-                  >
-                    <TextField
-                      label="CPF"
-                      fullWidth
-                      value={cpfDisplay}
-                      onChange={handleCpfChange}
-                      onBlur={onCpfBlur}
-                      error={!!errors.cpf || !!cpfFetchError}
-                      helperText={errors.cpf ?? cpfFetchError ?? "Digite o CPF do candidato aprovado"}
-                      placeholder="000.000.000-00"
-                      disabled={isFetching}
-                      InputProps={{
-                        startAdornment: (
-                          <Box sx={{ mr: 1, display: "flex", alignItems: "center" }}>
-                            <BadgeIcon sx={{ color: "#A650F0" }} />
-                          </Box>
-                        ),
-                        endAdornment: isFetching ? <CircularProgress size={20} /> : null,
-                      }}
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          "&:hover fieldset": {
-                            borderColor: "#A650F0",
-                          },
-                          "&.Mui-focused fieldset": {
-                            borderColor: "#A650F0",
-                          },
-                        },
-                        "& .MuiInputLabel-root.Mui-focused": {
-                          color: "#A650F0",
-                        },
-                      }}
-                    />
-                  </Tooltip>
-                </Box>
-              </CardContent>
-            </Card>
-
-            {/* Seção: Informações Acadêmicas */}
-            <Card
-              elevation={0}
-              sx={{
-                mb: 3,
-                border: "1px solid #E1BEE7",
-                borderRadius: 2,
-                backgroundColor: "#FAFAFA",
-              }}
-            >
-              <CardContent>
-                <Box display="flex" alignItems="center" gap={1} mb={3}>
-                  <SchoolIcon sx={{ color: "#A650F0", fontSize: 24 }} />
-                  <Typography variant="h6" fontWeight={600} sx={{ color: "#A650F0" }}>
-                    Informações Acadêmicas
-                  </Typography>
-                </Box>
-
-                <Box display="flex" gap={3} flexWrap="wrap">
-                  <Box sx={{ flex: { xs: "1 1 100%", md: "1 1 calc(50% - 12px)" } }}>
-                    <TextField
-                      label="Matrícula"
-                      fullWidth
-                      value={formValues.registration}
-                      onChange={(e) => handleFieldChange("registration", e.target.value)}
-                      error={!!errors.registration}
-                      helperText={errors.registration}
-                      InputProps={{
-                        startAdornment: (
-                          <Box sx={{ mr: 1, display: "flex", alignItems: "center" }}>
-                            <AssignmentIcon sx={{ color: "#A650F0" }} />
-                          </Box>
-                        ),
-                      }}
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          "&:hover fieldset": {
-                            borderColor: "#A650F0",
-                          },
-                          "&.Mui-focused fieldset": {
-                            borderColor: "#A650F0",
-                          },
-                        },
-                        "& .MuiInputLabel-root.Mui-focused": {
-                          color: "#A650F0",
-                        },
-                      }}
-                    />
-                  </Box>
-
-                  <Box sx={{ flex: { xs: "1 1 100%", md: "1 1 calc(50% - 12px)" } }}>
-                    <TextField
-                      label="E-mail Corporativo"
-                      fullWidth
-                      value={formValues.corp_email}
-                      onChange={(e) => handleFieldChange("corp_email", e.target.value)}
-                      error={!!errors.corp_email}
-                      helperText={errors.corp_email}
-                      type="email"
-                      InputProps={{
-                        startAdornment: (
-                          <Box sx={{ mr: 1, display: "flex", alignItems: "center" }}>
-                            <EmailIcon sx={{ color: "#A650F0" }} />
-                          </Box>
-                        ),
-                      }}
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          "&:hover fieldset": {
-                            borderColor: "#A650F0",
-                          },
-                          "&.Mui-focused fieldset": {
-                            borderColor: "#A650F0",
-                          },
-                        },
-                        "& .MuiInputLabel-root.Mui-focused": {
-                          color: "#A650F0",
-                        },
-                      }}
-                    />
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-
-            {/* Seção: Configurações do Aluno */}
-            <Card
-              elevation={0}
-              sx={{
-                mb: 3,
-                border: "1px solid #E1BEE7",
-                borderRadius: 2,
-                backgroundColor: "#FAFAFA",
-              }}
-            >
-              <CardContent>
-                <Box display="flex" alignItems="center" gap={1} mb={3}>
-                  <PersonIcon sx={{ color: "#A650F0", fontSize: 24 }} />
-                  <Typography variant="h6" fontWeight={600} sx={{ color: "#A650F0" }}>
-                    Configurações do Aluno
-                  </Typography>
-                </Box>
-
-                <Box display="flex" gap={3} flexWrap="wrap">
-                  <Box sx={{ flex: { xs: "1 1 100%", md: "1 1 calc(50% - 12px)" } }}>
-                    <FormControl fullWidth error={!!errors.monitor}>
-                      <InputLabel
-                        sx={{
-                          "&.Mui-focused": {
-                            color: "#A650F0",
-                          },
-                        }}
-                      >
-                        Agente de Sucesso
-                      </InputLabel>
-                      <Select
-                        label="Agente de Sucesso"
-                        value={monitorOpt}
-                        onChange={handleMonitorChange}
-                        startAdornment={
-                          <Box sx={{ mr: 1, display: "flex", alignItems: "center" }}>
-                            <PersonIcon sx={{ color: "#A650F0", ml: 1 }} />
-                          </Box>
-                        }
-                        sx={{
-                          "& .MuiOutlinedInput-notchedOutline": {
-                            borderColor: "#E1BEE7",
-                          },
-                          "&:hover .MuiOutlinedInput-notchedOutline": {
-                            borderColor: "#A650F0",
-                          },
-                          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                            borderColor: "#A650F0",
-                          },
-                        }}
-                      >
-                        {MOCK_MONITORS.map((m) => (
-                          <MenuItem key={m.id} value={m.username}>
-                            {m.first_name} {m.last_name}
-                          </MenuItem>
-                        ))}
-                        <MenuItem value="Outro">Outro</MenuItem>
-                      </Select>
-                      {errors.monitor && (
-                        <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
-                          {errors.monitor}
-                        </Typography>
-                      )}
-                    </FormControl>
-                  </Box>
-
-                  <Box sx={{ flex: { xs: "1 1 100%", md: "1 1 calc(50% - 12px)" } }}>
-                    <FormControl fullWidth error={!!errors.status}>
-                      <InputLabel
-                        sx={{
-                          "&.Mui-focused": {
-                            color: "#A650F0",
-                          },
-                        }}
-                      >
-                        Status
-                      </InputLabel>
-                      <Select
-                        label="Status"
-                        value={statusOpt}
-                        onChange={handleStatusChange}
-                        sx={{
-                          "& .MuiOutlinedInput-notchedOutline": {
-                            borderColor: "#E1BEE7",
-                          },
-                          "&:hover .MuiOutlinedInput-notchedOutline": {
-                            borderColor: "#A650F0",
-                          },
-                          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                            borderColor: "#A650F0",
-                          },
-                        }}
-                      >
-                        {statusOptions.map((opt) => (
-                          <MenuItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </MenuItem>
-                        ))}
-                        <MenuItem value="Outro">Outro</MenuItem>
-                      </Select>
-                      {errors.status && (
-                        <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
-                          {errors.status}
-                        </Typography>
-                      )}
-                    </FormControl>
-                  </Box>
-
-                  {monitorOpt === "Outro" && (
-                    <Box sx={{ flex: { xs: "1 1 100%", md: "1 1 calc(50% - 12px)" } }}>
-                      <TextField
-                        label="Outro Monitor"
-                        fullWidth
-                        value={monitorOther}
-                        onChange={handleMonitorOtherChange}
-                        error={!!errors.monitor}
-                        helperText={errors.monitor}
-                        sx={{
-                          "& .MuiOutlinedInput-root": {
-                            "&:hover fieldset": {
-                              borderColor: "#A650F0",
-                            },
-                            "&.Mui-focused fieldset": {
-                              borderColor: "#A650F0",
-                            },
-                          },
-                          "& .MuiInputLabel-root.Mui-focused": {
-                            color: "#A650F0",
-                          },
-                        }}
-                      />
-                    </Box>
-                  )}
-
-                  {statusOpt === "Outro" && (
-                    <Box sx={{ flex: { xs: "1 1 100%", md: "1 1 calc(50% - 12px)" } }}>
-                      <TextField
-                        label="Outro Status"
-                        fullWidth
-                        value={statusOther}
-                        onChange={handleStatusOtherChange}
-                        error={!!errors.status}
-                        helperText={errors.status}
-                        sx={{
-                          "& .MuiOutlinedInput-root": {
-                            "&:hover fieldset": {
-                              borderColor: "#A650F0",
-                            },
-                            "&.Mui-focused fieldset": {
-                              borderColor: "#A650F0",
-                            },
-                          },
-                          "& .MuiInputLabel-root.Mui-focused": {
-                            color: "#A650F0",
-                          },
-                        }}
-                      />
-                    </Box>
-                  )}
-                </Box>
-              </CardContent>
-            </Card>
-
-            <Divider sx={{ my: 3 }} />
-
-            {/* Botões de Ação */}
-            <Box display="flex" gap={2} justifyContent="flex-end" mt={3}>
-              <Button
-                variant="outlined"
-                onClick={() => navigate(APP_ROUTES.STUDENTS)}
-                sx={{
-                  color: "#A650F0",
-                  borderColor: "#A650F0",
-                  px: 4,
-                  py: 1.5,
-                  "&:hover": {
-                    borderColor: "#8B3DD9",
-                    backgroundColor: "#F3E5F5",
-                  },
-                }}
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                variant="contained"
-                disabled={isFetching}
-                sx={{
-                  backgroundColor: "#A650F0",
-                  px: 4,
-                  py: 1.5,
-                  fontWeight: 600,
-                  boxShadow: "0 4px 12px rgba(166, 80, 240, 0.3)",
-                  "&:hover": {
-                    backgroundColor: "#8B3DD9",
-                    boxShadow: "0 6px 16px rgba(166, 80, 240, 0.4)",
-                  },
-                  "&:disabled": {
-                    backgroundColor: "#CCB2E6",
-                  },
-                }}
-              >
-                {isFetching ? (
-                  <>
-                    <CircularProgress size={18} sx={{ mr: 1 }} color="inherit" />
-                    Processando...
-                  </>
-                ) : (
-                  "Cadastrar Aluno"
-                )}
-              </Button>
-            </Box>
-          </Box>
-        </Paper>
+    </Fade>
+        </Box>
       </Box>
 
       <Snackbar

@@ -16,16 +16,11 @@ import { authService } from "../http/services/authService";
 const rootReducer = combineReducers({ auth: authReducer });
 export type RootState = ReturnType<typeof rootReducer>;
 
-// Gera uma chave secreta padrão para desenvolvimento se não estiver definida
 const getSecretKey = () => {
   const envSecret = import.meta.env.VITE_PERSIST_SECRET;
   if (envSecret) {
     return envSecret;
   }
-  // Chave padrão para desenvolvimento (NÃO usar em produção!)
-  console.warn(
-    "[store] VITE_PERSIST_SECRET não definida. Usando chave padrão para desenvolvimento."
-  );
   return "dev-secret-key-change-in-production-2024";
 };
 
@@ -36,9 +31,7 @@ const persistConfig: PersistConfig<RootState> = {
   transforms: [
     encryptTransform({
       secretKey: getSecretKey(),
-      onError: (err) => {
-        console.error("[store] Erro ao criptografar dados persistidos:", err);
-      },
+      onError: () => {},
     }),
   ],
 };
@@ -54,29 +47,35 @@ export const store = configureStore({
       },
     }),
 });
-console.log("[store] store criado");
+
 export const persistor = persistStore(store);
-console.log("[store] persistor criado");
+
+persistor.subscribe(() => {
+  const state = store.getState();
+  if (state.auth.accessToken) {
+    httpClient.setAuthToken(state.auth.accessToken);
+  }
+});
+
+const initialState = store.getState();
+if (initialState.auth.accessToken) {
+  httpClient.setAuthToken(initialState.auth.accessToken);
+}
 
 httpClient.setOnUnauthorized(async () => {
   const { refreshToken } = store.getState().auth;
-  console.log("[store] onUnauthorized chamado, refreshToken:", refreshToken);
   if (!refreshToken) {
-    console.warn("[store] refreshToken ausente, limpando credenciais");
-    return store.dispatch(clearCredentials());
+    store.dispatch(clearCredentials());
+    return;
   }
   try {
-    const res = await authService.refreshToken({ refresh: refreshToken });
-    console.log("[store] refreshToken resposta", res);
+    const res = await authService.refreshToken({ refreshToken });
     if (res.status === 200 && res.data) {
-      store.dispatch(setAccessToken(res.data.access));
-      console.log("[store] Novo accessToken definido");
+      store.dispatch(setAccessToken(res.data.accessToken));
     } else {
-      console.warn("[store] refreshToken falhou, limpando credenciais");
       store.dispatch(clearCredentials());
     }
-  } catch (err) {
-    console.error("[store] Erro ao tentar refreshToken", err);
+  } catch {
     store.dispatch(clearCredentials());
   }
 });

@@ -1,4 +1,4 @@
-import { type ChangeEvent, useState } from "react";
+import React, { type ChangeEvent, useState } from "react";
 import {
   Box,
   Typography,
@@ -7,30 +7,56 @@ import {
   Paper,
   Toolbar,
   Alert,
-  Breadcrumbs,
-  Link,
+  Snackbar,
+  Fade,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TablePagination,
+  TextField,
 } from "@mui/material";
-import { DataGrid } from "@mui/x-data-grid";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import NavigateNextIcon from "@mui/icons-material/NavigateNext";
-import { useNavigate } from "react-router";
-import { useDocuments } from "./useDocuments";
-import PdfViewModa from "../../components/modals/PdfViewModa";
-import { getTableConfig, APP_ROUTES } from "../../util/constants";
+import SearchIcon from "@mui/icons-material/Search";
+import PageHeader from "../../components/ui/page/PageHeader";
+import {
+  designSystem,
+  paperStyles,
+  iconButtonStyles,
+  progressStyles,
+  tableHeadStyles,
+  tableRowHoverStyles,
+  tablePaginationStyles,
+  textFieldStyles,
+} from "../../styles/designSystem";
+import { useDocuments } from "../../hooks/useDocuments";
+import PdfViewModal from "../../components/modals/PdfViewModal";
+import { APP_ROUTES } from "../../util/constants";
+
+const API_URL = import.meta.env.VITE_API_URL as string || "http://186.248.135.172:31535";
 
 export default function DocumentsList() {
-  const navigate = useNavigate();
-  const { docs, loading, error, uploadId, uploadAddress, uploadSchoolHistory } =
+  const { documents, loading, snackbar, closeSnackbar, fetchDocuments, uploadId, uploadAddress, uploadSchoolHistory, pagination } =
     useDocuments();
 
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  const rows = docs.map((d) => ({
+  // Carregar documentos ao montar o componente
+  React.useEffect(() => {
+    fetchDocuments(page + 1, rowsPerPage);
+  }, [page, rowsPerPage]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const rows = documents.map((d) => ({
     id: d.id,
-    userId: d.user_data,
-    userName: d.user_name || `Usuário ${d.user_data}`,
+    userId: parseInt(d.user_data_id),
+    userName: d.student_name || `Usuário ${d.user_data_id}`,
     idDoc: d.id_doc,
     idDocStatus: d.id_doc_status,
     addressDoc: d.address_doc,
@@ -41,6 +67,26 @@ export default function DocumentsList() {
     contractDocStatus: d.contract_doc_status,
     createdAt: new Date(d.created_at).toLocaleString(),
   }));
+
+  const filteredRows = rows.filter(
+    (row) =>
+      row.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      row.userId.toString().includes(searchTerm)
+  );
+
+  const paginatedRows = filteredRows.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  const handleChangePage = (_event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   const handleFile = (
     e: ChangeEvent<HTMLInputElement>,
@@ -54,46 +100,69 @@ export default function DocumentsList() {
     if (type === "school") uploadSchoolHistory(userId, file.name, file);
   };
 
-  const openViewer = (url: string) => setViewerUrl(url);
+  // Constrói URL completa do PDF
+  const buildPdfUrl = (pdfPath: string | null | undefined): string | null => {
+    if (!pdfPath) return null;
+    
+    // Se já for uma URL completa, retorna como está
+    if (pdfPath.startsWith("http://") || pdfPath.startsWith("https://")) {
+      return pdfPath;
+    }
+    
+    // Remove barra inicial se existir
+    const cleanPath = pdfPath.startsWith("/") ? pdfPath.slice(1) : pdfPath;
+    
+    // Constrói URL completa
+    return `${API_URL}/${cleanPath}`;
+  };
+
+  const openViewer = (url: string) => {
+    const fullUrl = buildPdfUrl(url);
+    if (fullUrl) {
+      setViewerUrl(fullUrl);
+    }
+  };
   const closeViewer = () => setViewerUrl(null);
 
   const renderDocCell = (
-    params: any,
+    row: any,
     type: "idDoc" | "addressDoc" | "schoolDoc" | "contractDoc"
   ) => {
-    const url = params.row[type] as string | null;
-    const userId = params.row.userId as number;
+    const url = row[type] as string | null;
+    const userId = row.userId as number;
 
     if (url) {
       return (
         <IconButton
+          {...iconButtonStyles}
           size="small"
-          onClick={() => openViewer(url)}
-          sx={{ color: "gray" }}
+          onClick={(e) => {
+            e.stopPropagation();
+            openViewer(url);
+          }}
         >
           <VisibilityIcon />
         </IconButton>
       );
     } else {
-      // choose upload handler
       let inputId = "";
       let handlerType: "id" | "address" | "school";
       if (type === "idDoc") {
-        inputId = `id-upload-${params.id}`;
+        inputId = `id-upload-${row.id}`;
         handlerType = "id";
       }
       if (type === "addressDoc") {
-        inputId = `addr-upload-${params.id}`;
+        inputId = `addr-upload-${row.id}`;
         handlerType = "address";
       }
       if (type === "schoolDoc") {
-        inputId = `school-upload-${params.id}`;
+        inputId = `school-upload-${row.id}`;
         handlerType = "school";
       }
       if (type === "contractDoc") {
-        inputId = `contract-upload-${params.id}`;
+        inputId = `contract-upload-${row.id}`;
         handlerType = "school";
-      } // or new handler
+      }
       return (
         <>
           <input
@@ -104,7 +173,12 @@ export default function DocumentsList() {
             onChange={(e) => handleFile(e, userId, handlerType)}
           />
           <label htmlFor={inputId}>
-            <IconButton component="span" size="small" sx={{ color: "gray" }}>
+            <IconButton
+              {...iconButtonStyles}
+              component="span"
+              size="small"
+              onClick={(e) => e.stopPropagation()}
+            >
               <UploadFileIcon />
             </IconButton>
           </label>
@@ -113,170 +187,152 @@ export default function DocumentsList() {
     }
   };
 
-  const columns: any[] = [
-    { field: "userId", headerName: "ID", width: 80 },
-    { field: "userName", headerName: "Nome do Usuário", width: 200, flex: 1 },
-    {
-      field: "idDoc",
-      headerName: "Identidade",
-      width: 120,
-      renderCell: (params: any) => renderDocCell(params, "idDoc"),
-      align: "center",
-      headerAlign: "center",
-    },
-    {
-      field: "addressDoc",
-      headerName: "Endereço",
-      width: 120,
-      renderCell: (params: any) => renderDocCell(params, "addressDoc"),
-      align: "center",
-      headerAlign: "center",
-    },
-    {
-      field: "schoolDoc",
-      headerName: "Histórico",
-      width: 120,
-      renderCell: (params: any) => renderDocCell(params, "schoolDoc"),
-      align: "center",
-      headerAlign: "center",
-    },
-    {
-      field: "contractDoc",
-      headerName: "Contrato",
-      width: 120,
-      renderCell: (params: any) => renderDocCell(params, "contractDoc"),
-      align: "center",
-      headerAlign: "center",
-    },
-    { field: "createdAt", headerName: "Enviado em", width: 180 },
-  ];
-
   return (
-    <Box p={2}>
-      {/* Breadcrumb */}
-      <Breadcrumbs
-        aria-label="breadcrumb"
-        separator={<NavigateNextIcon fontSize="small" />}
-        sx={{ mb: 3 }}
-      >
-        <Link
-          component="button"
-          variant="body1"
-          onClick={() => navigate(APP_ROUTES.DASHBOARD)}
-          sx={{
-            color: "#A650F0",
-            textDecoration: "none",
-            cursor: "pointer",
-            "&:hover": {
-              textDecoration: "underline",
-            },
-          }}
-        >
-          Dashboard
-        </Link>
-        <Typography color="text.primary">Visualização de Documentos</Typography>
-      </Breadcrumbs>
+    <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      <Box sx={{ flex: 1, p: { xs: 2, sm: 3, md: 4 }, display: "flex", flexDirection: "column", overflow: "auto" }}>
+        <Box sx={{ maxWidth: 1400, width: "100%", margin: "0 auto" }}>
+          <PageHeader
+            title="Documentos"
+            subtitle="Visualize e gerencie documentos."
+            description="Esta página permite visualizar e gerenciar documentos dos candidatos e alunos. Utilize os filtros e a busca para encontrar documentos específicos."
+            breadcrumbs={[
+              { label: "Dashboard", path: APP_ROUTES.DASHBOARD },
+              { label: "Documentos" },
+            ]}
+          />
+          <Fade in timeout={1000}>
+            <Paper {...paperStyles}>
+              <Toolbar
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 2,
+                  p: 3,
+                  backgroundColor: designSystem.colors.background.primary,
+                  borderBottom: `1px solid ${designSystem.colors.border.main}`,
+                }}
+              >
+                <Box display="flex" alignItems="center" sx={{ flex: 1, minWidth: 240, maxWidth: 420 }}>
+                  <SearchIcon sx={{ mr: 1, color: designSystem.colors.text.disabled }} />
+                  <TextField
+                    placeholder="Pesquisar por CPF, nome, email..."
+                    variant="standard"
+                    fullWidth
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    {...textFieldStyles}
+                  />
+                </Box>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <IconButton
+                    {...iconButtonStyles}
+                    onClick={() => fetchDocuments(page + 1, rowsPerPage)}
+                    title="Atualizar lista"
+                  >
+                    <RefreshIcon />
+                  </IconButton>
+                </Box>
+              </Toolbar>
 
-      {/* Título e Texto Explicativo */}
-      <Box sx={{ mb: 3 }}>
-        <Typography
-          variant="h4"
-          sx={{
-            color: "#A650F0",
-            fontWeight: 600,
-            mb: 2,
-          }}
-        >
-          Visualização de Documentos
-        </Typography>
-        <Paper
-          elevation={1}
-          sx={{
-            p: 2,
-            backgroundColor: "#F3E5F5",
-            borderRadius: 2,
-            borderLeft: "4px solid #A650F0",
-          }}
-        >
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
-            <strong>Documentos de Candidatos</strong>
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Esta página permite visualizar e gerenciar os documentos dos candidatos. Você pode visualizar documentos de identidade, endereço, histórico escolar e contratos. Clique no ícone de visualização para abrir o documento ou no ícone de upload para enviar um novo documento.
-          </Typography>
-        </Paper>
+              {loading ? (
+                <Box display="flex" justifyContent="center" alignItems="center" p={4}>
+                  <CircularProgress {...progressStyles} />
+                </Box>
+              ) : (
+                <TableContainer sx={{ overflowX: "auto", width: "100%" }}>
+                  <Table stickyHeader size="small" sx={{ minWidth: 900 }}>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 80 }}>ID</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 200 }}>Nome do Usuário</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 120 }} align="center">Identidade</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 120 }} align="center">Endereço</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 120 }} align="center">Histórico</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 120 }} align="center">Contrato</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 180 }}>Enviado em</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {paginatedRows.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                            <Typography color="textSecondary">
+                              {searchTerm ? "Nenhum resultado encontrado" : "Nenhum documento disponível"}
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        paginatedRows.map((row) => (
+                          <TableRow key={row.id} {...tableRowHoverStyles}>
+                            <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {row.userId}
+                            </TableCell>
+                            <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {row.userName}
+                            </TableCell>
+                            <TableCell align="center">
+                              {renderDocCell(row, "idDoc")}
+                            </TableCell>
+                            <TableCell align="center">
+                              {renderDocCell(row, "addressDoc")}
+                            </TableCell>
+                            <TableCell align="center">
+                              {renderDocCell(row, "schoolDoc")}
+                            </TableCell>
+                            <TableCell align="center">
+                              {renderDocCell(row, "contractDoc")}
+                            </TableCell>
+                            <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {row.createdAt}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                  <TablePagination
+                    component="div"
+                    count={pagination.totalItems}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    rowsPerPage={rowsPerPage}
+                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    rowsPerPageOptions={[5, 10, 25, 50]}
+                    labelRowsPerPage="Linhas por página:"
+                    labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count !== -1 ? count : `mais de ${to}`}`}
+                    {...tablePaginationStyles}
+                  />
+                </TableContainer>
+              )}
+            </Paper>
+          </Fade>
+        </Box>
       </Box>
 
-      <Paper elevation={2} sx={{ borderRadius: 2, overflow: "hidden" }}>
-        <Toolbar
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            backgroundColor: "#A650F0",
-            color: "white",
-          }}
-        >
-          <Typography variant="h6" sx={{ color: "white" }}>
-            Documentos de Candidatos
-          </Typography>
-          <IconButton
-            onClick={() => window.location.reload()}
-            sx={{ color: "white" }}
-            title="Atualizar lista"
-          >
-            <RefreshIcon />
-          </IconButton>
-        </Toolbar>
-
-        {loading ? (
-          <Box display="flex" justifyContent="center" alignItems="center" p={4}>
-            <CircularProgress />
-          </Box>
-        ) : error ? (
-          <Box p={2}>
-            <Alert severity="error">{error}</Alert>
-          </Box>
-        ) : (
-          <Box sx={{ height: 500, width: "100%" }}>
-            <DataGrid
-              rows={rows}
-              columns={columns}
-              disableRowSelectionOnClick
-              getRowClassName={(params) =>
-                params.indexRelativeToCurrentPage % 2 === 0 ? "even" : "odd"
-              }
-              {...getTableConfig()}
-              sx={{
-                "& .MuiDataGrid-columnHeaders": {
-                  backgroundColor: "#A650F0",
-                  "& .MuiDataGrid-columnHeaderTitle": {
-                    fontWeight: 600,
-                    color: "gray",
-                  },
-                },
-                "& .even": {
-                  backgroundColor: "#F5F5F5",
-                },
-                "& .odd": {
-                  backgroundColor: "white",
-                },
-                "& .MuiDataGrid-row:hover": {
-                  backgroundColor: "#E1BEE7",
-                  cursor: "pointer",
-                },
-              }}
-            />
-          </Box>
-        )}
-      </Paper>
-
       {viewerUrl && (
-        <PdfViewModa
+        <PdfViewModal
           open={true}
           documentUrl={viewerUrl}
           onClose={closeViewer}
         />
       )}
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={closeSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={closeSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

@@ -9,55 +9,12 @@ import {
   Breadcrumbs,
   Link,
   CircularProgress,
+  Alert,
 } from '@mui/material';
 import { useNavigate, useParams } from 'react-router';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import { APP_ROUTES } from '../../util/constants';
-
-interface UserProfile {
-  id: number;
-  profile_photo?: string;
-  bio?: string;
-  cpf: string;
-  personal_email: string;
-  birth_date: string;
-  hire_date?: string;
-  occupation?: string;
-  department?: string;
-  equipment_patrimony?: string;
-  work_location?: string;
-  manager?: string;
-  created_at: string;
-  user_display: {
-    username: string;
-    first_name: string;
-    last_name: string;
-    email: string;
-  };
-}
-
-// Dados mockados
-const MOCK_PROFILE: UserProfile = {
-  id: 1,
-  profile_photo: 'https://i.pravatar.cc/150?img=1',
-  bio: 'Profissional dedicado com experiência em gestão de projetos e desenvolvimento de equipes. Apaixonado por tecnologia e inovação.',
-  cpf: '123.456.789-00',
-  personal_email: 'usuario@example.com',
-  birth_date: '1990-05-15',
-  hire_date: '2020-01-10',
-  occupation: 'Desenvolvedor Full Stack',
-  department: 'Tecnologia',
-  equipment_patrimony: 'EQ-2020-001',
-  work_location: 'Escritório Central',
-  manager: 'João Silva',
-  created_at: '2020-01-10T10:00:00Z',
-  user_display: {
-    username: 'usuario.teste',
-    first_name: 'João',
-    last_name: 'Silva',
-    email: 'usuario@example.com',
-  },
-};
+import { usersService, type UserProfileResponse } from '../../core/http/services/usersService';
 
 const formatDate = (dateString: string): string => {
   if (!dateString) return '—';
@@ -77,15 +34,37 @@ const Perfil: React.FC = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfileResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simula carregamento de dados
-    setTimeout(() => {
-      setUserProfile(MOCK_PROFILE);
-      setLoading(false);
-    }, 500);
+    const fetchUserProfile = async () => {
+      if (!id) {
+        setError('ID do usuário não fornecido');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const response = await usersService.getProfileById(id);
+        
+        if (response.status === 200 && response.data) {
+          setUserProfile(response.data);
+        } else {
+          setError(response.message || 'Erro ao carregar perfil do usuário');
+        }
+      } catch (err: any) {
+        setError(err.message || 'Erro ao carregar perfil do usuário');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserProfile();
   }, [id]);
 
   if (loading) {
@@ -96,16 +75,40 @@ const Perfil: React.FC = () => {
     );
   }
 
-  if (!userProfile) return null;
+  if (error) {
+    return (
+      <Box p={2}>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+        <Button variant="contained" onClick={() => navigate(APP_ROUTES.USERS_LIST)}>
+          Voltar para lista de usuários
+        </Button>
+      </Box>
+    );
+  }
 
-  const username = userProfile.user_display.username;
+  if (!userProfile) {
+    return (
+      <Box p={2}>
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          Perfil não encontrado
+        </Alert>
+        <Button variant="contained" onClick={() => navigate(APP_ROUTES.USERS_LIST)}>
+          Voltar para lista de usuários
+        </Button>
+      </Box>
+    );
+  }
+
+  const username = userProfile.user_display?.username || 'N/A';
 
   const details = [
     { label: 'Bio', value: userProfile.bio },
-    { label: 'Nome', value: `${userProfile.user_display.first_name} ${userProfile.user_display.last_name}` },
+    { label: 'Nome', value: `${userProfile.user_display?.first_name || ''} ${userProfile.user_display?.last_name || ''}`.trim() || 'N/A' },
     { label: 'CPF', value: userProfile.cpf },
     { label: 'E-mail', value: userProfile.personal_email },
-    { label: 'Nascimento', value: formatDate(userProfile.birth_date) },
+    { label: 'Nascimento', value: formatDate(userProfile.birth_date || '') },
     { label: 'Contratação', value: userProfile.hire_date ? formatDate(userProfile.hire_date) : '—' },
     { label: 'Cargo', value: userProfile.occupation },
     { label: 'Departamento', value: userProfile.department },

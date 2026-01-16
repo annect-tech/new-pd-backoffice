@@ -1,26 +1,20 @@
 import {
   type LoginPayload,
-  type RegisterPayload,
   type LoginResponse,
-  type RegisterResponse,
   type RefreshTokenPayload,
   type RefreshTokenResponse,
 } from "../../../interfaces/authInterfaces";
 import { ENDPOINTS } from "../../../util/constants";
 import { httpClient } from "../httpClient";
 
-const API_URL = import.meta.env.VITE_API_URL as string;
+const API_URL = import.meta.env.VITE_API_URL as string || "http://186.248.135.172:31535";
 
 export const authService = {
   login: (payload: LoginPayload) =>
     httpClient.post<LoginResponse>(API_URL, ENDPOINTS.AUTH.LOGIN, payload),
 
-  register: (payload: RegisterPayload) =>
-    httpClient.post<RegisterResponse>(
-      API_URL,
-      ENDPOINTS.AUTH.REGISTER,
-      payload
-    ),
+  // Registro removido - não existe endpoint público no backend
+  // Apenas administradores podem criar usuários via POST /admin/users
 
   refreshToken: (payload: RefreshTokenPayload) =>
     httpClient.post<RefreshTokenResponse>(

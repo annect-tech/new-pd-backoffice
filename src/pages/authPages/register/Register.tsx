@@ -12,7 +12,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
-import AuthCard from '../../../components/geralComponents/AuthCard';
+import AuthCard from '../../../components/ui/card/AuthCard';
 import AuthPromotionalSection from '../../../components/auth/SideAuthSection';
 import { getAuthTextFieldStyles } from '../../../components/auth/authTextFieldStyles';
 import useRegister from './register';
@@ -179,7 +179,7 @@ const RegisterPage: React.FC = () => {
               Já possui conta?{' '}
               <Button 
                 variant="text" 
-                onClick={() => navigate(APP_ROUTES.SIGNIN)}
+                onClick={() => navigate(APP_ROUTES.LOGIN)}
                 sx={{
                   color: theme.palette.primary.main,
                   textTransform: 'none',

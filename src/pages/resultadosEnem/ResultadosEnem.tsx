@@ -1,12 +1,11 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   Alert,
   Box,
-  Breadcrumbs,
   Button,
   CircularProgress,
+  Fade,
   IconButton,
-  Link,
   Menu,
   MenuItem,
   Paper,
@@ -20,79 +19,37 @@ import {
   TextField,
   Toolbar,
   Typography,
+  Snackbar,
 } from "@mui/material";
 import {
   Visibility as VisibilityIcon,
   Refresh as RefreshIcon,
   Search as SearchIcon,
   FilterList as FilterListIcon,
-  NavigateNext as NavigateNextIcon,
   Download as DownloadIcon,
 } from "@mui/icons-material";
-import { useNavigate } from "react-router";
-import PdfViewModa from "../../components/modals/PdfViewModa";
+import PageHeader from "../../components/ui/page/PageHeader";
+import {
+  designSystem,
+  paperStyles,
+  toolbarStyles,
+  tableHeadStyles,
+  tableRowHoverStyles,
+  iconButtonStyles,
+  textFieldStyles,
+  progressStyles,
+  tablePaginationStyles,
+} from "../../styles/designSystem";
+import PdfViewModal from "../../components/modals/PdfViewModal";
 import EnemStatusUpdaterModal from "../../components/modals/EnemStatusUpdaterModal";
 import { APP_ROUTES } from "../../util/constants";
+import { useEnemResults } from "../../hooks/useEnemResults";
 import type { EnemResult } from "../../interfaces/enemResult";
 
-// Dados mockados (substituir por API futuramente)
-const MOCK_RESULTS: EnemResult[] = [
-  {
-    id: "1",
-    inscription_number: "2025ENEM001",
-    name: "Ana Souza",
-    cpf: "123.456.789-00",
-    foreign_language: "Inglês",
-    languages_score: 720,
-    human_sciences_score: 680,
-    natural_sciences_score: 705,
-    math_score: 750,
-    essay_score: 920,
-    pdf_file: "https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf",
-    status: "aprovado",
-    created_at: "2025-02-10T14:30:00Z",
-    user_id: 1,
-  },
-  {
-    id: "2",
-    inscription_number: "2025ENEM002",
-    name: "Bruno Lima",
-    cpf: "987.654.321-00",
-    foreign_language: "Espanhol",
-    languages_score: 640,
-    human_sciences_score: 610,
-    natural_sciences_score: 630,
-    math_score: 590,
-    essay_score: 780,
-    pdf_file: "https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf",
-    status: "pendente",
-    created_at: "2025-02-11T09:10:00Z",
-    user_id: 2,
-  },
-  {
-    id: "3",
-    inscription_number: "2025ENEM003",
-    name: "Carla Menezes",
-    cpf: "321.654.987-00",
-    foreign_language: "Inglês",
-    languages_score: 580,
-    human_sciences_score: 600,
-    natural_sciences_score: 590,
-    math_score: 560,
-    essay_score: 700,
-    pdf_file: "https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf",
-    status: "reprovado",
-    created_at: "2025-02-12T18:45:00Z",
-    user_id: 3,
-  },
-];
+const API_URL = import.meta.env.VITE_API_URL as string || "http://186.248.135.172:31535";
 
 const ResultadosEnem: React.FC = () => {
-  const navigate = useNavigate();
-
-  const [items, setItems] = useState<EnemResult[]>(MOCK_RESULTS);
-  const [loading] = useState(false);
-  const [error] = useState<string | null>(null);
+  const { items, loading, error, fetchEnemResults, updateStatus, snackbar, closeSnackbar } = useEnemResults();
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
   const [statusAnchor, setStatusAnchor] = useState<null | HTMLElement>(null);
   const [statusFilter, setStatusFilter] = useState<"all" | "aprovado" | "reprovado" | "pendente">("all");
@@ -102,16 +59,60 @@ const ResultadosEnem: React.FC = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [downloadAnchor, setDownloadAnchor] = useState<null | HTMLElement>(null);
 
+  useEffect(() => {
+    fetchEnemResults();
+  }, [fetchEnemResults]);
+
   const handleRefresh = () => {
     setStatusFilter("all");
     setSearchTerm("");
-    setItems(MOCK_RESULTS);
+    fetchEnemResults();
   };
 
-  // Atualiza status localmente (mock)
+  // Atualiza status usando o hook
   const handleUpdateStatus = async (id: string, newStatus: string) => {
-    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, status: newStatus } : i)));
-    return { success: true, message: "Status atualizado localmente (mock)." };
+    return await updateStatus(id, newStatus);
+  };
+
+  // Normaliza o status para valores corretos
+  const normalizeStatus = (status: string | null | undefined): string => {
+    if (!status) return "pendente";
+    
+    const normalized = status.toLowerCase().trim();
+    
+    // Mapeia valores incorretos ou variações
+    if (normalized === "aprovado" || normalized === "approved" || normalized === "aprovada") {
+      return "aprovado";
+    }
+    if (normalized === "reprovado" || normalized === "rejected" || normalized === "reprovada") {
+      return "reprovado";
+    }
+    if (normalized === "filesent" || normalized === "filesent?" || normalized === "file_sent" || normalized === "enviado") {
+      return "pendente";
+    }
+    
+    // Se não reconhecer o status, retorna pendente
+    if (!["aprovado", "reprovado", "pendente"].includes(normalized)) {
+      return "pendente";
+    }
+    
+    return normalized;
+  };
+
+  // Constrói URL completa do PDF
+  const buildPdfUrl = (pdfPath: string | null | undefined): string | null => {
+    if (!pdfPath) return null;
+    
+    // Se já for uma URL completa, retorna como está
+    if (pdfPath.startsWith("http://") || pdfPath.startsWith("https://")) {
+      return pdfPath;
+    }
+    
+    // Remove barra inicial se existir
+    const cleanPath = pdfPath.startsWith("/") ? pdfPath.slice(1) : pdfPath;
+    
+    // Constrói URL completa
+    return `${API_URL}/${cleanPath}`;
   };
 
   const filteredItems = useMemo(() => {
@@ -125,7 +126,8 @@ const ResultadosEnem: React.FC = () => {
       )
       .filter((item) => {
         if (statusFilter === "all") return true;
-        return item.status?.toLowerCase() === statusFilter;
+        const itemStatus = normalizeStatus(item.status);
+        return itemStatus === statusFilter;
       });
   }, [items, searchTerm, statusFilter]);
 
@@ -136,7 +138,7 @@ const ResultadosEnem: React.FC = () => {
       name: item.name,
       cpf: item.cpf,
       language: item.foreign_language,
-      status: item.status || "pendente",
+      status: normalizeStatus(item.status),
       createdAt: new Date(item.created_at).toLocaleString("pt-BR"),
       pdf: item.pdf_file,
     }));
@@ -182,206 +184,174 @@ const ResultadosEnem: React.FC = () => {
   };
 
   return (
-    <Box p={2}>
-      <Breadcrumbs
-        aria-label="breadcrumb"
-        separator={<NavigateNextIcon fontSize="small" />}
-        sx={{ mb: 3 }}
-      >
-        <Link
-          component="button"
-          variant="body1"
-          onClick={() => navigate(APP_ROUTES.DASHBOARD)}
-          sx={{
-            color: "#A650F0",
-            textDecoration: "none",
-            cursor: "pointer",
-            "&:hover": { textDecoration: "underline" },
-          }}
-        >
-          Dashboard
-        </Link>
-        <Typography color="text.primary">Resultados ENEM</Typography>
-      </Breadcrumbs>
-
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" sx={{ color: "#A650F0", fontWeight: 600, mb: 2 }}>
-          Resultados ENEM
-        </Typography>
-        <Paper
-          elevation={1}
-          sx={{
-            p: 2,
-            backgroundColor: "#F3E5F5",
-            borderRadius: 2,
-            borderLeft: "4px solid #A650F0",
-          }}
-        >
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
-            <strong>Resultados ENEM</strong>
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Visualize e gerencie os boletins do ENEM. Pesquise por inscrição, nome ou CPF, filtre por status,
-            exporte em CSV, visualize os PDFs e atualize o status pelo modal dedicado.
-          </Typography>
-        </Paper>
-      </Box>
-
-      <Paper elevation={2} sx={{ borderRadius: 2, overflow: "hidden" }}>
-        <Toolbar sx={{ display: "flex", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}>
-          <Box display="flex" alignItems="center" sx={{ flex: 1, minWidth: 240, maxWidth: 420 }}>
-            <SearchIcon sx={{ mr: 1, color: "#A650F0" }} />
-            <TextField
-              placeholder="Pesquisar por inscrição, nome ou CPF..."
-              variant="standard"
-              fullWidth
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              sx={{
-                "& .MuiInput-underline:before": { borderBottomColor: "#A650F0" },
-                "& .MuiInput-underline:hover:before": { borderBottomColor: "#A650F0" },
-                "& .MuiInput-underline:after": { borderBottomColor: "#A650F0" },
-              }}
-            />
-          </Box>
-          <Box display="flex" alignItems="center" gap={1}>
-            <IconButton onClick={(e) => setStatusAnchor(e.currentTarget)}>
-              <FilterListIcon />
-            </IconButton>
-            <Menu anchorEl={statusAnchor} open={Boolean(statusAnchor)} onClose={() => setStatusAnchor(null)}>
-              <MenuItem onClick={() => { setStatusFilter("all"); setStatusAnchor(null); }}>
-                Todos ({items.length})
-              </MenuItem>
-              <MenuItem onClick={() => { setStatusFilter("aprovado"); setStatusAnchor(null); }}>
-                Aprovados ({items.filter((i) => i.status?.toLowerCase() === "aprovado").length})
-              </MenuItem>
-              <MenuItem onClick={() => { setStatusFilter("reprovado"); setStatusAnchor(null); }}>
-                Reprovados ({items.filter((i) => i.status?.toLowerCase() === "reprovado").length})
-              </MenuItem>
-              <MenuItem onClick={() => { setStatusFilter("pendente"); setStatusAnchor(null); }}>
-                Pendentes ({items.filter((i) => i.status?.toLowerCase() === "pendente").length})
-              </MenuItem>
-            </Menu>
-            <IconButton onClick={(e) => setDownloadAnchor(e.currentTarget)}>
-              <DownloadIcon />
-            </IconButton>
-            <Menu anchorEl={downloadAnchor} open={Boolean(downloadAnchor)} onClose={() => setDownloadAnchor(null)}>
-              <MenuItem
-                onClick={() => {
-                  handleExportCSV();
-                  setDownloadAnchor(null);
-                }}
-              >
-                CSV
-              </MenuItem>
-            </Menu>
-            <IconButton onClick={handleRefresh}>
-              <RefreshIcon />
-            </IconButton>
-            <Button variant="outlined" onClick={() => setModalOpen(true)}>
-              Atualizar Status ENEM
-            </Button>
-          </Box>
-        </Toolbar>
-
-        {loading ? (
-          <Box display="flex" justifyContent="center" alignItems="center" p={4}>
-            <CircularProgress />
-          </Box>
-        ) : error ? (
-          <Box p={2}>
-            <Alert severity="error">{error}</Alert>
-          </Box>
-        ) : (
-          <TableContainer>
-            <Table stickyHeader>
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ backgroundColor: "#A650F0", color: "#FFFFFF", fontWeight: 600, minWidth: 140 }}>
-                    Inscrição
-                  </TableCell>
-                  <TableCell sx={{ backgroundColor: "#A650F0", color: "#FFFFFF", fontWeight: 600, minWidth: 200 }}>
-                    Nome
-                  </TableCell>
-                  <TableCell sx={{ backgroundColor: "#A650F0", color: "#FFFFFF", fontWeight: 600, minWidth: 130 }}>
-                    CPF
-                  </TableCell>
-                  <TableCell sx={{ backgroundColor: "#A650F0", color: "#FFFFFF", fontWeight: 600, minWidth: 130 }}>
-                    Idioma
-                  </TableCell>
-                  <TableCell sx={{ backgroundColor: "#A650F0", color: "#FFFFFF", fontWeight: 600, minWidth: 140 }}>
-                    Status
-                  </TableCell>
-                  <TableCell sx={{ backgroundColor: "#A650F0", color: "#FFFFFF", fontWeight: 600, minWidth: 180 }}>
-                    Enviado em
-                  </TableCell>
-                  <TableCell sx={{ backgroundColor: "#A650F0", color: "#FFFFFF", fontWeight: 600, minWidth: 100 }}>
-                    PDF
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {paginatedData.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
-                      <Typography color="textSecondary">
-                        {searchTerm || statusFilter !== "all" ? "Nenhum resultado encontrado" : "Nenhum dado disponível"}
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  paginatedData.map((row) => (
-                    <TableRow
-                      key={row.id}
-                      hover
-                      sx={{
-                        "&:nth-of-type(even)": { backgroundColor: "#F9F9F9" },
-                        "&:hover": { backgroundColor: "#F3E5F5" },
+    <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      <Box sx={{ flex: 1, p: { xs: 2, sm: 3, md: 4 }, display: "flex", flexDirection: "column", overflow: "auto" }}>
+        <Box sx={{ maxWidth: 1400, width: "100%", margin: "0 auto" }}>
+          <PageHeader
+            title="Resultados ENEM"
+            subtitle="Gerenciamento de Notas do ENEM"
+            description="Esta página permite gerenciar e visualizar as NOTAS DO ENEM dos candidatos. Você pode pesquisar por CPF ou nome, atualizar notas e exportar os dados em diferentes formatos (CSV, JSON, XLSX)."
+            breadcrumbs={[
+              { label: "Dashboard", path: APP_ROUTES.DASHBOARD },
+              { label: "Resultados ENEM" },
+            ]}
+          />
+          <Fade in timeout={1000}>
+            <Paper {...paperStyles}>
+              <Toolbar {...toolbarStyles}>
+                <Box display="flex" alignItems="center" sx={{ flex: 1, minWidth: 240, maxWidth: 420 }}>
+                  <SearchIcon sx={{ mr: 1, color: designSystem.colors.text.disabled }} />
+                  <TextField
+                    placeholder="Pesquisar por inscrição, nome ou CPF..."
+                    variant="standard"
+                    fullWidth
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    {...textFieldStyles}
+                  />
+                </Box>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <IconButton {...iconButtonStyles} onClick={(e) => setStatusAnchor(e.currentTarget)}>
+                    <FilterListIcon />
+                  </IconButton>
+                  <Menu anchorEl={statusAnchor} open={Boolean(statusAnchor)} onClose={() => setStatusAnchor(null)}>
+                    <MenuItem onClick={() => { setStatusFilter("all"); setStatusAnchor(null); }}>
+                      Todos ({items.length})
+                    </MenuItem>
+                    <MenuItem onClick={() => { setStatusFilter("aprovado"); setStatusAnchor(null); }}>
+                      Aprovados ({items.filter((i) => normalizeStatus(i.status) === "aprovado").length})
+                    </MenuItem>
+                    <MenuItem onClick={() => { setStatusFilter("reprovado"); setStatusAnchor(null); }}>
+                      Reprovados ({items.filter((i) => normalizeStatus(i.status) === "reprovado").length})
+                    </MenuItem>
+                    <MenuItem onClick={() => { setStatusFilter("pendente"); setStatusAnchor(null); }}>
+                      Pendentes ({items.filter((i) => normalizeStatus(i.status) === "pendente").length})
+                    </MenuItem>
+                  </Menu>
+                  <IconButton {...iconButtonStyles} onClick={(e) => setDownloadAnchor(e.currentTarget)}>
+                    <DownloadIcon />
+                  </IconButton>
+                  <Menu anchorEl={downloadAnchor} open={Boolean(downloadAnchor)} onClose={() => setDownloadAnchor(null)}>
+                    <MenuItem
+                      onClick={() => {
+                        handleExportCSV();
+                        setDownloadAnchor(null);
                       }}
                     >
-                      <TableCell>{row.inscription}</TableCell>
-                      <TableCell>{row.name}</TableCell>
-                      <TableCell>{row.cpf}</TableCell>
-                      <TableCell>{row.language}</TableCell>
-                      <TableCell>
-                        <Typography
-                          sx={{
-                            color: getStatusColor(row.status),
-                            fontWeight: 600,
-                            textTransform: "capitalize",
-                          }}
-                        >
-                          {row.status}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>{row.createdAt}</TableCell>
-                      <TableCell>
-                        <IconButton onClick={() => setViewerUrl(row.pdf)}>
-                          <VisibilityIcon />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-            <TablePagination
-              component="div"
-              count={filteredItems.length}
-              page={page}
-              onPageChange={handleChangePage}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              rowsPerPageOptions={[5, 10, 25, 50]}
-              labelRowsPerPage="Linhas por página:"
-              labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count !== -1 ? count : `mais de ${to}`}`}
-            />
-          </TableContainer>
-        )}
-      </Paper>
+                      CSV
+                    </MenuItem>
+                  </Menu>
+                  <IconButton {...iconButtonStyles} onClick={handleRefresh}>
+                    <RefreshIcon />
+                  </IconButton>
+                  <Button variant="outlined" onClick={() => setModalOpen(true)}>
+                    Atualizar Status ENEM
+                  </Button>
+                </Box>
+              </Toolbar>
+
+              {loading ? (
+                <Box display="flex" justifyContent="center" alignItems="center" p={4}>
+                  <CircularProgress {...progressStyles} />
+                </Box>
+              ) : error ? (
+                <Box p={2}>
+                  <Alert severity="error">{error}</Alert>
+                </Box>
+              ) : (
+                <TableContainer sx={{ maxWidth: "100%" }}>
+                  <Table stickyHeader size="small" sx={{ tableLayout: "fixed", width: "100%" }}>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 140 }}>
+                          Inscrição
+                        </TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 200 }}>
+                          Nome
+                        </TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 130 }}>
+                          CPF
+                        </TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 130 }}>
+                          Idioma
+                        </TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 140 }}>
+                          Status
+                        </TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 180 }}>
+                          Enviado em
+                        </TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 100 }}>
+                          PDF
+                        </TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {paginatedData.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                            <Typography color="textSecondary">
+                              {searchTerm || statusFilter !== "all" ? "Nenhum resultado encontrado" : "Nenhum dado disponível"}
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        paginatedData.map((row) => (
+                          <TableRow
+                            key={row.id}
+                            {...tableRowHoverStyles}
+                          >
+                            <TableCell>{row.inscription}</TableCell>
+                            <TableCell>{row.name}</TableCell>
+                            <TableCell>{row.cpf}</TableCell>
+                            <TableCell>{row.language}</TableCell>
+                            <TableCell>
+                              <Typography
+                                sx={{
+                                  color: getStatusColor(row.status),
+                                  fontWeight: 600,
+                                  textTransform: "capitalize",
+                                }}
+                              >
+                                {row.status}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>{row.createdAt}</TableCell>
+                            <TableCell>
+                              <IconButton 
+                                {...iconButtonStyles} 
+                                onClick={() => setViewerUrl(buildPdfUrl(row.pdf))}
+                                disabled={!row.pdf}
+                              >
+                                <VisibilityIcon />
+                              </IconButton>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                  <TablePagination
+                    component="div"
+                    count={filteredItems.length}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    rowsPerPage={rowsPerPage}
+                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    rowsPerPageOptions={[5, 10, 25, 50]}
+                    labelRowsPerPage="Linhas por página:"
+                    labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count !== -1 ? count : `mais de ${to}`}`}
+                    {...tablePaginationStyles}
+                  />
+                </TableContainer>
+              )}
+            </Paper>
+          </Fade>
+        </Box>
+      </Box>
 
       {viewerUrl && (
-        <PdfViewModa open documentUrl={viewerUrl} onClose={() => setViewerUrl(null)} />
+        <PdfViewModal open documentUrl={viewerUrl} onClose={() => setViewerUrl(null)} />
       )}
 
       <EnemStatusUpdaterModal
@@ -390,6 +360,21 @@ const ResultadosEnem: React.FC = () => {
         onClose={() => setModalOpen(false)}
         onUpdate={handleUpdateStatus}
       />
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={closeSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={closeSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

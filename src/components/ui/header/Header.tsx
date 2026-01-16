@@ -8,19 +8,17 @@ import {
   Menu,
   MenuItem,
 } from "@mui/material";
-import MenuIcon from "@mui/icons-material/Menu";
-import AccountCircleIcon from "@mui/icons-material/AccountCircle";
-import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import { useNavigate } from "react-router";
-import logoDesenvolve from "../../../assets/images/logo/LOGO DESENVOLVE.png";
+import { useAuth } from "../../../hooks/useAuth";
 import { APP_ROUTES } from "../../../util/constants";
 
 interface HeaderProps {
   onMenuClick?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
+const Header: React.FC<HeaderProps> = () => {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -31,13 +29,15 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
     setAnchorEl(null);
   };
 
-  const handleLogoClick = () => {
-    navigate(APP_ROUTES.DASHBOARD);
-  };
-
   const handleProfileClick = () => {
     navigate(APP_ROUTES.MY_PROFILE);
     handleMenuClose();
+  };
+
+  const handleLogout = () => {
+    logout();
+    handleMenuClose();
+    navigate(APP_ROUTES.LOGIN);
   };
 
   return (
@@ -46,49 +46,17 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
       elevation={0}
       sx={{
         bgcolor: "#FFFFFF",
-        color: "#4A4A4A",
-        boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+        color: "#1F2937",
+        boxShadow: "none",
         width: "100%",
-        zIndex: 1100, // Menor que o sidebar para ficar abaixo
+        zIndex: 1100,
+        borderBottom: "1px solid #F3F4F6",
       }}
     >
-      <Toolbar sx={{ justifyContent: "space-between", py: 1.5 }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <IconButton
-            edge="start"
-            onClick={onMenuClick}
-            sx={{
-              color: "#4A4A4A",
-              "&:hover": { bgcolor: "rgba(0,0,0,0.04)" },
-            }}
-          >
-            <MenuIcon />
-          </IconButton>
+      <Toolbar sx={{ justifyContent: "space-between", py: 1, minHeight: 60 }}>
+        {/* Menu Toggle */}
+        <Box sx={{ display: "flex", alignItems: "center" }}>
 
-          {/* Logo */}
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1.5,
-            }}
-          >
-            <Box
-              component="img"
-              src={logoDesenvolve}
-              alt="Desenvolve"
-              onClick={handleLogoClick}
-              sx={{
-                width: { xs: 140, sm: 160, md: 180 },
-                height: "auto",
-                cursor: "pointer",
-                transition: "opacity 0.2s",
-                "&:hover": {
-                  opacity: 0.8,
-                },
-              }}
-            />
-          </Box>
         </Box>
 
         {/* Perfil com dropdown */}
@@ -96,23 +64,25 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           <IconButton
             onClick={handleMenuOpen}
             sx={{
+              bgcolor: "#FEFEFE",
               p: 0.5,
-              "&:hover": { bgcolor: "rgba(0,0,0,0.04)" },
+              "&:hover": {
+                bgcolor: "transparent",
+              },
             }}
           >
             <Avatar
               sx={{
-                width: 32,
-                height: 32,
-                bgcolor: "#4A4A4A",
-                fontSize: 16,
+                width: 28,
+                height: 28,
+                background: "#E5E7EB",
+                fontWeight: 500,
+                fontSize: "0.75rem",
+                color: "#9CA3AF",
               }}
             >
-              <AccountCircleIcon sx={{ fontSize: 24 }} />
+              {user?.first_name?.[0] || user?.email?.[0] || "U"}
             </Avatar>
-            <KeyboardArrowDownIcon
-              sx={{ fontSize: 16, color: "#4A4A4A", ml: 0.5 }}
-            />
           </IconButton>
           <Menu
             anchorEl={anchorEl}
@@ -126,9 +96,41 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
               vertical: "top",
               horizontal: "right",
             }}
+            slotProps={{
+              paper: {
+                sx: {
+                  mt: 1,
+                  minWidth: 140,
+                  borderRadius: 1,
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                  border: "1px solid #E5E7EB",
+                  bgcolor: "#F9FAFB",
+                },
+              },
+            }}
           >
-            <MenuItem onClick={handleProfileClick}>Meu Perfil</MenuItem>
-            <MenuItem onClick={handleMenuClose}>Sair</MenuItem>
+            <MenuItem
+              onClick={handleProfileClick}
+              sx={{
+                py: 0.75,
+                px: 2,
+                fontSize: "0.8125rem",
+                color: "#000000",
+              }}
+            >
+              Meu Perfil
+            </MenuItem>
+            <MenuItem
+              onClick={handleLogout}
+              sx={{
+                py: 0.75,
+                px: 2,
+                fontSize: "0.8125rem",
+                color: "#000000",
+              }}
+            >
+              Sair
+            </MenuItem>
           </Menu>
         </Box>
       </Toolbar>

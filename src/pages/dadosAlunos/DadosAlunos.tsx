@@ -1,12 +1,11 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   Alert,
   Box,
-  Breadcrumbs,
   Button,
   CircularProgress,
+  Fade,
   IconButton,
-  Link,
   Menu,
   MenuItem,
   Paper,
@@ -23,7 +22,6 @@ import {
   Typography,
 } from "@mui/material";
 import {
-  NavigateNext as NavigateNextIcon,
   Search as SearchIcon,
   FilterList as FilterListIcon,
   Download as DownloadIcon,
@@ -34,9 +32,25 @@ import {
 } from "@mui/icons-material";
 import { useNavigate } from "react-router";
 import { APP_ROUTES } from "../../util/constants";
+import PageHeader from "../../components/ui/page/PageHeader";
+import {
+  designSystem,
+  paperStyles,
+  toolbarStyles,
+  tableHeadStyles,
+  tableRowHoverStyles,
+  iconButtonStyles,
+  textFieldStyles,
+  primaryButtonStyles,
+  progressStyles,
+  tablePaginationStyles,
+} from "../../styles/designSystem";
 import AgentModal from "../../components/modals/AgentModal";
 import PsychologistModal from "../../components/modals/PsychologistModal";
 import EditStudentModal from "../../components/modals/EditStudentModal";
+import { useStudentData } from "../../hooks/useStudentData";
+import { useSelective } from "../../hooks/useSelective";
+import { studentDataService } from "../../core/http/services/studentDataService";
 
 interface StudentRow {
   id: string;
@@ -49,59 +63,31 @@ interface StudentRow {
   birth_date: string;
   username: string;
   origin: "novo" | "antigo";
+  user_data_id?: string;
 }
-
-// Dados mockados (substituir por integração futura)
-const MOCK_NEW_STUDENTS: StudentRow[] = [
-  {
-    id: "1",
-    completeName: "João Silva",
-    registration: "2025A001",
-    corp_email: "joao.silva@empresa.com",
-    monitor: "Carlos Mendes",
-    status: "Ativo",
-    cpf: "123.456.789-00",
-    birth_date: "1998-03-10",
-    username: "joao.silva",
-    origin: "novo",
-  },
-  {
-    id: "2",
-    completeName: "Maria Santos",
-    registration: "2025A002",
-    corp_email: "maria.santos@empresa.com",
-    monitor: "Ana Prado",
-    status: "Ativo",
-    cpf: "987.654.321-00",
-    birth_date: "1997-07-22",
-    username: "maria.santos",
-    origin: "novo",
-  },
-  {
-    id: "3",
-    completeName: "Pedro Oliveira",
-    registration: "2025A003",
-    corp_email: "pedro.oliveira@empresa.com",
-    monitor: "Carlos Mendes",
-    status: "Suspenso",
-    cpf: "456.789.123-00",
-    birth_date: "1999-01-15",
-    username: "pedro.oliveira",
-    origin: "novo",
-  },
-];
-
 
 const DadosAlunos: React.FC = () => {
   const navigate = useNavigate();
+  
+  // Hook para buscar dados de user_data (dados pessoais)
+  const {
+    users: userData,
+    loading: userDataLoading,
+    pagination: userDataPagination,
+    fetchUsers,
+    snackbar: hookSnackbar,
+    closeSnackbar: closeHookSnackbar,
+  } = useSelective();
 
-  const [items, setItems] = useState<StudentRow[]>([...MOCK_NEW_STUDENTS]);
+  const [items, setItems] = useState<StudentRow[]>([]);
   const [oldItems, setOldItems] = useState<StudentRow[]>([]);
   const [oldLoading, setOldLoading] = useState(false);
   const [_oldError, setOldError] = useState<string | null>(null);
   const [hasFetchedOld, setHasFetchedOld] = useState(false);
-  const [loading] = useState(false);
-  const [error] = useState<string | null>(null);
+  const [studentDataMap, setStudentDataMap] = useState<Map<string, any>>(new Map());
+  const [loadingStudentData, setLoadingStudentData] = useState(false);
+  const loading = userDataLoading || loadingStudentData;
+  const error = null;
   const [viewerUrl] = useState<string | null>(null); // reservado se necessário
   const [statusAnchor, setStatusAnchor] = useState<null | HTMLElement>(null);
   const [statusFilter, setStatusFilter] = useState<
@@ -131,12 +117,85 @@ const DadosAlunos: React.FC = () => {
     { name: "Isabela Jales", value: "isabelajales@projetodesenvolve.com.br" },
   ];
   
+  // Buscar student_data (dados acadêmicos) ao montar
+  useEffect(() => {
+    const fetchStudentData = async () => {
+      setLoadingStudentData(true);
+      try {
+        // Buscar todos os student_data sem paginação para fazer o mapa completo
+        const response = await studentDataService.list(1, 1000);
+        
+        if (response.status >= 200 && response.status < 300 && response.data) {
+          const raw = response.data as any;
+          const studentDataList = Array.isArray(raw?.data) ? raw.data : [];
+          
+          // Criar mapa de user_data_id -> student_data
+          const map = new Map();
+          studentDataList.forEach((sd: any) => {
+            map.set(sd.user_data_id, sd);
+          });
+          
+          setStudentDataMap(map);
+        }
+      } catch {
+      } finally {
+        setLoadingStudentData(false);
+      }
+    };
+    
+    fetchStudentData();
+  }, []);
+
+  // Buscar user_data (dados pessoais) com paginação
+  useEffect(() => {
+    fetchUsers(page + 1, rowsPerPage, searchTerm.trim() || undefined);
+  }, [page, rowsPerPage, searchTerm, fetchUsers]);
+
+  // Fazer merge de user_data + student_data
+  useEffect(() => {
+    if (userData && userData.length > 0) {
+      const convertedStudents: StudentRow[] = userData.map((user) => {
+        const userId = String(user.id);
+        const studentData = studentDataMap.get(userId);
+        
+        // Nome completo
+        const completeName = [user.first_name, user.last_name]
+          .filter(Boolean)
+          .join(" ") || (user as any)?.name || "—";
+        
+        return {
+          id: userId,
+          user_data_id: userId,
+          completeName,
+          registration: studentData?.registration || "—",
+          corp_email: studentData?.corp_email || user.email || "—",
+          monitor: studentData?.monitor || "—",
+          status: studentData?.status || "Inativo",
+          cpf: user.cpf || "—",
+          birth_date: user.birth_date || "—",
+          username: user.username || "—",
+          origin: "novo" as const,
+        };
+      });
+      setItems(convertedStudents);
+    }
+  }, [userData, studentDataMap]);
 
   const combinedRows = useMemo(() => {
     return showOld ? oldItems : items;
   }, [items, oldItems, showOld]);
 
   const filteredRows = useMemo(() => {
+    // Se estiver mostrando dados novos da API, não precisa filtrar localmente
+    // pois a busca já é feita no backend
+    if (!showOld) {
+      return combinedRows.filter((row) => {
+        if (statusFilter === "all") return true;
+        return row.status === statusFilter;
+      });
+    }
+    
+    // Para dados antigos, filtrar localmente
     return combinedRows
       .filter(
         (row) =>
@@ -148,23 +207,32 @@ const DadosAlunos: React.FC = () => {
         if (statusFilter === "all") return true;
         return row.status === statusFilter;
       });
-  }, [combinedRows, searchTerm, statusFilter]);
+  }, [combinedRows, searchTerm, statusFilter, showOld]);
 
   const paginatedRows = useMemo(() => {
+    // Se estiver mostrando dados novos da API, não paginar localmente
+    if (!showOld) {
+      return filteredRows;
+    }
+    
+    // Para dados antigos, paginar localmente
     const start = page * rowsPerPage;
     return filteredRows.slice(start, start + rowsPerPage);
-  }, [filteredRows, page, rowsPerPage]);
+  }, [filteredRows, page, rowsPerPage, showOld]);
+  
+  // Total de itens para paginação
+  const totalItems = showOld ? filteredRows.length : userDataPagination.totalItems;
 
   const handleRefresh = () => {
     setStatusFilter("all");
     setSearchTerm("");
-    setItems([...MOCK_NEW_STUDENTS]);
     setOldItems([]);
     setHasFetchedOld(false);
     setOldError(null);
     setShowOld(false);
     setPage(0);
     setSelectedStudent(null);
+    fetchUsers(1, rowsPerPage);
   };
   
   const fetchOldFromApi = async () => {
@@ -308,210 +376,205 @@ const DadosAlunos: React.FC = () => {
   };
 
   return (
-    <Box p={2} sx={{ maxWidth: "1200px", mx: "auto" }}> 
-      <Breadcrumbs
-        aria-label="breadcrumb"
-        separator={<NavigateNextIcon fontSize="small" />}
-        sx={{ mb: 3 }}
+    <Box 
+      sx={{ 
+        minHeight: "100vh", 
+        display: "flex", 
+        flexDirection: "column",
+        width: "100%",
+        overflow: "hidden",
+      }}
+    >
+      <Box 
+        sx={{ 
+          flex: 1, 
+          p: { xs: 2, sm: 3, md: 4 }, 
+          display: "flex", 
+          flexDirection: "column", 
+          overflow: "auto",
+          width: "100%",
+        }}
       >
-        <Link
-          component="button"
-          variant="body1"
-          onClick={() => navigate(APP_ROUTES.DASHBOARD)}
-          sx={{
-            color: "#A650F0",
-            textDecoration: "none",
-            cursor: "pointer",
-            "&:hover": { textDecoration: "underline" },
+        <Box 
+          sx={{ 
+            maxWidth: 1400, 
+            width: "100%", 
+            margin: "0 auto",
           }}
         >
-          Dashboard
-        </Link>
-        <Typography color="text.primary">Dados de Alunos</Typography>
-      </Breadcrumbs>
-
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" sx={{ color: "#A650F0", fontWeight: 600, mb: 2 }}>
-          Dados de Alunos
-        </Typography>
-        <Paper
-          elevation={1}
-          sx={{
-            p: 2,
-            backgroundColor: "#F3E5F5",
-            borderRadius: 2,
-            borderLeft: "4px solid #A650F0",
-          }}
-        >
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
-            <strong>Dados de Alunos</strong>
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Visualize e gerencie os dados dos alunos. Pesquise por nome, matrícula ou CPF,
-            filtre por status, exporte em CSV e alterna entre alunos atuais e dados antigos (mock).
-          </Typography>
-        </Paper>
-      </Box>
-
-      <Paper elevation={2} sx={{ borderRadius: 2, overflow: "hidden", maxWidth: "1100px", mx: "auto" }}>
-        <Toolbar sx={{ display: "flex", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}>
-          <Box display="flex" alignItems="center" sx={{ flex: 1, minWidth: 240, maxWidth: 420 }}>
-            <SearchIcon sx={{ mr: 1, color: "#A650F0" }} />
-            <TextField
-              placeholder="Pesquisar por nome, matrícula ou CPF..."
-              variant="standard"
-              fullWidth
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              sx={{
-                "& .MuiInput-underline:before": { borderBottomColor: "#A650F0" },
-                "& .MuiInput-underline:hover:before": { borderBottomColor: "#A650F0" },
-                "& .MuiInput-underline:after": { borderBottomColor: "#A650F0" },
-              }}
-            />
-          </Box>
-          <Box display="flex" alignItems="center" gap={1}>
-            <IconButton onClick={(e) => setStatusAnchor(e.currentTarget)}>
-              <FilterListIcon />
-            </IconButton>
-            <Menu anchorEl={statusAnchor} open={Boolean(statusAnchor)} onClose={() => setStatusAnchor(null)}>
-              <MenuItem onClick={() => { setStatusFilter("all"); setStatusAnchor(null); }}>
-                Todos ({combinedRows.length})
-              </MenuItem>
-              <MenuItem onClick={() => { setStatusFilter("Ativo"); setStatusAnchor(null); }}>
-                Ativos ({combinedRows.filter((i) => i.status === "Ativo").length})
-              </MenuItem>
-              <MenuItem onClick={() => { setStatusFilter("Inativo"); setStatusAnchor(null); }}>
-                Inativos ({combinedRows.filter((i) => i.status === "Inativo").length})
-              </MenuItem>
-              <MenuItem onClick={() => { setStatusFilter("Retido"); setStatusAnchor(null); }}>
-                Retidos ({combinedRows.filter((i) => i.status === "Retido").length})
-              </MenuItem>
-              <MenuItem onClick={() => { setStatusFilter("Suspenso"); setStatusAnchor(null); }}>
-                Suspensos ({combinedRows.filter((i) => i.status === "Suspenso").length})
-              </MenuItem>
-            </Menu>
-            <IconButton onClick={(e) => setDownloadAnchor(e.currentTarget)}>
-              <DownloadIcon />
-            </IconButton>
-            <Menu anchorEl={downloadAnchor} open={Boolean(downloadAnchor)} onClose={() => setDownloadAnchor(null)}>
-              <MenuItem
-                onClick={() => {
-                  handleExportCSV();
-                  setDownloadAnchor(null);
-                }}
-              >
-                CSV
-              </MenuItem>
-            </Menu>
-            <IconButton onClick={handleRefresh}>
-              <RefreshIcon />
-            </IconButton>
-            <Button
-              variant="outlined"
-              startIcon={<AddIcon />}
-              onClick={() => navigate(APP_ROUTES.STUDENT_CREATE)}
-            >
-              Novo
-            </Button>
-            <Button
-              variant="text"
-              onClick={toggleOldData}
-              disabled={oldLoading}
-              sx={{ color: "#A650F0" }}
-            >
-              {oldLoading ? "Carregando..." : showOld ? "Ocultar dados antigos" : "Mostrar dados antigos"}
-            </Button>
-          </Box>
-        </Toolbar>
-
-        {loading ? (
-          <Box display="flex" justifyContent="center" alignItems="center" p={4}>
-            <CircularProgress />
-          </Box>
-        ) : error ? (
-          <Box p={2}>
-            <Alert severity="error">{error}</Alert>
-          </Box>
-        ) : (
-          <TableContainer>
-            <Table stickyHeader>
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ backgroundColor: "#A650F0", color: "#FFFFFF", fontWeight: 600, minWidth: 70 }}>ID</TableCell>
-                  <TableCell sx={{ backgroundColor: "#A650F0", color: "#FFFFFF", fontWeight: 600, minWidth: 200 }}>Nome Completo</TableCell>
-                  <TableCell sx={{ backgroundColor: "#A650F0", color: "#FFFFFF", fontWeight: 600, minWidth: 150 }}>Matrícula</TableCell>
-                  <TableCell sx={{ backgroundColor: "#A650F0", color: "#FFFFFF", fontWeight: 600, minWidth: 200 }}>E-mail Corporativo</TableCell>
-                  <TableCell sx={{ backgroundColor: "#A650F0", color: "#FFFFFF", fontWeight: 600, minWidth: 140 }}>Monitor</TableCell>
-                  <TableCell sx={{ backgroundColor: "#A650F0", color: "#FFFFFF", fontWeight: 600, minWidth: 110 }}>Status</TableCell>
-                  <TableCell sx={{ backgroundColor: "#A650F0", color: "#FFFFFF", fontWeight: 600, minWidth: 130 }}>CPF</TableCell>
-                  <TableCell sx={{ backgroundColor: "#A650F0", color: "#FFFFFF", fontWeight: 600, minWidth: 150 }}>Data de Nascimento</TableCell>
-                  <TableCell sx={{ backgroundColor: "#A650F0", color: "#FFFFFF", fontWeight: 600, minWidth: 170 }}>Agente de Sucesso</TableCell>
-                  <TableCell sx={{ backgroundColor: "#A650F0", color: "#FFFFFF", fontWeight: 600, minWidth: 100 }}>Origem</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {paginatedRows.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={10} align="center" sx={{ py: 3 }}>
-                      <Typography color="textSecondary">
-                        {searchTerm || statusFilter !== "all" ? "Nenhum resultado encontrado" : "Nenhum dado disponível"}
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  paginatedRows.map((row) => (
-                    <TableRow
-                      key={row.id}
-                      hover
-                      onClick={() => handleSelectStudent(row)}
-                      sx={{
-                        cursor: "pointer",
-                        "&:nth-of-type(even)": { backgroundColor: "#F9F9F9" },
-                        "&:hover": { backgroundColor: "#F3E5F5" },
-                        ...(selectedStudent?.id === row.id && {
-                          backgroundColor: "#E1BEE7",
-                          "&:hover": { backgroundColor: "#CE93D8" },
-                        }),
+          <PageHeader
+            title="Dados de Alunos"
+            subtitle="Visualize e gerencie informações dos alunos."
+            description="Esta página permite visualizar, pesquisar e gerenciar os dados completos dos alunos cadastrados no sistema. Você pode filtrar por status, pesquisar por nome/matrícula/CPF, editar informações, vincular agentes de sucesso e psicólogos, e exportar os dados em diferentes formatos."
+            breadcrumbs={[
+              { label: "Dashboard", path: APP_ROUTES.DASHBOARD },
+              { label: "Dados de Alunos" },
+            ]}
+          />
+          <Fade in timeout={1000}>
+            <Paper {...paperStyles} sx={{ ...paperStyles.sx, overflow: "hidden" }}>
+              <Toolbar {...toolbarStyles}>
+                <Box display="flex" alignItems="center" sx={{ flex: 1, minWidth: 240, maxWidth: 420 }}>
+                  <SearchIcon sx={{ mr: 1, color: designSystem.colors.text.disabled }} />
+                  <TextField
+                    placeholder="Pesquisar por nome, matrícula ou CPF..."
+                    variant="standard"
+                    fullWidth
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    {...textFieldStyles}
+                  />
+                </Box>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <IconButton {...iconButtonStyles} onClick={(e) => setStatusAnchor(e.currentTarget)}>
+                    <FilterListIcon />
+                  </IconButton>
+                  <Menu anchorEl={statusAnchor} open={Boolean(statusAnchor)} onClose={() => setStatusAnchor(null)}>
+                    <MenuItem onClick={() => { setStatusFilter("all"); setStatusAnchor(null); }}>
+                      Todos ({combinedRows.length})
+                    </MenuItem>
+                    <MenuItem onClick={() => { setStatusFilter("Ativo"); setStatusAnchor(null); }}>
+                      Ativos ({combinedRows.filter((i) => i.status === "Ativo").length})
+                    </MenuItem>
+                    <MenuItem onClick={() => { setStatusFilter("Inativo"); setStatusAnchor(null); }}>
+                      Inativos ({combinedRows.filter((i) => i.status === "Inativo").length})
+                    </MenuItem>
+                    <MenuItem onClick={() => { setStatusFilter("Retido"); setStatusAnchor(null); }}>
+                      Retidos ({combinedRows.filter((i) => i.status === "Retido").length})
+                    </MenuItem>
+                    <MenuItem onClick={() => { setStatusFilter("Suspenso"); setStatusAnchor(null); }}>
+                      Suspensos ({combinedRows.filter((i) => i.status === "Suspenso").length})
+                    </MenuItem>
+                  </Menu>
+                  <IconButton {...iconButtonStyles} onClick={(e) => setDownloadAnchor(e.currentTarget)}>
+                    <DownloadIcon />
+                  </IconButton>
+                  <Menu anchorEl={downloadAnchor} open={Boolean(downloadAnchor)} onClose={() => setDownloadAnchor(null)}>
+                    <MenuItem
+                      onClick={() => {
+                        handleExportCSV();
+                        setDownloadAnchor(null);
                       }}
                     >
-                      <TableCell>{row.id}</TableCell>
-                      <TableCell>{row.completeName}</TableCell>
-                      <TableCell>{row.registration}</TableCell>
-                      <TableCell>{row.corp_email}</TableCell>
-                      <TableCell>{row.monitor}</TableCell>
-                      <TableCell>
-                        <Typography sx={{ color: getStatusColor(row.status), fontWeight: 600 }}>
-                          {row.status}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>{row.cpf}</TableCell>
-                      <TableCell>{row.birth_date}</TableCell>
-                      <TableCell>{row.username}</TableCell>
-                      <TableCell sx={{ textTransform: "capitalize" }}>{row.origin}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-            <TablePagination
-              component="div"
-              count={filteredRows.length}
-              page={page}
-              onPageChange={handleChangePage}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              rowsPerPageOptions={[5, 10, 25, 50]}
-              labelRowsPerPage="Linhas por página:"
-              labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count !== -1 ? count : `mais de ${to}`}`}
-            />
-          </TableContainer>
-        )}
-      </Paper>
+                      CSV
+                    </MenuItem>
+                  </Menu>
+                  <IconButton {...iconButtonStyles} onClick={handleRefresh}>
+                    <RefreshIcon />
+                  </IconButton>
+                  <Button
+                    variant="outlined"
+                    startIcon={<AddIcon />}
+                    onClick={() => navigate(APP_ROUTES.STUDENT_CREATE)}
+                    sx={{ whiteSpace: "nowrap" }}
+                  >
+                    Novo
+                  </Button>
+                  <Button
+                    variant="text"
+                    onClick={toggleOldData}
+                    disabled={oldLoading}
+                    sx={{ 
+                      color: designSystem.colors.primary.main,
+                      whiteSpace: "nowrap",
+                      fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                    }}
+                  >
+                    {oldLoading ? "Carregando..." : showOld ? "Ocultar dados antigos" : "Mostrar dados antigos"}
+                  </Button>
+                </Box>
+              </Toolbar>
+
+              {loading ? (
+                <Box display="flex" justifyContent="center" alignItems="center" p={4}>
+                  <CircularProgress {...progressStyles} />
+                </Box>
+              ) : error ? (
+                <Box p={2}>
+                  <Alert severity="error">{error}</Alert>
+                </Box>
+              ) : (
+                <TableContainer sx={{ overflowX: "auto", width: "100%", maxWidth: "100%" }}>
+                  <Table size="small" sx={{ minWidth: 1200 }}>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 60 }}>ID</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 180 }}>Nome Completo</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 120 }}>Matrícula</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 220 }}>E-mail Corporativo</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 120 }}>Monitor</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 100 }}>Status</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 130 }}>CPF</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 120 }}>Data de Nasc.</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 140 }}>Agente de Sucesso</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 110 }}>Origem</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {paginatedRows.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={10} align="center" sx={{ py: 3 }}>
+                            <Typography color="textSecondary">
+                              {searchTerm || statusFilter !== "all" ? "Nenhum resultado encontrado" : "Nenhum dado disponível"}
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        paginatedRows.map((row) => (
+                          <TableRow
+                            key={row.id}
+                            {...tableRowHoverStyles}
+                            onClick={() => handleSelectStudent(row)}
+                            sx={{
+                              ...tableRowHoverStyles.sx,
+                              cursor: "pointer",
+                              ...(selectedStudent?.id === row.id && {
+                                backgroundColor: `${designSystem.colors.primary.lighter} !important`,
+                                "&:hover": { backgroundColor: `${designSystem.colors.primary.light} !important` },
+                              }),
+                            }}
+                          >
+                            <TableCell sx={{ width: 60, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.id}</TableCell>
+                            <TableCell sx={{ width: 180, maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.completeName}</TableCell>
+                            <TableCell sx={{ width: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.registration}</TableCell>
+                            <TableCell sx={{ width: 220, maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.corp_email}</TableCell>
+                            <TableCell sx={{ width: 120, maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.monitor}</TableCell>
+                            <TableCell sx={{ width: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              <Typography sx={{ color: getStatusColor(row.status), fontWeight: 600 }}>
+                                {row.status}
+                              </Typography>
+                            </TableCell>
+                            <TableCell sx={{ width: 130, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.cpf}</TableCell>
+                            <TableCell sx={{ width: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.birth_date}</TableCell>
+                            <TableCell sx={{ width: 140, maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.username}</TableCell>
+                            <TableCell sx={{ width: 110, textTransform: "capitalize", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.origin}</TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                  <TablePagination
+                    component="div"
+                    count={totalItems}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    rowsPerPage={rowsPerPage}
+                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    rowsPerPageOptions={[5, 10, 25, 50]}
+                    labelRowsPerPage="Linhas por página:"
+                    labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count !== -1 ? count : `mais de ${to}`}`}
+                    {...tablePaginationStyles}
+                  />
+                </TableContainer>
+              )}
+            </Paper>
+          </Fade>
+        </Box>
+      </Box>
 
       {/* Componentes do pd-dados-alunos embaixo da tabela */}
       {selectedStudent && (
-        <Box sx={{ mt: 3, maxWidth: "1100px", mx: "auto" }}>
+        <Box sx={{ mt: 3, maxWidth: 1400, width: "100%", margin: "24px auto 0", px: { xs: 2, sm: 3, md: 4 } }}>
           {/* DashboardHead - Botões de ação */}
           <Paper
             elevation={2}
@@ -607,7 +670,8 @@ const DadosAlunos: React.FC = () => {
                           Dados do aluno
                         </Typography>
                         <IconButton
-                          sx={{ position: "absolute", right: 0 }}
+                          {...iconButtonStyles}
+                          sx={{ ...iconButtonStyles.sx, position: "absolute", right: 0 }}
                           onClick={() => setOpenEditModal(true)}
                         >
                           <EditIcon />
@@ -636,6 +700,7 @@ const DadosAlunos: React.FC = () => {
                           <strong>Email:</strong> {selectedStudent.corp_email}
                         </Typography>
                         <IconButton
+                          {...iconButtonStyles}
                           onClick={() =>
                             window.open(`mailto:${selectedStudent.corp_email}`, "_blank")
                           }
@@ -675,8 +740,7 @@ const DadosAlunos: React.FC = () => {
                     <TableCell colSpan={3} align="center">
                       <Box>
                         <Button
-                          variant="contained"
-                          color="primary"
+                          {...primaryButtonStyles}
                           onClick={() => setSeeMore(!seeMore)}
                         >
                           {seeMore ? "Ver menos" : "Ver mais"}
@@ -723,13 +787,29 @@ const DadosAlunos: React.FC = () => {
         agents={MOCK_AGENTS}
       />
 
-      {/* Snackbar */}
+      {/* Snackbar local */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
         message={snackbar.message}
       />
+
+      {/* Snackbar do hook useSelective */}
+      <Snackbar
+        open={hookSnackbar.open}
+        autoHideDuration={3000}
+        onClose={closeHookSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={closeHookSnackbar}
+          severity={hookSnackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {hookSnackbar.message}
+        </Alert>
+      </Snackbar>
 
       {viewerUrl && null}
     </Box>

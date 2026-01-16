@@ -2,51 +2,60 @@
 import { useState } from 'react'
 import { authService } from '../core/http/services/authService'
 import { useAuthContext } from '../app/providers/AuthProvider'
+import { decodeJWT } from '../util/jwt'
 
 export function useAuth() {
   const { setCredentials, logout, accessToken, refreshToken, user } = useAuthContext()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const login = async ({ email, password }: { email: string; password: string }) => {
+  const login = async ({ credential, password }: { credential: string; password: string }) => {
     setLoading(true)
     setError(null)
     try {
-      const response = await authService.login({ email, password })
-      console.log('[useAuth] login response', response)
-      if (response && response.data) {
+      const response = await authService.login({ credential, password })
+
+      if (response.status !== 200) {
+        const errorMsg = (response.data as any)?.message || response.message || 'Erro ao fazer login'
+        throw new Error(errorMsg)
+      }
+
+      if (response && response.data && response.data.accessToken) {
+        const { accessToken, refreshToken } = response.data
+
+        const jwtPayload = decodeJWT(accessToken)
+
+        const user = {
+          id: jwtPayload.sub,
+          roles: jwtPayload.roles,
+          tenant_city_id: jwtPayload.tenant_city_id,
+        }
+
         setCredentials({
-          accessToken: response.data.access,
-          refreshToken: response.data.refresh,
-          user: response.data.user
+          accessToken,
+          refreshToken,
+          user
         })
+
+        return { success: true }
       } else {
-        throw new Error('Resposta inválida do servidor')
+        throw new Error('Resposta inválida do servidor - tokens não encontrados')
       }
     } catch (err: any) {
-      setError(err.message || 'Erro ao fazer login')
+      const errorMessage = err.message || 'Erro ao fazer login'
+      setError(errorMessage)
       throw err
     } finally {
       setLoading(false)
     }
   }
 
-  const register = async ({ first_name, last_name, email, password, password2 }: { first_name: string; last_name: string; email: string; password: string; password2: string }) => {
-    setLoading(true)
-    setError(null)
-    try {
-      await authService.register({ first_name, last_name, email, password, password2 })
-    } catch (err: any) {
-      setError(err.message || 'Erro ao cadastrar')
-      throw err
-    } finally {
-      setLoading(false)
-    }
-  }
+  // Registro removido - não existe no backend
+  // Apenas administradores podem criar usuários
+
   return {
     login,
     logout,
-    register,
     accessToken,
     refreshToken,
     user,

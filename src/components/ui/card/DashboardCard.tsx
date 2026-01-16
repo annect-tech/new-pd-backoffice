@@ -14,38 +14,52 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
   onClick,
   isAdmin = false,
 }) => {
-  const cardColor = isAdmin ? "#6B7280" : "#A650F0"; // Cinza para admin, roxo para normal
-  
+  const cardColor = isAdmin ? "#1F2937" : "#1F2937";
+
   // Cores do gradiente
-  // Cards normais: azul (topo) até roxo (embaixo)
-  // Cards admin: laranja (topo) até roxo (embaixo)
-  const startColor = isAdmin ? "#F97316" : "#3B82F6"; // Laranja para admin, azul para normal
-  const endColor = isAdmin ? "#A650F0" : "#A650F0"; // Roxo embaixo para ambos
-  
+  const startColor = isAdmin ? "#F97316" : "#3B82F6";
+  const endColor = isAdmin ? "#A650F0" : "#A650F0";
+
   // ID único para o gradiente
-  const gradientId = useMemo(() => `gradient-${Math.random().toString(36).substr(2, 9)}`, []);
+  const gradientId = useMemo(() => `gradient-${Math.random().toString(36).substring(2, 11)}`, []);
+
   return (
     <Card
       sx={{
         width: "100%",
-        height: 160,
-        borderRadius: 2,
-        boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+        height: 130,
+        borderRadius: 2.5,
+        boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
         cursor: onClick ? "pointer" : "default",
-        transition: "all 0.3s ease",
+        transition: "all 0.2s ease",
         bgcolor: "#FFFFFF",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
         boxSizing: "border-box",
         margin: 0,
-        transform: "scale(1)",
+        border: "1px solid rgba(0,0,0,0.06)",
+        position: "relative",
+        "&::before": {
+          content: '""',
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: "3px",
+          background: isAdmin
+            ? "linear-gradient(90deg, #F97316 0%, #A650F0 100%)"
+            : "linear-gradient(90deg, #3B82F6 0%, #A650F0 100%)",
+          opacity: 0,
+          transition: "opacity 0.3s ease",
+        },
         "&:hover": {
-          transform: "scale(1.05)",
-          boxShadow: isAdmin
-            ? "0 4px 12px rgba(107, 114, 128, 0.2)"
-            : "0 4px 12px rgba(166, 80, 240, 0.2)",
-          zIndex: 10,
+          transform: "translateY(-2px)",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+          borderColor: "rgba(0,0,0,0.1)",
+          "&::before": {
+            opacity: 1,
+          },
         },
       }}
       onClick={onClick}
@@ -57,7 +71,7 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
           alignItems: "center",
           justifyContent: "center",
           py: 2,
-          px: 2,
+          px: 1.5,
           height: "100%",
           width: "100%",
           boxSizing: "border-box",
@@ -68,14 +82,14 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
       >
         <Box
           sx={{
-            mb: 1.5,
+            mb: 1.2,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
-            height: 40,
             position: "relative",
             "& svg": {
+              fontSize: "36px !important",
               fill: `url(#${gradientId})`,
             },
           }}
@@ -94,10 +108,10 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
           variant="h6"
           sx={{
             color: cardColor,
-            fontWeight: 500,
+            fontWeight: 600,
             textAlign: "center",
-            fontSize: "0.9rem",
-            lineHeight: 1.3,
+            fontSize: "0.8rem",
+            lineHeight: 1.25,
             wordBreak: "break-word",
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -105,7 +119,6 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
             WebkitLineClamp: 2,
             WebkitBoxOrient: "vertical",
             flexShrink: 0,
-            maxHeight: "2.6em",
           }}
         >
           {title}

@@ -6,21 +6,10 @@ import LayoutSidebar from "../ui/sidebar/LayoutSidebar";
 import getTheme from "../../assets/styles/theme";
 import { APP_ROUTES } from "../../util/constants";
 import { useAuthContext } from "../../app/providers/AuthProvider";
+import { useUserProfile } from "../../hooks/useUserProfile";
 import CreateProfileModal from "../modals/CreateProfileModal";
+import type { UserProfilePayload } from "../../interfaces/profile";
 
-// Interface definida localmente para evitar problemas de resolução de módulo
-interface UserProfilePayload {
-  cpf?: string;
-  personal_email?: string;
-  bio?: string;
-  birth_date?: string;
-  hire_date?: string;
-  occupation?: string;
-  department?: string;
-  equipment_patrimony?: string;
-  work_location?: string;
-  manager?: string;
-}
 import TrackChangesIcon from "@mui/icons-material/TrackChanges";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import WorkspacePremiumIcon from "@mui/icons-material/WorkspacePremium";
@@ -30,55 +19,134 @@ import BadgeIcon from "@mui/icons-material/Badge";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import GroupsIcon from "@mui/icons-material/Groups";
 import LocationCityIcon from "@mui/icons-material/LocationCity";
+import ApartmentIcon from "@mui/icons-material/Apartment";
+import HomeIcon from "@mui/icons-material/Home";
 import EditIcon from "@mui/icons-material/Edit";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import PersonIcon from "@mui/icons-material/Person";
 import DashboardIcon from "@mui/icons-material/Dashboard";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(true);
   const themeMode = "light";
   const theme = useMemo(() => getTheme(themeMode), [themeMode]);
   const { user, accessToken } = useAuthContext();
+  const { fetchProfileByUserId, fetchProfileByCpf, createProfile, uploadPhoto } = useUserProfile();
   const [showCreateProfile, setShowCreateProfile] = useState(false);
   const [profileData, setProfileData] = useState<UserProfilePayload>({});
   const [profileLoading, setProfileLoading] = useState(false);
 
+  // Verifica se o usuário tem permissão para criar perfil (requer ADMIN ou ADMIN_MASTER)
+  const hasAdminPermission = useMemo(() => {
+    if (!user?.roles || user.roles.length === 0) return false;
+    const adminRoles = ['ADMIN', 'ADMIN_MASTER'];
+    return user.roles.some(role => 
+      adminRoles.includes(role.toUpperCase())
+    );
+  }, [user?.roles]);
+
+  // TEMPORARIAMENTE DESABILITADO: Verificação de perfil bloqueando acesso
+  // TODO: Reativar após completar integrações e testes
   // Verifica se deve mostrar o modal de criação de perfil
   useEffect(() => {
-    if (accessToken && user) {
-      // Simula verificação se o usuário tem perfil
-      // Em produção, isso viria de uma API
-      const hasProfile = localStorage.getItem(`user_${user.id}_has_profile`);
-      if (!hasProfile) {
-        setShowCreateProfile(true);
+    setShowCreateProfile(false);
+    
+    /* CÓDIGO ORIGINAL COMENTADO - Reativar quando necessário
+    const checkUserProfile = async () => {
+      if (accessToken && user?.id) {
+        setCheckingProfile(true);
+        try {
+          // Só verificar perfil se o usuário tiver permissão de admin
+          // Caso contrário, não mostrar modal (usuário não pode criar perfil)
+          if (!hasAdminPermission) {
+            setCheckingProfile(false);
+            return;
+          }
+
+          const profile = await fetchProfileByUserId(user.id);
+          if (!profile) {
+            setShowCreateProfile(true);
+          } else {
+            setShowCreateProfile(false);
+          }
+        } catch {
+          // Em caso de erro, não mostrar modal (pode ser problema de conexão ou permissão)
+        } finally {
+          setCheckingProfile(false);
+        }
       }
-    }
-  }, [accessToken, user]);
+    };
+
+    checkUserProfile();
+    */
+  }, [accessToken, user?.id, fetchProfileByUserId, hasAdminPermission]);
 
   const handleCreateProfile = async () => {
+    if (!user?.id) {
+      throw new Error("User ID não disponível para criar perfil");
+    }
+
+    if (!hasAdminPermission) {
+      const errorMessage = "Você não tem permissão para criar perfis. Esta ação requer role ADMIN ou ADMIN_MASTER.";
+      throw new Error(errorMessage);
+    }
+
     setProfileLoading(true);
     try {
-      // Simula criação de perfil com dados mockados
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      
-      // Simula resposta da API com dados mockados
-      const mockProfileResponse = {
-        id: user?.id || 1,
+      let existingProfileByUserId = null;
+      try {
+        existingProfileByUserId = await fetchProfileByUserId(user.id);
+        
+        if (existingProfileByUserId && existingProfileByUserId.id) {
+          const errorMessage = `Já existe um perfil para este usuário (ID: ${user.id}, Perfil ID: ${existingProfileByUserId.id}). Não é possível criar outro perfil.`;
+          throw new Error(errorMessage);
+        }
+      } catch (checkError: any) {
+        if (checkError.message && (checkError.message.includes("não encontrado") || checkError.message.includes("Perfil não encontrado"))) {
+          // Perfil não existe, pode continuar
+        } else if (checkError.message && checkError.message.includes("Já existe um perfil")) {
+          throw checkError;
+        }
+      }
+
+      if (profileData.cpf) {
+        try {
+          const existingProfileByCpf = await fetchProfileByCpf(profileData.cpf);
+          
+          if (existingProfileByCpf && existingProfileByCpf.id) {
+            const errorMessage = `Já existe um perfil com este CPF (CPF: ${profileData.cpf}, Perfil ID: ${existingProfileByCpf.id}, User ID: ${existingProfileByCpf.user_id}). Não é possível criar outro perfil com o mesmo CPF.`;
+            throw new Error(errorMessage);
+          }
+        } catch (checkError: any) {
+          if (checkError.message && (checkError.message.includes("não encontrado") || checkError.message.includes("Perfil não encontrado"))) {
+            // Perfil não existe, pode continuar
+          } else if (checkError.message && checkError.message.includes("Já existe um perfil")) {
+            throw checkError;
+          }
+        }
+      }
+
+      const payload = {
+        user_id: user.id,
         ...profileData,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       };
-      
-      // Salva no localStorage (mock)
-      if (user) {
-        localStorage.setItem(`user_${user.id}_has_profile`, 'true');
-        localStorage.setItem(`user_${user.id}_profile`, JSON.stringify(mockProfileResponse));
+
+      // Criar perfil via API
+      const success = await createProfile(payload);
+
+      if (success) {
+        setShowCreateProfile(false);
+        // Limpar dados do formulário
+        setProfileData({});
+      }
+    } catch (error: any) {
+      if (error.message === "Internal server error" || error.message.includes("Internal server error")) {
+        const improvedMessage = `Erro ao criar perfil para o usuário ID ${user.id}.\n\nPossíveis causas:\n• Já existe um perfil para este usuário (constraint unique no banco)\n• Já existe um perfil com este CPF (${profileData.cpf})\n• Erro no servidor. Verifique os logs do backend.\n\nSugestão: Verifique se já existe um perfil para este usuário antes de tentar criar novamente.`;
+        throw new Error(improvedMessage);
       }
       
-      console.log('Perfil criado com sucesso (mockado):', mockProfileResponse);
-    } catch (error) {
-      console.error('Erro ao criar perfil (mockado):', error);
+      // Re-lançar o erro para que o CreateProfileModal possa capturá-lo
       throw error;
     } finally {
       setProfileLoading(false);
@@ -86,28 +154,27 @@ export default function AppLayout() {
   };
 
   const handleUploadPhoto = async (file: File) => {
-    // Simula upload de foto com dados mockados
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    
-    // Simula URL da foto enviada
-    const mockPhotoUrl = URL.createObjectURL(file);
-    
-    // Salva no localStorage (mock)
-    if (user) {
-      const profile = localStorage.getItem(`user_${user.id}_profile`);
-      if (profile) {
-        const profileData = JSON.parse(profile);
-        profileData.profile_photo = mockPhotoUrl;
-        localStorage.setItem(`user_${user.id}_profile`, JSON.stringify(profileData));
-      }
+    if (!user?.id) {
+      return;
     }
-    
-    console.log('Foto enviada com sucesso (mockado):', file.name, 'URL:', mockPhotoUrl);
+
+    try {
+      const profile = await fetchProfileByUserId(user.id);
+      if (!profile?.id) {
+        throw new Error("Perfil não encontrado. Crie o perfil primeiro.");
+      }
+
+      const url = await uploadPhoto(profile.id, file);
+      if (!url) {
+        throw new Error("Erro ao fazer upload da foto");
+      }
+    } catch (error) {
+      throw error;
+    }
   };
 
   const sidebarMenuGroups = [
     {
-      title: "Cards Gerais",
       menus: [
         {
           icon: <DashboardIcon />,
@@ -130,14 +197,14 @@ export default function AppLayout() {
           to: APP_ROUTES.MERIT_VALIDATION,
         },
         {
+          icon: <EmojiEventsIcon />,
+          label: "Resultados Mérito",
+          to: APP_ROUTES.MERIT_RESULTS,
+        },
+        {
           icon: <TaskIcon />,
           label: "Resultado das Provas",
           to: APP_ROUTES.EXAMS,
-        },
-        {
-          icon: <WorkspacePremiumIcon />,
-          label: "Resultados Mérito",
-          to: APP_ROUTES.MERIT_RESULTS,
         },
         {
           icon: <FormatListBulletedIcon />,
@@ -162,12 +229,21 @@ export default function AppLayout() {
       ],
     },
     {
-      title: "Cards de Admin",
       menus: [
         {
+          icon: <ApartmentIcon />,
+          label: "Tenant Cities",
+          to: APP_ROUTES.TENANT_CITIES,
+        },
+        {
           icon: <LocationCityIcon />,
-          label: "Cidades",
-          to: APP_ROUTES.CITIES,
+          label: "Allowed Cities",
+          to: APP_ROUTES.ALLOWED_CITIES,
+        },
+        {
+          icon: <HomeIcon />,
+          label: "Endereços",
+          to: APP_ROUTES.ADDRESSES,
         },
         {
           icon: <EditIcon />,
@@ -191,7 +267,20 @@ export default function AppLayout() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Box display="flex" height="100vh" sx={{ bgcolor: "#F3E5F5", position: "relative" }}>
+      <Box display="flex" height="100vh" sx={{ position: "relative" }}>
+        {/* Overlay para melhor legibilidade */}
+        <Box
+          sx={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            bgcolor: "rgba(255, 255, 255, 0.7)",
+            zIndex: 0,
+          }}
+        />
+
         <LayoutSidebar
           collapsed={collapsed}
           menuGroups={sidebarMenuGroups}
@@ -204,6 +293,7 @@ export default function AppLayout() {
           sx={{
             width: "100%",
             position: "relative",
+            zIndex: 1,
           }}
         >
           <Box
@@ -211,6 +301,7 @@ export default function AppLayout() {
               width: "100%",
               position: "relative",
               zIndex: 1100,
+              display: "none", // Temporariamente oculto
             }}
           >
             <Header onMenuClick={() => setCollapsed((p) => !p)} />
@@ -222,6 +313,8 @@ export default function AppLayout() {
             sx={{
               marginLeft: "60px", // Espaço para o sidebar colapsado
               width: "calc(100% - 60px)",
+              overflowX: "hidden",
+              boxSizing: "border-box",
             }}
           >
             <Outlet />

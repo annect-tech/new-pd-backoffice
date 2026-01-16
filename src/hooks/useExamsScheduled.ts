@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import type { ExamScheduled } from "../interfaces/examScheduled";
+import { examsScheduledService } from "../core/http/services/examsScheduledService";
 
 interface SnackbarState {
   open: boolean;
@@ -7,10 +8,23 @@ interface SnackbarState {
   severity: "success" | "error" | "warning" | "info";
 }
 
+interface PaginationState {
+  currentPage: number;
+  itemsPerPage: number;
+  totalItems: number;
+  totalPages: number;
+}
+
 export const useExamsScheduled = () => {
   const [exams, setExams] = useState<ExamScheduled[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState<PaginationState>({
+    currentPage: 1,
+    itemsPerPage: 10,
+    totalItems: 0,
+    totalPages: 0,
+  });
   const [snackbar, setSnackbar] = useState<SnackbarState>({
     open: false,
     message: "",
@@ -28,137 +42,62 @@ export const useExamsScheduled = () => {
     setSnackbar((prev) => ({ ...prev, open: false }));
   }, []);
 
-  const fetchExams = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // TODO: Substituir pelo endpoint real da API
-      // const response = await httpClient.get<ExamScheduled[]>(API_URL, "/exams-scheduled/");
-      
-      // Dados mockados para demonstração
-      const mockExams: ExamScheduled[] = [
-        {
-          id: 1,
-          score: 85,
-          status: "present",
-          user_data: {
-            cpf: "123.456.789-00",
-            celphone: "(11) 98765-4321",
-            user: {
-              first_name: "João",
-              last_name: "Silva",
-            },
-          },
-          exam_scheduled_hour: {
-            hour: "08:00",
-            exam_date: {
-              date: "2024-03-15",
-              local: {
-                name: "Centro de Convenções",
-              },
-            },
-          },
-        },
-        {
-          id: 2,
-          score: 90,
-          status: "present",
-          user_data: {
-            cpf: "987.654.321-00",
-            celphone: "(11) 97654-3210",
-            user: {
-              first_name: "Maria",
-              last_name: "Santos",
-            },
-          },
-          exam_scheduled_hour: {
-            hour: "08:00",
-            exam_date: {
-              date: "2024-03-15",
-              local: {
-                name: "Centro de Convenções",
-              },
-            },
-          },
-        },
-        {
-          id: 3,
-          status: "absent",
-          user_data: {
-            cpf: "456.789.123-00",
-            celphone: "(11) 96543-2109",
-            user: {
-              first_name: "Pedro",
-              last_name: "Oliveira",
-            },
-          },
-          exam_scheduled_hour: {
-            hour: "08:00",
-            exam_date: {
-              date: "2024-03-15",
-              local: {
-                name: "Centro de Convenções",
-              },
-            },
-          },
-        },
-        {
-          id: 4,
-          score: 75,
-          status: "scheduled",
-          user_data: {
-            cpf: "789.123.456-00",
-            celphone: "(11) 95432-1098",
-            user: {
-              first_name: "Ana",
-              last_name: "Costa",
-            },
-          },
-          exam_scheduled_hour: {
-            hour: "14:00",
-            exam_date: {
-              date: "2024-03-15",
-              local: {
-                name: "Auditório Principal",
-              },
-            },
-          },
-        },
-        {
-          id: 5,
-          status: "absent",
-          user_data: {
-            cpf: "321.654.987-00",
-            celphone: "(11) 94321-0987",
-            user: {
-              first_name: "Carlos",
-              last_name: "Souza",
-            },
-          },
-          exam_scheduled_hour: {
-            hour: "14:00",
-            exam_date: {
-              date: "2024-03-15",
-              local: {
-                name: "Auditório Principal",
-              },
-            },
-          },
-        },
-      ];
+  const fetchExams = useCallback(
+    async (page: number = 1, size: number = 10, search?: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await examsScheduledService.list(page, size, search);
 
-      // Simular delay da API
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      setExams(mockExams);
-      showSnackbar("Dados carregados com sucesso", "success");
-    } catch (err: any) {
-      const errorMessage = err.message || "Erro ao carregar dados";
-      setError(errorMessage);
-      showSnackbar(errorMessage, "error");
-    } finally {
-      setLoading(false);
-    }
-  }, [showSnackbar]);
+        if (response.status >= 200 && response.status < 300 && response.data) {
+          const raw = response.data as any;
+          
+          // A resposta pode vir como array direto ou como objeto com propriedade data
+          let list: any[] = [];
+          let paginationData: any = {};
+          
+          if (Array.isArray(raw)) {
+            // Se a resposta é um array direto
+            list = raw;
+            paginationData = {
+              currentPage: page,
+              itemsPerPage: size,
+              totalItems: raw.length,
+              totalPages: Math.ceil(raw.length / size),
+            };
+          } else if (Array.isArray(raw?.data)) {
+            // Se a resposta tem estrutura paginada
+            list = raw.data;
+            paginationData = {
+              currentPage: Number(raw?.currentPage ?? page),
+              itemsPerPage: Number(raw?.itemsPerPage ?? size),
+              totalItems: Number(raw?.totalItems ?? list.length),
+              totalPages: Number(raw?.totalPages ?? 0),
+            };
+          }
+
+          setExams(list);
+          setPagination(paginationData);
+          showSnackbar("Dados carregados com sucesso", "success");
+        } else {
+          setExams([]);
+          setPagination((prev) => ({ ...prev, totalItems: 0, totalPages: 0 }));
+          const errorMessage = response.message || "Erro ao carregar dados";
+          setError(errorMessage);
+          showSnackbar(errorMessage, "error");
+        }
+      } catch (err: any) {
+        setExams([]);
+        setPagination((prev) => ({ ...prev, totalItems: 0, totalPages: 0 }));
+        const errorMessage = err?.message || "Erro ao carregar dados";
+        setError(errorMessage);
+        showSnackbar(errorMessage, "error");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [showSnackbar]
+  );
 
   const handleExportCSV = useCallback(() => {
     if (exams.length === 0) {
@@ -166,15 +105,24 @@ export const useExamsScheduled = () => {
       return;
     }
 
-    const headers = ["CPF", "Nome", "Celular", "Status", "Local", "Data", "Hora"];
-    const rows = exams.map((exam) => [
-      exam.user_data.cpf,
-      `${exam.user_data.user.first_name} ${exam.user_data.user.last_name}`,
-      exam.user_data.celphone || "Não informado",
+    const headers = ["ID", "User Data ID", "CPF", "Nome", "Celular", "Status", "Local", "Data", "Hora", "Nota"];
+    const rows = exams.map((exam: any) => [
+      exam.id || "—",
+      exam.user_data_id || "—",
+      // Tenta acessar dados completos (se disponíveis), caso contrário usa fallbacks
+      exam.user_data?.cpf || "—",
+      exam.user_data?.user
+        ? `${exam.user_data.user.first_name} ${exam.user_data.user.last_name}`
+        : exam.user_data?.username || "—",
+      exam.user_data?.celphone || "Não informado",
       exam.status === "absent" ? "ausente" : exam.status === "scheduled" ? "agendado" : "presente",
-      exam.exam_scheduled_hour.exam_date.local.name,
-      exam.exam_scheduled_hour.exam_date.date,
-      exam.exam_scheduled_hour.hour,
+      exam.exam_scheduled_hour?.exam_date?.local?.name || 
+      exam.exam_schedule_info?.local_name || "—",
+      exam.exam_scheduled_hour?.exam_date?.date || 
+      exam.exam_schedule_info?.date || "—",
+      exam.exam_scheduled_hour?.hour || 
+      exam.exam_schedule_info?.hour || "—",
+      exam.score ?? "—",
     ]);
 
     const csvContent = [headers, ...rows]
@@ -213,6 +161,7 @@ export const useExamsScheduled = () => {
     exams,
     loading,
     error,
+    pagination,
     snackbar,
     closeSnackbar,
     fetchExams,

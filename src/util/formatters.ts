@@ -20,6 +20,14 @@ export const formatCpf = (value: string): string => {
 };
 
 /**
+ * Remove a máscara do CPF, retornando apenas os dígitos
+ */
+export const removeCpfMask = (value: string): string => {
+  if (!value) return '';
+  return value.replace(/\D/g, '');
+};
+
+/**
  * Formata data para exibição em português
  */
 export const formatDate = (dateString: string): string => {
