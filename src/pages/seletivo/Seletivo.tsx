@@ -129,10 +129,8 @@ const Seletivo: React.FC = () => {
       return firstName !== "admin";
     });
     
-    // Aplicar busca local se houver termo de pesquisa
     if (debouncedSearchTerm && debouncedSearchTerm.trim()) {
       const searchLower = debouncedSearchTerm.trim().toLowerCase();
-      console.log('[Seletivo] Aplicando busca local para:', searchLower);
       
       result = result.filter((u) => {
         // Buscar em CPF
@@ -157,8 +155,6 @@ const Seletivo: React.FC = () => {
         
         return false;
       });
-      
-      console.log('[Seletivo] Resultados da busca:', result.length);
     }
     
     // Aplicar filtro de status
@@ -177,9 +173,7 @@ const Seletivo: React.FC = () => {
       });
     }
     
-    // Aplicar ordenação sempre
     if (sortOrder !== "none") {
-      console.log('[Seletivo] Aplicando ordenação:', sortOrder);
       result.sort((a, b) => {
         // Usar a mesma lógica de nome da tabela
         const getFullName = (user: any) => {
@@ -194,38 +188,18 @@ const Seletivo: React.FC = () => {
         
         return finalResult;
       });
-      console.log('[Seletivo] Primeiros 3 após ordenação:', result.slice(0, 3).map(u => {
-        return [u.first_name, u.last_name].filter(Boolean).join(" ") || (u as any).name || "—";
-      }));
     }
     
     return result;
   }, [enrichedUsers, filterStatus, sortOrder, debouncedSearchTerm]);
 
-  // Debug logs
   useEffect(() => {
-    console.log('[Seletivo Debug]', {
-      totalUsers: users?.length || 0,
-      enrichedUsers: enrichedUsers?.length || 0,
-      filtered: filtered?.length || 0,
-      searchTerm,
-      debouncedSearchTerm,
-      filterStatus,
-      sortOrder,
-      page,
-      rowsPerPage
-    });
-  }, [users, enrichedUsers, filtered, searchTerm, debouncedSearchTerm, filterStatus, sortOrder, page, rowsPerPage]);
-
-  // Buscar dados completos dos usuários (incluindo endereços) quando a lista mudar
   useEffect(() => {
     const fetchUsersDetails = async () => {
       if (!users || users.length === 0) return;
       
       setLoadingAddresses(true);
       try {
-        console.log("[Seletivo] Carregando dados completos dos usuários...");
-        
         const map = new Map<number, Address[]>();
         
         // Buscar dados completos de cada usuário em paralelo
@@ -241,17 +215,14 @@ const Seletivo: React.FC = () => {
                 map.set(user.id, fullUser.addresses);
               }
             }
-          } catch (error) {
-            console.error(`[Seletivo] Erro ao buscar dados do usuário ${user.id}:`, error);
+          } catch {
           }
         });
         
         await Promise.all(promises);
         
-        console.log(`[Seletivo] ✅ Dados completos carregados. ${map.size} usuários com endereços`);
         setAddressesMap(map);
-      } catch (error) {
-        console.error("[Seletivo] Erro ao buscar dados dos usuários:", error);
+      } catch {
       } finally {
         setLoadingAddresses(false);
       }
@@ -302,7 +273,6 @@ const Seletivo: React.FC = () => {
   //   closeFilterMenu();
   // };
   const applySortOrder = (order: "asc" | "desc" | "none") => {
-    console.log('[Seletivo] Mudando ordenação para:', order);
     setSortOrder(order);
     closeFilterMenu();
   };
@@ -322,11 +292,8 @@ const Seletivo: React.FC = () => {
         setCurrentUser(response.data);
       } else {
         setCurrentUser(user);
-        // Mostrar aviso que alguns dados podem não estar disponíveis
-        console.warn("Não foi possível carregar dados completos do usuário");
       }
-    } catch (error) {
-      console.error("Erro ao carregar dados do usuário:", error);
+    } catch {
       setCurrentUser(user);
     } finally {
       setLoadingDetails(false);

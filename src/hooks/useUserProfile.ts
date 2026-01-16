@@ -116,20 +116,15 @@ export const useUserProfile = () => {
     async (userId: number) => {
       setLoading(true);
       try {
-        console.log(`[useUserProfile] Buscando perfil para userId: ${userId}`);
         const profile = await userProfileService.getByUserId(userId);
-        console.log(`[useUserProfile] Perfil encontrado:`, profile);
         
         if (profile) {
           setCurrentProfile(profile);
           return profile;
         } else {
-          console.log(`[useUserProfile] Perfil não encontrado para userId: ${userId}`);
-          // Não mostrar snackbar aqui - é esperado que o perfil não exista em alguns casos
           return null;
         }
       } catch (error: any) {
-        console.error(`[useUserProfile] Erro ao buscar perfil para userId ${userId}:`, error);
         // Não mostrar snackbar aqui - deixar o código chamador decidir
         // Re-lançar o erro para que o AppLayout possa tratá-lo
         throw error;
@@ -147,19 +142,15 @@ export const useUserProfile = () => {
     async (cpf: string) => {
       setLoading(true);
       try {
-        console.log(`[useUserProfile] Buscando perfil para CPF: ${cpf}`);
         const profile = await userProfileService.getByCpf(cpf);
-        console.log(`[useUserProfile] Perfil encontrado por CPF:`, profile);
         
         if (profile) {
           setCurrentProfile(profile);
           return profile;
         } else {
-          console.log(`[useUserProfile] Perfil não encontrado para CPF: ${cpf}`);
           return null;
         }
       } catch (error: any) {
-        console.error(`[useUserProfile] Erro ao buscar perfil para CPF ${cpf}:`, error);
         throw error;
       } finally {
         setLoading(false);
@@ -205,7 +196,6 @@ export const useUserProfile = () => {
         
         if (missingFields.length > 0) {
           const errorMessage = `Campos obrigatórios faltando: ${missingFields.join(', ')}`;
-          console.error("[useUserProfile] Validação de payload:", errorMessage);
           showSnackbar(errorMessage, "error");
           throw new Error(errorMessage);
         }
@@ -221,7 +211,6 @@ export const useUserProfile = () => {
         
         if (oversizedFields.length > 0) {
           const errorMessage = `Campos excedem o tamanho máximo permitido: ${oversizedFields.join(', ')}`;
-          console.error("[useUserProfile] Validação de tamanho:", errorMessage);
           showSnackbar(errorMessage, "error");
           throw new Error(errorMessage);
         }
@@ -229,10 +218,8 @@ export const useUserProfile = () => {
         // Limpar e formatar payload
         const cleanCpf = payload.cpf?.replace(/\D/g, '') || '';
         
-        // Validar CPF após limpeza
         if (cleanCpf.length < 11 || cleanCpf.length > 14) {
           const errorMessage = `CPF inválido. Deve ter entre 11 e 14 caracteres. Recebido: ${cleanCpf.length} caracteres.`;
-          console.error("[useUserProfile] Validação de CPF:", errorMessage);
           showSnackbar(errorMessage, "error");
           throw new Error(errorMessage);
         }
@@ -250,8 +237,7 @@ export const useUserProfile = () => {
             if (!isNaN(birthDate.getTime())) {
               cleanPayload.birth_date = birthDate.toISOString().split('T')[0];
             }
-          } catch (e) {
-            console.warn("[useUserProfile] Erro ao formatar birth_date:", e);
+          } catch {
           }
         }
 
@@ -261,8 +247,7 @@ export const useUserProfile = () => {
             if (!isNaN(hireDate.getTime())) {
               cleanPayload.hire_date = hireDate.toISOString().split('T')[0];
             }
-          } catch (e) {
-            console.warn("[useUserProfile] Erro ao formatar hire_date:", e);
+          } catch {
           }
         }
 
@@ -280,7 +265,6 @@ export const useUserProfile = () => {
         for (const field of stringFields) {
           if (cleanPayload[field] && typeof cleanPayload[field] === 'string' && cleanPayload[field].trim().length === 0) {
             const errorMessage = `Campo ${field} não pode estar vazio.`;
-            console.error("[useUserProfile] Validação de campo:", errorMessage);
             showSnackbar(errorMessage, "error");
             throw new Error(errorMessage);
           }
@@ -300,7 +284,6 @@ export const useUserProfile = () => {
         for (const [field, maxLength] of Object.entries(maxLengths)) {
           if (cleanPayload[field] && typeof cleanPayload[field] === 'string' && cleanPayload[field].length > maxLength) {
             const errorMessage = `Campo ${field} excede o tamanho máximo de ${maxLength} caracteres. Tamanho atual: ${cleanPayload[field].length}`;
-            console.error("[useUserProfile] Validação de comprimento:", errorMessage);
             showSnackbar(errorMessage, "error");
             throw new Error(errorMessage);
           }
@@ -311,26 +294,12 @@ export const useUserProfile = () => {
           const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
           if (!emailRegex.test(cleanPayload.personal_email)) {
             const errorMessage = "Email pessoal inválido.";
-            console.error("[useUserProfile] Validação de email:", errorMessage);
             showSnackbar(errorMessage, "error");
             throw new Error(errorMessage);
           }
         }
 
-        console.log("[useUserProfile] Criando perfil com payload limpo:", JSON.stringify(cleanPayload, null, 2));
-        console.log("[useUserProfile] Tipos dos campos:", Object.keys(cleanPayload).reduce((acc, key) => {
-          acc[key] = typeof cleanPayload[key];
-          return acc;
-        }, {} as Record<string, string>));
-
         const response = await userProfileService.create(cleanPayload);
-        
-        console.log("[useUserProfile] Resposta da API:", {
-          status: response.status,
-          message: response.message,
-          data: JSON.stringify(response.data, null, 2),
-          dataObject: response.data
-        });
 
         if (response.status >= 200 && response.status < 300) {
           showSnackbar("Perfil criado com sucesso!", "success");
@@ -344,19 +313,8 @@ export const useUserProfile = () => {
           if (response.status === 403) {
             errorMessage = "Sem permissão de acesso. Esta ação requer role ADMIN ou ADMIN_MASTER.";
           } 
-          // Tratamento especial para erro 500 (Internal Server Error)
           else if (response.status === 500) {
-            console.error("[useUserProfile] Erro 500 completo:", {
-              status: response.status,
-              message: response.message,
-              data: response.data,
-              payload: cleanPayload
-            });
-            
-            // Tentar extrair mensagem mais específica
             if (response.data) {
-              console.error("[useUserProfile] Dados do erro 500:", JSON.stringify(response.data, null, 2));
-              
               if (typeof response.data === 'string') {
                 errorMessage = response.data;
               } else if (response.data.message) {

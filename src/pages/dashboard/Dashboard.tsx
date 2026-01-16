@@ -13,6 +13,8 @@ import LocationCityIcon from "@mui/icons-material/LocationCity";
 import EditIcon from "@mui/icons-material/Edit";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import PersonIcon from "@mui/icons-material/Person";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import HomeIcon from "@mui/icons-material/Home";
 import DashboardCard from "../../components/ui/card/DashboardCard";
 import { APP_ROUTES } from "../../util/constants";
 import { useAuthContext } from "../../app/providers/AuthProvider";
@@ -56,14 +58,14 @@ const Dashboard: React.FC = () => {
       link: APP_ROUTES.MERIT_VALIDATION,
     },
     {
+      title: "Resultados Mérito",
+      icon: <EmojiEventsIcon sx={{ fontSize: 48 }} />,
+      link: APP_ROUTES.MERIT_RESULTS,
+    },
+    {
       title: "Resultado das Provas",
       icon: <TaskIcon sx={{ fontSize: 48 }} />,
       link: APP_ROUTES.EXAMS,
-    },
-    {
-      title: "Resultados Mérito",
-      icon: <WorkspacePremiumIcon sx={{ fontSize: 48 }} />,
-      link: APP_ROUTES.MERIT_RESULTS,
     },
     {
       title: "Resultados ENEM",
@@ -88,7 +90,7 @@ const Dashboard: React.FC = () => {
     {
       title: "Cidades",
       icon: <LocationCityIcon sx={{ fontSize: 48 }} />,
-      link: APP_ROUTES.CITIES,
+      link: APP_ROUTES.ALLOWED_CITIES,
       isAdmin: true,
     },
     {
@@ -101,6 +103,12 @@ const Dashboard: React.FC = () => {
       title: "Visualização de Documentos",
       icon: <InsertDriveFileIcon sx={{ fontSize: 48 }} />,
       link: APP_ROUTES.DOCUMENTS,
+      isAdmin: true,
+    },
+    {
+      title: "Endereços",
+      icon: <HomeIcon sx={{ fontSize: 48 }} />,
+      link: APP_ROUTES.ADDRESSES,
       isAdmin: true,
     },
     {

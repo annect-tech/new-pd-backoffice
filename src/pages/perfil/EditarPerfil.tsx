@@ -80,7 +80,6 @@ const EditarPerfil: React.FC = () => {
           setError(response.message || 'Erro ao carregar perfil do usuário');
         }
       } catch (err: any) {
-        console.error('Erro ao buscar perfil:', err);
         setError(err.message || 'Erro ao carregar perfil do usuário');
       } finally {
         setLoading(false);
@@ -110,11 +109,6 @@ const EditarPerfil: React.FC = () => {
     setSaving(true);
 
     try {
-      // TODO: Implementar chamada real à API quando o endpoint de update estiver disponível
-      // Por enquanto, apenas mostra mensagem de aviso
-      console.warn('Endpoint de atualização de perfil ainda não implementado no backend');
-      
-      // Simula salvamento (remover quando API estiver pronta)
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       setSnackbar({

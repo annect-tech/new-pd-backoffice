@@ -44,39 +44,23 @@ export const useExams = () => {
     setLoading(true);
     setError(null);
     try {
-      console.log("[useExams] Buscando exames - página:", currentPage, "tamanho:", currentSize);
       const response = await examsService.list(currentPage, currentSize);
-      
-      console.log("[useExams] Resposta recebida:", {
-        status: response.status,
-        hasData: !!response.data,
-        dataType: typeof response.data,
-        dataKeys: response.data ? Object.keys(response.data) : [],
-      });
 
       if (response.status >= 200 && response.status < 300 && response.data) {
         const examData = Array.isArray(response.data.data) ? response.data.data : [];
-        if (import.meta.env.DEV) {
-          console.log("[useExams] Exames encontrados:", examData.length);
-          if (examData.length > 0) {
-            console.log("[useExams] Primeiro exame bruto:", examData[0]);
-          }
-        }
         setExams(examData);
         setPage(response.data.currentPage || currentPage);
         setSize(response.data.itemsPerPage || currentSize);
         setTotalItems(response.data.totalItems || 0);
         setTotalPages(response.data.totalPages || 0);
-        // Não mostrar snackbar de sucesso automaticamente para não poluir a UI
+        showSnackbar("Dados carregados com sucesso", "success");
       } else {
-        console.warn("[useExams] Resposta não contém dados válidos:", response);
         setExams([]);
         const errorMessage = response.message || "Erro ao carregar exames";
         setError(errorMessage);
         showSnackbar(errorMessage, "error");
       }
     } catch (err: any) {
-      console.error("[useExams] Erro ao buscar exames:", err);
       setExams([]);
       const errorMessage = err.message || "Erro ao carregar exames";
       setError(errorMessage);
@@ -107,8 +91,6 @@ export const useExams = () => {
 
   const goToDetail = () => {
     if (selectedRowId) {
-      // TODO: Implementar navegação para detalhes
-      console.log("Ver detalhes do exame:", selectedRowId);
       handleCloseRowMenu();
     }
   };

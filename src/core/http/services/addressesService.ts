@@ -1,16 +1,56 @@
 import { httpClient } from "../httpClient";
-import type { Address } from "../../../interfaces/userProfile";
+import { store } from "../../store";
 
 const API_URL = import.meta.env.VITE_API_URL as string || "http://186.248.135.172:31535";
 
+/**
+ * Determina o prefixo de endpoint baseado nas roles do usuário
+ * @returns "admin" se usuário tem role ADMIN/ADMIN_MASTER, "user" caso contrário
+ */
+const getEndpointPrefix = (): "admin" | "user" => {
+  const state = store.getState();
+  const userRoles = state.auth.user?.roles || [];
+  
+  const hasAdminRole = userRoles.some(
+    role => role.toUpperCase() === "ADMIN" || role.toUpperCase() === "ADMIN_MASTER"
+  );
+  
+  return hasAdminRole ? "admin" : "user";
+};
+
+export interface Address {
+  id: number;
+  cep: string;
+  street: string;
+  number: string;
+  complement: string | null;
+  neighborhood: string;
+  city: string;
+  state: string;
+  country: string;
+  latitude: number | null;
+  longitude: number | null;
+  reference: string | null;
+  tenant_city_id: string;
+  is_deleted: boolean;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
+
 export interface AddressPayload {
   cep: string;
-  logradouro: string;
-  complemento?: string;
-  bairro: string;
-  localidade: string;
-  uf: string;
-  user_data_id?: number;
+  street: string;
+  number: string;
+  complement?: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  country?: string;
+  latitude?: number;
+  longitude?: number;
+  reference?: string;
+  tenant_city_id?: string;
 }
 
 export interface PaginatedResponse<T> {
@@ -21,133 +61,108 @@ export interface PaginatedResponse<T> {
   totalPages: number;
 }
 
+export interface CreateAddressResponse {
+  id: number;
+  message: string;
+  address: Address;
+}
+
+export interface UpdateAddressResponse {
+  message: string;
+  address: Address;
+}
+
+export interface DeleteAddressResponse {
+  message: string;
+}
+
 export const addressesService = {
   /**
-   * Lista todos os endereços com paginação (admin)
+   * Lista todos os endereços com paginação e filtros
    * @param page - Número da página (padrão: 1)
    * @param size - Itens por página (padrão: 10)
    * @param search - Termo de busca opcional
+   * @param filters - Filtros opcionais (city, state, neighborhood, include_deleted)
    */
-  list: (page: number = 1, size: number = 10, search?: string) => {
+  list: (
+    page: number = 1,
+    size: number = 10,
+    search?: string,
+    filters?: {
+      city?: string;
+      state?: string;
+      neighborhood?: string;
+      include_deleted?: boolean;
+    }
+  ) => {
+    const prefix = getEndpointPrefix();
     return httpClient.get<PaginatedResponse<Address>>(
       API_URL,
-      "/admin/addresses",
+      `/${prefix}/addresses`,
       {
         queryParams: {
           page,
           size,
           ...(search ? { search } : {}),
+          ...(filters?.city ? { city: filters.city } : {}),
+          ...(filters?.state ? { state: filters.state } : {}),
+          ...(filters?.neighborhood ? { neighborhood: filters.neighborhood } : {}),
+          ...(filters?.include_deleted !== undefined ? { include_deleted: filters.include_deleted } : {}),
         },
       }
     );
   },
 
   /**
-   * Obtém um endereço específico por ID (admin)
+   * Busca um endereço por ID
    * @param id - ID do endereço
    */
-  getById: (id: string | number) =>
-    httpClient.get<Address>(
+  findOne: (id: number | string) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.get<Address>(
       API_URL,
-      `/admin/addresses/${id}`
-    ),
-
-  /**
-   * Cria um novo endereço (admin)
-   * @param payload - Dados do endereço
-   */
-  create: (payload: AddressPayload) =>
-    httpClient.post<{ id: number; message: string }>(
-      API_URL,
-      "/admin/addresses",
-      payload
-    ),
-
-  /**
-   * Atualiza um endereço existente (admin)
-   * @param id - ID do endereço
-   * @param payload - Dados atualizados
-   */
-  update: (id: string | number, payload: Partial<AddressPayload>) =>
-    httpClient.patch<{ message: string }>(
-      API_URL,
-      "/admin/addresses",
-      id,
-      payload
-    ),
-
-  /**
-   * Deleta um endereço (admin)
-   * @param id - ID do endereço
-   */
-  delete: (id: string | number) =>
-    httpClient.delete<{ message: string }>(
-      API_URL,
-      "/admin/addresses",
-      id
-    ),
-
-  // ========== USER ENDPOINTS ==========
-
-  /**
-   * Lista endereços do usuário logado (user)
-   */
-  listUser: (page: number = 1, size: number = 10, search?: string) => {
-    return httpClient.get<PaginatedResponse<Address>>(
-      API_URL,
-      "/user/addresses",
-      {
-        queryParams: {
-          page,
-          size,
-          ...(search ? { search } : {}),
-        },
-      }
+      `/${prefix}/addresses/${id}`
     );
   },
 
   /**
-   * Obtém um endereço específico do usuário logado (user)
-   * @param id - ID do endereço
-   */
-  getUserById: (id: string | number) =>
-    httpClient.get<Address>(
-      API_URL,
-      `/user/addresses/${id}`
-    ),
-
-  /**
-   * Cria um novo endereço para o usuário logado (user)
+   * Cria um novo endereço
    * @param payload - Dados do endereço
    */
-  createUser: (payload: AddressPayload) =>
-    httpClient.post<{ id: number; message: string }>(
+  create: (payload: AddressPayload) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.post<CreateAddressResponse>(
       API_URL,
-      "/user/addresses",
+      `/${prefix}/addresses`,
       payload
-    ),
+    );
+  },
 
   /**
-   * Atualiza um endereço do usuário logado (user)
+   * Atualiza um endereço existente
    * @param id - ID do endereço
    * @param payload - Dados atualizados
    */
-  updateUser: (id: string | number, payload: Partial<AddressPayload>) =>
-    httpClient.patch<{ message: string }>(
+  update: (id: number | string, payload: Partial<AddressPayload>) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.patch<UpdateAddressResponse>(
       API_URL,
-      "/user/addresses",
+      `/${prefix}/addresses`,
       id,
       payload
-    ),
+    );
+  },
 
   /**
-   * Deleta um endereço do usuário logado (user)
+   * Deleta um endereço (soft delete)
    * @param id - ID do endereço
    */
-  deleteUser: (id: string | number) =>
-    httpClient.delete<{ message: string }>(
+  delete: (id: number | string) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.delete<DeleteAddressResponse>(
       API_URL,
-      "/user/addresses",
+      `/${prefix}/addresses`,
       id
-    ),
+    );
+  },
 };

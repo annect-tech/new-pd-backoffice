@@ -58,7 +58,6 @@ const Perfil: React.FC = () => {
           setError(response.message || 'Erro ao carregar perfil do usuário');
         }
       } catch (err: any) {
-        console.error('Erro ao buscar perfil:', err);
         setError(err.message || 'Erro ao carregar perfil do usuário');
       } finally {
         setLoading(false);

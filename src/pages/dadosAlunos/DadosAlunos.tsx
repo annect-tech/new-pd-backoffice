@@ -75,6 +75,8 @@ const DadosAlunos: React.FC = () => {
     loading: userDataLoading,
     pagination: userDataPagination,
     fetchUsers,
+    snackbar: hookSnackbar,
+    closeSnackbar: closeHookSnackbar,
   } = useSelective();
 
   const [items, setItems] = useState<StudentRow[]>([]);
@@ -135,8 +137,7 @@ const DadosAlunos: React.FC = () => {
           
           setStudentDataMap(map);
         }
-      } catch (error) {
-        console.error("Erro ao buscar student_data:", error);
+      } catch {
       } finally {
         setLoadingStudentData(false);
       }
@@ -786,13 +787,29 @@ const DadosAlunos: React.FC = () => {
         agents={MOCK_AGENTS}
       />
 
-      {/* Snackbar */}
+      {/* Snackbar local */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
         message={snackbar.message}
       />
+
+      {/* Snackbar do hook useSelective */}
+      <Snackbar
+        open={hookSnackbar.open}
+        autoHideDuration={3000}
+        onClose={closeHookSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={closeHookSnackbar}
+          severity={hookSnackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {hookSnackbar.message}
+        </Alert>
+      </Snackbar>
 
       {viewerUrl && null}
     </Box>

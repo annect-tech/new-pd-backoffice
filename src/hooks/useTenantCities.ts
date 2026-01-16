@@ -61,6 +61,7 @@ export const useTenantCities = () => {
             totalItems: Number(raw?.totalItems ?? list.length),
             totalPages: Number(raw?.totalPages ?? 0),
           });
+          showSnackbar("Dados carregados com sucesso", "success");
         } else {
           setTenantCities([]);
           setPagination((prev) => ({ ...prev, totalItems: 0, totalPages: 0 }));

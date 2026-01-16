@@ -31,6 +31,8 @@ export const APP_ROUTES = {
   RETENTION: "/retencao",
   CITIES: "/cidades",
   TENANT_CITIES: "/tenant-cities",
+  ALLOWED_CITIES: "/allowed-cities",
+  ADDRESSES: "/enderecos",
   CONTRACTS: "/contratos",
   EXAM_DATES: "/datas-prova",
   DOCUMENTS: "/documentos",

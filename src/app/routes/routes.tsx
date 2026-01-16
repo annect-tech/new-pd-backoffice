@@ -12,9 +12,9 @@ import ResultadosEnem from "../../pages/resultadosEnem/ResultadosEnem";
 import DadosAlunos from "../../pages/dadosAlunos/DadosAlunos";
 import CadastroAlunos from "../../pages/cadastroAlunos/CadastroAlunos";
 import Retencao from "../../pages/retencao/Retencao";
-import Cidades from "../../pages/cidades/Cidades";
-import DiagnosticoCidades from "../../pages/cidades/DiagnosticoCidades";
 import TenantCities from "../../pages/tenantCities/TenantCities";
+import AllowedCities from "../../pages/allowedCities/AllowedCities";
+import Addresses from "../../pages/addresses/Addresses";
 import Contratos from "../../pages/contratos/Contratos";
 import Documentos from "../../pages/documentos/Documentos";
 import Usuarios from "../../pages/usuarios/Usuarios";
@@ -57,28 +57,24 @@ export const AppRoutes = () => (
 
       {/* Rotas dos Cards de Admin */}
       <Route
-        path={APP_ROUTES.CITIES}
-        element={
-          <RoleGuard allowedRoles={["ADMIN", "ADMIN_MASTER"]}>
-            <Cidades />
-          </RoleGuard>
-        }
-      />
-      <Route
-        path="/diagnostico-cidades"
-        element={
-          <RoleGuard allowedRoles={["ADMIN", "ADMIN_MASTER"]}>
-            <DiagnosticoCidades />
-          </RoleGuard>
-        }
-      />
-      <Route
         path={APP_ROUTES.TENANT_CITIES}
         element={
           <RoleGuard allowedRoles={["ADMIN", "ADMIN_MASTER"]}>
             <TenantCities />
           </RoleGuard>
         }
+      />
+      <Route
+        path={APP_ROUTES.ALLOWED_CITIES}
+        element={
+          <RoleGuard allowedRoles={["ADMIN", "ADMIN_MASTER"]}>
+            <AllowedCities />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path={APP_ROUTES.ADDRESSES}
+        element={<Addresses />}
       />
       <Route
         path={APP_ROUTES.CONTRACTS}

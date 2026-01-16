@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -31,10 +31,58 @@ const AprovacaoMerito: React.FC = () => {
     closeSnackbar,
   } = useAcademicMerit();
 
+  const [documentError, setDocumentError] = useState(false);
+  const [documentLoading, setDocumentLoading] = useState(true);
+
   useEffect(() => {
     fetchMerits(1, 10, "pending");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Verificar se o documento existe quando mudar de documento
+  useEffect(() => {
+    if (currentMerit?.document) {
+      setDocumentError(false);
+      setDocumentLoading(true);
+      
+      // Verificar se o documento existe fazendo uma requisição HEAD
+      const checkDocument = async () => {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos timeout
+          
+          const response = await fetch(currentMerit.document, {
+            method: 'HEAD',
+            signal: controller.signal,
+          });
+          
+          clearTimeout(timeoutId);
+          
+          if (!response.ok || response.status === 404) {
+            setDocumentError(true);
+            setDocumentLoading(false);
+            return;
+          }
+          
+          const contentType = response.headers.get('content-type');
+          if (contentType && !contentType.includes('pdf') && !contentType.includes('application/pdf')) {
+            // Não marcar como erro, pode ser que funcione mesmo assim
+          }
+          
+          setDocumentLoading(false);
+        } catch {
+          // Em caso de erro CORS, tentar carregar mesmo assim
+          // O iframe pode conseguir carregar mesmo com CORS
+          setDocumentLoading(false);
+        }
+      };
+      
+      checkDocument();
+    } else {
+      setDocumentError(true);
+      setDocumentLoading(false);
+    }
+  }, [currentMerit?.id, currentMerit?.document]);
 
   if (loading) {
     return (
@@ -261,16 +309,103 @@ const AprovacaoMerito: React.FC = () => {
                   </Box>
                 </Box>
                 <Box sx={{ flex: 1, position: "relative", bgcolor: "#FAFAFA" }}>
-                  <iframe
-                    src={currentMerit.document}
-                    title="Documento de Mérito"
-                    width="100%"
-                    height="100%"
-                    style={{ border: "none" }}
-                    onError={(e) => {
-                      console.error("Erro ao carregar PDF:", e);
-                    }}
-                  />
+                  {documentError || !currentMerit.document ? (
+                    <Box
+                      sx={{
+                        height: "100%",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        p: 4,
+                        textAlign: "center",
+                      }}
+                    >
+                      <Alert severity="error" sx={{ mb: 2, maxWidth: 500 }}>
+                        <Typography variant="h6" gutterBottom>
+                          Documento não encontrado
+                        </Typography>
+                        <Typography variant="body2">
+                          O arquivo do documento não está disponível ou foi removido.
+                        </Typography>
+                        {currentMerit.document && (
+                          <Typography variant="body2" sx={{ mt: 1, fontSize: "0.75rem", color: "text.secondary" }}>
+                            URL: {currentMerit.document.substring(0, 80)}...
+                          </Typography>
+                        )}
+                      </Alert>
+                      <Button
+                        variant="outlined"
+                        onClick={() => {
+                          setDocumentError(false);
+                          setDocumentLoading(true);
+                        }}
+                        sx={{ mt: 2 }}
+                      >
+                        Tentar novamente
+                      </Button>
+                    </Box>
+                  ) : (
+                    <>
+                      {documentLoading && (
+                        <Box
+                          sx={{
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            bgcolor: "rgba(255, 255, 255, 0.9)",
+                            zIndex: 1,
+                          }}
+                        >
+                          <CircularProgress />
+                        </Box>
+                      )}
+                      <iframe
+                        key={currentMerit.id}
+                        src={documentError ? undefined : currentMerit.document}
+                        title="Documento de Mérito"
+                        width="100%"
+                        height="100%"
+                        style={{ border: "none", display: documentError ? "none" : "block" }}
+                        onLoad={() => {
+                          setDocumentLoading(false);
+                        }}
+                        onError={() => {
+                          setDocumentError(true);
+                          setDocumentLoading(false);
+                        }}
+                      />
+                      {/* Botão para abrir em nova aba caso o iframe não carregue */}
+                      <Box
+                        sx={{
+                          position: "absolute",
+                          top: 8,
+                          right: 8,
+                          zIndex: 2,
+                        }}
+                      >
+                        <Button
+                          variant="contained"
+                          size="small"
+                          onClick={() => window.open(currentMerit.document, "_blank")}
+                          sx={{
+                            bgcolor: "rgba(0, 0, 0, 0.6)",
+                            color: "white",
+                            "&:hover": {
+                              bgcolor: "rgba(0, 0, 0, 0.8)",
+                            },
+                          }}
+                        >
+                          Abrir em nova aba
+                        </Button>
+                      </Box>
+                    </>
+                  )}
                 </Box>
               </Paper>
 

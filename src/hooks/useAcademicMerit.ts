@@ -43,32 +43,37 @@ export const useAcademicMerit = () => {
     // Garantir que os parâmetros são números
     const pageNum = typeof page === 'number' ? page : 1;
     const sizeNum = typeof size === 'number' ? size : 10;
+    const statusFilter = status || "pending";
     
     setLoading(true);
     setError(null);
     try {
-      console.log("[useAcademicMerit] fetchMerits - página:", pageNum, "tamanho:", sizeNum, "status:", status || "pending");
-      // Use paginated list filtered by pending status
-      const response = await academicMeritService.list(pageNum, sizeNum, status || "pending");
-      
-      console.log("[useAcademicMerit] Resposta fetchMerits:", {
-        status: response.status,
-        hasData: !!response.data,
-        dataType: typeof response.data,
-      });
+      const response = await academicMeritService.list(pageNum, 100, undefined);
 
       if (response.status >= 200 && response.status < 300 && response.data) {
         const raw = response.data as any;
-        const list = Array.isArray(raw?.data) ? raw.data : Array.isArray(raw) ? raw : [];
+        let list: AcademicMerit[] = [];
+        if (Array.isArray(raw)) {
+          list = raw;
+        } else if (Array.isArray(raw?.data)) {
+          list = raw.data;
+        }
+        
+        if (statusFilter === "pending") {
+          list = list.filter((doc: AcademicMerit) => doc.status === "PENDING");
+        } else if (statusFilter) {
+          list = list.filter((doc: AcademicMerit) => doc.status?.toUpperCase() === statusFilter.toUpperCase());
+        }
         
         setMerits(list);
         setPagination({
-          currentPage: Number(raw?.currentPage ?? page),
-          itemsPerPage: Number(raw?.itemsPerPage ?? size),
-          totalItems: Number(raw?.totalItems ?? list.length),
-          totalPages: Number(raw?.totalPages ?? 0),
+          currentPage: 1,
+          itemsPerPage: list.length,
+          totalItems: list.length,
+          totalPages: 1,
         });
         setCurrentIndex(0);
+        showSnackbar("Dados carregados com sucesso", "success");
       } else {
         setMerits([]);
         setPagination((prev) => ({ ...prev, totalItems: 0, totalPages: 0 }));
@@ -114,6 +119,7 @@ export const useAcademicMerit = () => {
         }
         
         setAllMerits(list);
+        showSnackbar("Dados carregados com sucesso", "success");
       } else {
         setAllMerits([]);
         const errorMessage = response.message || "Erro ao carregar documentos";
@@ -151,9 +157,20 @@ export const useAcademicMerit = () => {
   const approveCurrent = useCallback(async () => {
     if (!currentMerit) return;
 
+    // Validar se tem user_data_id
+    if (!currentMerit.user_data_id) {
+      const errorMessage = "Documento não possui user_data_id válido. Não é possível aprovar.";
+      setError(errorMessage);
+      showSnackbar(errorMessage, "error");
+      return;
+    }
+
     setActionLoading(true);
     try {
-      const response = await academicMeritService.approve(currentMerit.id);
+      const response = await academicMeritService.approve(
+        currentMerit.id,
+        currentMerit.user_data_id
+      );
 
       if (response.status >= 200 && response.status < 300) {
         showSnackbar("Documento aprovado com sucesso", "success");
@@ -171,14 +188,25 @@ export const useAcademicMerit = () => {
     } finally {
       setActionLoading(false);
     }
-  }, [currentMerit, fetchMerits]);
+  }, [currentMerit, fetchMerits, pagination, showSnackbar]);
 
   const recuseCurrent = useCallback(async () => {
     if (!currentMerit) return;
 
+    // Validar se tem user_data_id
+    if (!currentMerit.user_data_id) {
+      const errorMessage = "Documento não possui user_data_id válido. Não é possível reprovar.";
+      setError(errorMessage);
+      showSnackbar(errorMessage, "error");
+      return;
+    }
+
     setActionLoading(true);
     try {
-      const response = await academicMeritService.reject(currentMerit.id);
+      const response = await academicMeritService.reject(
+        currentMerit.id,
+        currentMerit.user_data_id
+      );
 
       if (response.status >= 200 && response.status < 300) {
         showSnackbar("Documento reprovado com sucesso", "success");

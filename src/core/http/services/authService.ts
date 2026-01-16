@@ -9,10 +9,6 @@ import { httpClient } from "../httpClient";
 
 const API_URL = import.meta.env.VITE_API_URL as string || "http://186.248.135.172:31535";
 
-// Debug: verificar qual URL está sendo usada
-console.log("[authService] API_URL configurada:", API_URL);
-console.log("[authService] VITE_API_URL do env:", import.meta.env.VITE_API_URL);
-
 export const authService = {
   login: (payload: LoginPayload) =>
     httpClient.post<LoginResponse>(API_URL, ENDPOINTS.AUTH.LOGIN, payload),

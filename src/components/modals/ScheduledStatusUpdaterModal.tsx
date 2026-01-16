@@ -50,8 +50,7 @@ const ScheduledStatusUpdaterModal: React.FC<ScheduledStatusUpdaterModalProps> = 
         setNewStatus("scheduled");
         setSuccess(false);
       }, 1500);
-    } catch (error) {
-      console.error("Erro ao atualizar status:", error);
+    } catch {
     } finally {
       setLoading(false);
     }

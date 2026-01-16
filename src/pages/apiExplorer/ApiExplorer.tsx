@@ -156,18 +156,14 @@ const ApiExplorer: React.FC = () => {
         }
       });
 
-      console.log(`[ApiExplorer] Executando ${selectedEndpoint.method} ${finalPath}`, queryParams);
-
       let result = await httpClient.get(
         API_URL,
         finalPath,
         Object.keys(queryParams).length > 0 ? { queryParams } : undefined
       );
 
-      // Se receber 403 (Forbidden) e for endpoint /admin/*, tentar automaticamente /user/*
       if (result.status === 403 && finalPath.startsWith('/admin/')) {
         const userPath = finalPath.replace('/admin/', '/user/');
-        console.log(`[ApiExplorer] ⚠️ Erro 403 em ${finalPath}, tentando fallback para ${userPath}`);
         
         const fallbackResult = await httpClient.get(
           API_URL,
@@ -176,17 +172,11 @@ const ApiExplorer: React.FC = () => {
         );
         
         if (fallbackResult.status >= 200 && fallbackResult.status < 300) {
-          console.log(`[ApiExplorer] ✅ Fallback bem-sucedido! Usando ${userPath}`);
           result = fallbackResult;
           setError(`⚠️ Endpoint ${finalPath} retornou 403 (Sem permissão). Usando ${userPath} como alternativa.`);
-        } else {
-          console.log(`[ApiExplorer] ❌ Fallback também falhou`);
         }
       }
 
-      console.log(`[ApiExplorer] Resposta:`, result);
-      
-      // Se ainda tiver erro, mostrar mensagem
       if (result.status >= 400) {
         const errorMsg = result.data?.message || result.message || `Erro ${result.status}`;
         setError(errorMsg);
@@ -195,7 +185,6 @@ const ApiExplorer: React.FC = () => {
         setResponse(result.data);
       }
     } catch (err: any) {
-      console.error(`[ApiExplorer] Erro:`, err);
       setError(err.message || "Erro ao executar requisição");
     } finally {
       setLoading(false);

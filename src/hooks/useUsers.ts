@@ -11,6 +11,12 @@ export interface UserWithProfile extends UserResponse {
   profile?: UserProfileResponse;
 }
 
+interface SnackbarState {
+  open: boolean;
+  message: string;
+  severity: "success" | "error" | "warning" | "info";
+}
+
 export function useUsers(page: number = 1, size: number = 10) {
   const [users, setUsers] = useState<UserWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -19,6 +25,22 @@ export function useUsers(page: number = 1, size: number = 10) {
   const [totalPages, setTotalPages] = useState(0);
   const [creating, setCreating] = useState(false);
   const [toggling, setToggling] = useState(false);
+  const [snackbar, setSnackbar] = useState<SnackbarState>({
+    open: false,
+    message: "",
+    severity: "info",
+  });
+
+  const showSnackbar = useCallback(
+    (message: string, severity: SnackbarState["severity"] = "info") => {
+      setSnackbar({ open: true, message, severity });
+    },
+    []
+  );
+
+  const closeSnackbar = useCallback(() => {
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  }, []);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -51,14 +73,16 @@ export function useUsers(page: number = 1, size: number = 10) {
       setUsers(usersWithProfiles);
       setTotal(meta?.total || 0);
       setTotalPages(meta?.totalPages || 0);
+      showSnackbar("Dados carregados com sucesso", "success");
     } catch (err: any) {
-      console.error("[useUsers] Erro ao buscar usuários:", err);
-      setError(err.message || "Erro ao carregar usuários");
+      const errorMessage = err.message || "Erro ao carregar usuários";
+      setError(errorMessage);
       setUsers([]);
+      showSnackbar(errorMessage, "error");
     } finally {
       setLoading(false);
     }
-  }, [page, size]);
+  }, [page, size, showSnackbar]);
 
   const createUser = useCallback(async (payload: CreateUserPayload): Promise<CreateUserResponse | null> => {
     setCreating(true);
@@ -97,7 +121,6 @@ export function useUsers(page: number = 1, size: number = 10) {
         throw new Error(errorMessage);
       }
     } catch (err: any) {
-      console.error("[useUsers] Erro ao criar usuário:", err);
       const errorMessage = err.message || "Erro ao criar usuário";
       setError(errorMessage);
       // Re-lançar o erro para que o componente possa capturá-lo
@@ -122,7 +145,6 @@ export function useUsers(page: number = 1, size: number = 10) {
         throw new Error(response.message || "Erro ao alterar status do usuário");
       }
     } catch (err: any) {
-      console.error("[useUsers] Erro ao alterar status do usuário:", err);
       setError(err.message || "Erro ao alterar status do usuário");
       return false;
     } finally {
@@ -142,6 +164,8 @@ export function useUsers(page: number = 1, size: number = 10) {
     totalPages,
     creating,
     toggling,
+    snackbar,
+    closeSnackbar,
     refetch: fetchUsers,
     createUser,
     toggleUserActive,
@@ -158,8 +182,6 @@ export function useMyProfile() {
     setError(null);
     
     try {
-      console.log("[useMyProfile] Buscando perfil para userId:", userId);
-      
       if (!userId) {
         setError("ID do usuário não encontrado");
         setLoading(false);
@@ -168,18 +190,13 @@ export function useMyProfile() {
       
       const profileData = await usersService.getMyProfile(userId);
       
-      console.log("[useMyProfile] Dados do perfil recebidos:", profileData);
-      
       if (profileData) {
         setProfile(profileData);
       } else {
-        // Não é um erro crítico - o usuário pode simplesmente não ter perfil criado ainda
-        console.log("[useMyProfile] Perfil não encontrado - usuário pode não ter perfil criado");
-        setError(null); // Não definir erro, apenas deixar profile como null
+        setError(null);
         setProfile(null);
       }
     } catch (err: any) {
-      console.error("[useMyProfile] Erro ao buscar perfil:", err);
       setError(err.message || "Erro ao carregar perfil");
     } finally {
       setLoading(false);

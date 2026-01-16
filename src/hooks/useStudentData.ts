@@ -72,7 +72,6 @@ export const useStudentData = () => {
           );
         }
       } catch (error: any) {
-        console.error("Erro ao buscar alunos:", error);
         setStudents([]);
         setPagination((prev) => ({ ...prev, totalItems: 0, totalPages: 0 }));
         showSnackbar(

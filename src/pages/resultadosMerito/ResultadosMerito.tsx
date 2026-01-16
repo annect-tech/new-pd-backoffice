@@ -155,8 +155,6 @@ const ResultadosMerito: React.FC = () => {
           .map(id => String(id))
       )];
       
-      console.log("[ResultadosMerito] Buscando nomes para user_ids:", uniqueUserIds);
-      
       if (uniqueUserIds.length === 0) {
         setLoadingNames(false);
         return;
@@ -165,42 +163,27 @@ const ResultadosMerito: React.FC = () => {
       const namesMap: Record<string, string> = {};
 
       try {
-        // Buscar nomes em paralelo
         const promises = uniqueUserIds.map(async (userId) => {
           try {
-            console.log(`[ResultadosMerito] Buscando nome para user_id: ${userId}`);
             const response = await selectiveService.getById(userId);
-            console.log(`[ResultadosMerito] Resposta para user_id ${userId}:`, {
-              status: response.status,
-              hasData: !!response.data,
-              data: response.data,
-            });
             
             if (response.status === 200 && response.data) {
-              // A API retorna FindUserDataOutputDto com campo 'name'
               const userData = response.data as any;
               const name = userData.name && userData.name !== 'N/A' 
                 ? userData.name 
                 : `Usuário ${userId}`;
-              console.log(`[ResultadosMerito] Nome encontrado para ${userId}:`, name);
               namesMap[userId] = name;
             } else {
-              // Se status não for 200 (ex: 404), usar fallback
-              console.warn(`[ResultadosMerito] Resposta inválida para ${userId} (status: ${response.status})`);
               namesMap[userId] = `Usuário ${userId}`;
             }
-          } catch (err) {
-            // Se falhar, usar fallback
-            console.error(`[ResultadosMerito] Erro ao buscar nome do usuário ${userId}:`, err);
+          } catch {
             namesMap[userId] = `Usuário ${userId}`;
           }
         });
 
         await Promise.all(promises);
-        console.log("[ResultadosMerito] Mapa de nomes final:", namesMap);
         setUserNamesMap(namesMap);
-      } catch (err) {
-        console.error("[ResultadosMerito] Erro ao buscar nomes dos usuários:", err);
+      } catch {
       } finally {
         setLoadingNames(false);
       }

@@ -168,13 +168,9 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
         }),
       };
       
-      console.log("[CreateUserModal] Payload a ser enviado:", payload);
-      
       await onCreateUser(payload);
       onClose();
     } catch (error: any) {
-      console.error("[CreateUserModal] Erro ao criar usuário:", error);
-      // Exibir mensagem de erro mais detalhada
       const errorMessage = error.message || "Erro ao criar usuário";
       setFormError(errorMessage);
     }

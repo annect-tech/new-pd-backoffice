@@ -48,7 +48,7 @@ export const useEnemResults = () => {
           setSize(response.data.itemsPerPage || s);
           setTotalItems(response.data.totalItems || 0);
           setTotalPages(response.data.totalPages || 0);
-          // Não mostrar snackbar de sucesso automaticamente para não poluir a UI
+          showSnackbar("Dados carregados com sucesso", "success");
           return;
         }
 

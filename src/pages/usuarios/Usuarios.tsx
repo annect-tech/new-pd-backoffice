@@ -17,6 +17,7 @@ import {
   Switch,
   FormControlLabel,
   Tooltip,
+  Snackbar,
 } from "@mui/material";
 import { Search as SearchIcon, Refresh as RefreshIcon, Add as AddIcon } from "@mui/icons-material";
 import PageHeader from "../../components/ui/page/PageHeader";
@@ -33,7 +34,7 @@ export default function UserList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const navigate = useNavigate();
-  const { users, loading, error, refetch, createUser, creating, toggleUserActive, toggling } = useUsers(1, 100);
+  const { users, loading, error, refetch, createUser, creating, toggleUserActive, toggling, snackbar, closeSnackbar } = useUsers(1, 100);
 
   const filteredUsers = users.filter((user) => {
     const firstName = user.first_name || "";
@@ -372,6 +373,22 @@ export default function UserList() {
         onCreateUser={handleCreateUser}
         onClose={() => setCreateModalOpen(false)}
       />
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={closeSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={closeSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

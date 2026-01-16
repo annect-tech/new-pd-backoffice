@@ -107,6 +107,16 @@ export const usersService = {
   },
 
   /**
+   * Obtém um usuário específico por ID
+   * Requer role ADMIN ou ADMIN_MASTER
+   */
+  getUserById: (id: number | string) =>
+    httpClient.get<UserResponse>(
+      API_URL,
+      `/admin/users/${id}`
+    ),
+
+  /**
    * Cria um novo usuário
    * Requer role ADMIN ou ADMIN_MASTER
    */
@@ -163,70 +173,36 @@ export const usersService = {
    */
   getMyProfile: async (userId: number): Promise<UserProfileResponse | null> => {
     try {
-      console.log("[usersService] Buscando perfil para userId:", userId, "tipo:", typeof userId);
-      
-      // Busca todos os perfis e filtra pelo user_id no frontend
-      // Como não há endpoint específico, buscamos todos e filtramos
       const response = await usersService.listProfiles(1, 1000);
       
-      console.log("[usersService] Resposta completa da API:", JSON.stringify(response, null, 2));
-      console.log("[usersService] Status:", response.status);
-      console.log("[usersService] Data:", response.data);
-      
-      // Verifica diferentes formatos de resposta
       let profiles: UserProfileResponse[] = [];
       
       if (response.status === 200) {
-        // Tenta diferentes formatos de resposta
         if (Array.isArray(response.data)) {
-          // Se a resposta é um array direto
           profiles = response.data;
         } else if (response.data?.data && Array.isArray(response.data.data)) {
-          // Se a resposta tem estrutura { data: [...], meta: {...} }
           profiles = response.data.data;
         } else if (response.data?.results && Array.isArray(response.data.results)) {
-          // Se a resposta tem estrutura { results: [...] }
           profiles = response.data.results;
         }
-        
-        console.log("[usersService] Total de perfis encontrados:", profiles.length);
-        console.log("[usersService] Perfis:", profiles);
         
         if (profiles.length > 0) {
           const profile = profiles.find(
             (p) => {
-              // Compara convertendo ambos para número para evitar problemas de tipo
               const profileUserId = typeof p.user_id === 'string' ? parseInt(p.user_id, 10) : Number(p.user_id);
               const searchUserId = typeof userId === 'string' ? parseInt(userId, 10) : Number(userId);
-              console.log("[usersService] Comparando perfil:", {
-                profileUserId,
-                searchUserId,
-                profileUserIdType: typeof profileUserId,
-                searchUserIdType: typeof searchUserId,
-                match: profileUserId === searchUserId
-              });
               return profileUserId === searchUserId;
             }
           );
           
           if (profile) {
-            console.log("[usersService] ✅ Perfil encontrado:", profile);
             return profile;
-          } else {
-            console.log("[usersService] ❌ Perfil não encontrado para userId:", userId);
-            console.log("[usersService] User IDs disponíveis:", profiles.map(p => p.user_id));
           }
-        } else {
-          console.log("[usersService] Nenhum perfil retornado pela API");
         }
-      } else {
-        console.log("[usersService] Status da resposta não é 200:", response.status);
-        console.log("[usersService] Mensagem:", response.message);
       }
       
       return null;
-    } catch (error) {
-      console.error("[usersService] Erro ao buscar perfil do usuário:", error);
+    } catch {
       return null;
     }
   },

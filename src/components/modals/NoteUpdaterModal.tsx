@@ -57,8 +57,7 @@ const NoteUpdaterModal: React.FC<NoteUpdaterModalProps> = ({
         setNewScore("");
         setSuccess(false);
       }, 1500);
-    } catch (error) {
-      console.error("Erro ao atualizar nota:", error);
+    } catch {
     } finally {
       setLoading(false);
     }

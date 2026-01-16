@@ -71,14 +71,8 @@ const MeuPerfil: React.FC = () => {
   });
 
   useEffect(() => {
-    console.log("[MeuPerfil] User do contexto:", user);
-    console.log("[MeuPerfil] User ID:", user?.id);
-    
     if (user?.id) {
-      console.log("[MeuPerfil] Buscando perfil para userId:", user.id);
       fetchMyProfile(user.id);
-    } else {
-      console.log("[MeuPerfil] User ID não disponível");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);

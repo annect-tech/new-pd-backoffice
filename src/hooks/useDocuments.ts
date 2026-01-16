@@ -64,6 +64,7 @@ export const useDocuments = () => {
             totalItems: response.data.totalItems || 0,
             totalPages: response.data.totalPages || 0,
           });
+          showSnackbar("Dados carregados com sucesso", "success");
         } else {
           setDocuments([]);
           showSnackbar(

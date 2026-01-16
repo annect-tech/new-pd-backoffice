@@ -84,24 +84,16 @@ export const userProfileService = {
    * @param userId - ID do usuário
    */
   getByUserId: async (userId: number): Promise<UserProfile | null> => {
-    console.log(`[userProfileService] Buscando perfil para userId: ${userId}`);
-    
     const response = await httpClient.get<PaginatedResponse<UserProfile>>(
       API_URL,
       "/admin/user-profiles",
       {
         queryParams: {
           page: 1,
-          size: 1000, // Buscar muitos para garantir que encontre
+          size: 1000,
         },
       }
     );
-
-    console.log(`[userProfileService] Resposta da busca de perfis:`, {
-      status: response.status,
-      hasData: !!response.data,
-      dataLength: response.data?.data?.length || 0
-    });
 
     if (response.status === 200 && response.data?.data) {
       const profile = response.data.data.find((p) => {
@@ -111,18 +103,10 @@ export const userProfileService = {
       });
       
       if (profile) {
-        console.log(`[userProfileService] ✅ Perfil encontrado:`, profile);
         return profile;
       } else {
-        console.log(`[userProfileService] ❌ Perfil não encontrado para userId: ${userId}`);
-        console.log(`[userProfileService] User IDs disponíveis:`, response.data.data.map(p => p.user_id));
         return null;
       }
-    }
-
-    // Se status não for 200, logar mas não lançar erro (pode ser problema de permissão, etc)
-    if (response.status !== 200) {
-      console.warn(`[userProfileService] Status não é 200 ao buscar perfis: ${response.status}`, response.message);
     }
 
     return null;
@@ -133,9 +117,7 @@ export const userProfileService = {
    * @param cpf - CPF do usuário (com ou sem formatação)
    */
   getByCpf: async (cpf: string): Promise<UserProfile | null> => {
-    // Remove formatação do CPF para busca
     const cleanCpf = cpf.replace(/\D/g, '');
-    console.log(`[userProfileService] Buscando perfil para CPF: ${cleanCpf} (original: ${cpf})`);
     
     const response = await httpClient.get<PaginatedResponse<UserProfile>>(
       API_URL,
@@ -143,16 +125,10 @@ export const userProfileService = {
       {
         queryParams: {
           page: 1,
-          size: 1000, // Buscar muitos para garantir que encontre
+          size: 1000,
         },
       }
     );
-
-    console.log(`[userProfileService] Resposta da busca de perfis por CPF:`, {
-      status: response.status,
-      hasData: !!response.data,
-      dataLength: response.data?.data?.length || 0
-    });
 
     if (response.status === 200 && response.data?.data) {
       const profile = response.data.data.find((p) => {
@@ -162,18 +138,10 @@ export const userProfileService = {
       });
       
       if (profile) {
-        console.log(`[userProfileService] ✅ Perfil encontrado por CPF:`, profile);
         return profile;
       } else {
-        console.log(`[userProfileService] ❌ Perfil não encontrado para CPF: ${cleanCpf}`);
-        console.log(`[userProfileService] CPFs disponíveis:`, response.data.data.filter(p => p.cpf).map(p => p.cpf));
         return null;
       }
-    }
-
-    // Se status não for 200, logar mas não lançar erro (pode ser problema de permissão, etc)
-    if (response.status !== 200) {
-      console.warn(`[userProfileService] Status não é 200 ao buscar perfis por CPF: ${response.status}`, response.message);
     }
 
     return null;

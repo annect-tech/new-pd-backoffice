@@ -164,9 +164,6 @@ const ResultadoProvas: React.FC = () => {
     ];
 
     if (uniqueUserIds.length === 0) {
-      if (import.meta.env.DEV) {
-        console.log("[ResultadoProvas] Nenhum user_data_id encontrado nos exames");
-      }
       return;
     }
 
@@ -174,18 +171,12 @@ const ResultadoProvas: React.FC = () => {
       setLoadingUsers(true);
       const map: Record<string, { name?: string; cpf?: string }> = {};
       
-      if (import.meta.env.DEV) {
-        console.log(`[ResultadoProvas] Buscando dados de ${uniqueUserIds.length} usuários...`);
-      }
-      
       try {
-        // Buscar todos os usuários do sistema
         const resp = await usersService.listAllUsers(1, 1000);
         
         if (resp.status === 200 && resp.data) {
           let users: any[] = [];
           
-          // Verificar diferentes formatos de resposta
           if (Array.isArray(resp.data)) {
             users = resp.data;
           } else if (resp.data?.data && Array.isArray(resp.data.data)) {
@@ -194,11 +185,6 @@ const ResultadoProvas: React.FC = () => {
             users = resp.data.results;
           }
           
-          if (import.meta.env.DEV) {
-            console.log(`[ResultadoProvas] ${users.length} usuários retornados da API`);
-          }
-          
-          // Criar mapa de usuários
           uniqueUserIds.forEach((userId) => {
             const user = users.find((u) => String(u.id) === userId);
             
@@ -211,32 +197,12 @@ const ResultadoProvas: React.FC = () => {
                 name: fullName || user.username || undefined,
                 cpf: user.cpf || undefined,
               };
-              
-              if (import.meta.env.DEV) {
-                console.log(`[ResultadoProvas] ✓ Dados do usuário ${userId}:`, map[userId]);
-              }
-            } else {
-              if (import.meta.env.DEV) {
-                console.warn(`[ResultadoProvas] ✗ Usuário ${userId} não encontrado na lista`);
-              }
             }
           });
-          
-          if (import.meta.env.DEV) {
-            console.log(`[ResultadoProvas] Busca concluída: ${Object.keys(map).length}/${uniqueUserIds.length} usuários encontrados`);
-            console.log("[ResultadoProvas] Mapa de usuários:", map);
-          }
-        } else {
-          if (import.meta.env.DEV) {
-            console.warn(`[ResultadoProvas] Resposta inválida da API (status: ${resp.status})`);
-          }
         }
         
         setUserInfoMap((prev) => ({ ...prev, ...map }));
-      } catch (err) {
-        if (import.meta.env.DEV) {
-          console.error(`[ResultadoProvas] Erro ao buscar usuários:`, err);
-        }
+      } catch {
       } finally {
         setLoadingUsers(false);
       }

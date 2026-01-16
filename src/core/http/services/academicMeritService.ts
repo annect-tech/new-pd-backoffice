@@ -62,25 +62,35 @@ export const academicMeritService = {
     ),
 
   /**
-   * Aprova um documento de mérito acadêmico
+   * Aprova um documento de mérito acadêmico (atualiza status para APPROVED)
    * @param id - ID do documento
+   * @param user_data_id - ID do user_data (opcional, mas pode ser necessário)
    */
-  approve: (id: string | number) =>
-    httpClient.post<{ message: string }>(
+  approve: (id: string | number, user_data_id?: string) =>
+    httpClient.put<AcademicMerit>(
       API_URL,
-      `/admin/academic-merit-documents/${id}/approve`,
-      {}
+      "/admin/academic-merit-documents",
+      id,
+      { 
+        status: "APPROVED",
+        ...(user_data_id && { user_data_id })
+      }
     ),
 
   /**
-   * Reprova um documento de mérito acadêmico
+   * Reprova um documento de mérito acadêmico (atualiza status para REJECTED)
    * @param id - ID do documento
+   * @param user_data_id - ID do user_data (opcional, mas pode ser necessário)
    */
-  reject: (id: string | number) =>
-    httpClient.post<{ message: string }>(
+  reject: (id: string | number, user_data_id?: string) =>
+    httpClient.put<AcademicMerit>(
       API_URL,
-      `/admin/academic-merit-documents/${id}/reject`,
-      {}
+      "/admin/academic-merit-documents",
+      id,
+      { 
+        status: "REJECTED",
+        ...(user_data_id && { user_data_id })
+      }
     ),
 
   /**

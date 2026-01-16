@@ -6,14 +6,6 @@
 
 ---
 
-## 📚 Documentação
-
-Para informações sobre integrações, rotas da API e status de implementação, consulte:
-- **[GUIA_INTEGRACAO.md](./GUIA_INTEGRACAO.md)** - Guia completo de integração frontend-backend
-- **[ALL_ROUTES_API_DOCUMENTATION.md](./ALL_ROUTES_API_DOCUMENTATION.md)** - Referência de todas as rotas disponíveis
-
----
-
 ## 📖 Descrição
 
 O **PD Backoffice** é uma aplicação administrativa desenvolvida com **Vite**, **React**, **TypeScript** e **Material-UI**, para gerenciamento completo do processo seletivo, incluindo:

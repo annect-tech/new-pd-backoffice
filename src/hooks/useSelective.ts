@@ -67,6 +67,7 @@ export const useSelective = () => {
             totalItems: Number(raw?.totalItems ?? raw?.total ?? list.length),
             totalPages: Number(raw?.totalPages ?? Math.ceil((raw?.totalItems ?? raw?.total ?? list.length) / (raw?.itemsPerPage ?? raw?.size ?? size))),
           });
+          showSnackbar("Dados carregados com sucesso", "success");
         } else {
           setUsers([]);
           setPagination((prev) => ({ ...prev, totalItems: 0, totalPages: 0 }));
@@ -76,7 +77,6 @@ export const useSelective = () => {
           );
         }
       } catch (error: any) {
-        console.error("Erro ao buscar usuários:", error);
         setUsers([]);
         setPagination((prev) => ({ ...prev, totalItems: 0, totalPages: 0 }));
         showSnackbar(

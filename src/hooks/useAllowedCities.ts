@@ -1,9 +1,9 @@
 import { useState, useCallback } from "react";
 import {
-  addressesService,
-  type Address,
-  type AddressPayload,
-} from "../core/http/services/addressesService";
+  allowedCitiesService,
+  type AllowedCity,
+  type AllowedCityPayload,
+} from "../core/http/services/allowedCitiesService";
 
 interface SnackbarState {
   open: boolean;
@@ -18,8 +18,8 @@ interface PaginationState {
   totalPages: number;
 }
 
-export const useAddresses = () => {
-  const [addresses, setAddresses] = useState<Address[]>([]);
+export const useAllowedCities = () => {
+  const [allowedCities, setAllowedCities] = useState<AllowedCity[]>([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState<PaginationState>({
     currentPage: 1,
@@ -44,27 +44,17 @@ export const useAddresses = () => {
     setSnackbar((prev) => ({ ...prev, open: false }));
   }, []);
 
-  const fetchAddresses = useCallback(
-    async (
-      page: number = 1,
-      size: number = 10,
-      search?: string,
-      filters?: {
-        city?: string;
-        state?: string;
-        neighborhood?: string;
-        include_deleted?: boolean;
-      }
-    ) => {
+  const fetchAllowedCities = useCallback(
+    async (page: number = 1, size: number = 10, search?: string) => {
       setLoading(true);
       try {
-        const response = await addressesService.list(page, size, search, filters);
+        const response = await allowedCitiesService.list(page, size, search);
 
         if (response.status >= 200 && response.status < 300 && response.data) {
           const raw = response.data as any;
           const list = Array.isArray(raw?.data) ? raw.data : Array.isArray(raw) ? raw : [];
 
-          setAddresses(list);
+          setAllowedCities(list);
           setPagination({
             currentPage: Number(raw?.currentPage ?? page),
             itemsPerPage: Number(raw?.itemsPerPage ?? size),
@@ -73,18 +63,18 @@ export const useAddresses = () => {
           });
           showSnackbar("Dados carregados com sucesso", "success");
         } else {
-          setAddresses([]);
+          setAllowedCities([]);
           setPagination((prev) => ({ ...prev, totalItems: 0, totalPages: 0 }));
           showSnackbar(
-            response.message || "Erro ao buscar endereços",
+            response.message || "Erro ao buscar cidades permitidas",
             "error"
           );
         }
       } catch (error: any) {
-        setAddresses([]);
+        setAllowedCities([]);
         setPagination((prev) => ({ ...prev, totalItems: 0, totalPages: 0 }));
         showSnackbar(
-          error?.message || "Erro ao buscar endereços",
+          error?.message || "Erro ao buscar cidades permitidas",
           "error"
         );
       } finally {
@@ -94,99 +84,99 @@ export const useAddresses = () => {
     [showSnackbar]
   );
 
-  const createAddress = useCallback(
-    async (payload: AddressPayload) => {
+  const createAllowedCity = useCallback(
+    async (payload: AllowedCityPayload) => {
       try {
-        const response = await addressesService.create(payload);
+        const response = await allowedCitiesService.create(payload);
 
         if (response.status >= 200 && response.status < 300) {
-          showSnackbar("Endereço criado com sucesso!", "success");
+          showSnackbar("Cidade permitida criada com sucesso!", "success");
           // Recarregar lista após criar
-          await fetchAddresses();
+          await fetchAllowedCities();
           return true;
         } else {
           showSnackbar(
-            response.message || "Erro ao criar endereço",
+            response.message || "Erro ao criar cidade permitida",
             "error"
           );
           return false;
         }
       } catch (error: any) {
         showSnackbar(
-          error?.message || "Erro ao criar endereço",
+          error?.message || "Erro ao criar cidade permitida",
           "error"
         );
         return false;
       }
     },
-    [showSnackbar, fetchAddresses]
+    [showSnackbar, fetchAllowedCities]
   );
 
-  const updateAddress = useCallback(
-    async (id: number, payload: Partial<AddressPayload>) => {
+  const updateAllowedCity = useCallback(
+    async (id: string, payload: Partial<AllowedCityPayload>) => {
       try {
-        const response = await addressesService.update(id, payload);
+        const response = await allowedCitiesService.update(id, payload);
 
         if (response.status >= 200 && response.status < 300) {
-          showSnackbar("Endereço atualizado com sucesso!", "success");
+          showSnackbar("Cidade permitida atualizada com sucesso!", "success");
           // Recarregar lista após atualizar
-          await fetchAddresses();
+          await fetchAllowedCities();
           return true;
         } else {
           showSnackbar(
-            response.message || "Erro ao atualizar endereço",
+            response.message || "Erro ao atualizar cidade permitida",
             "error"
           );
           return false;
         }
       } catch (error: any) {
         showSnackbar(
-          error?.message || "Erro ao atualizar endereço",
+          error?.message || "Erro ao atualizar cidade permitida",
           "error"
         );
         return false;
       }
     },
-    [showSnackbar, fetchAddresses]
+    [showSnackbar, fetchAllowedCities]
   );
 
-  const deleteAddress = useCallback(
-    async (id: number) => {
+  const deleteAllowedCity = useCallback(
+    async (id: string) => {
       try {
-        const response = await addressesService.delete(id);
+        const response = await allowedCitiesService.delete(id);
 
         if (response.status >= 200 && response.status < 300) {
-          showSnackbar("Endereço deletado com sucesso!", "success");
+          showSnackbar("Cidade permitida deletada com sucesso!", "success");
           // Recarregar lista após deletar
-          await fetchAddresses();
+          await fetchAllowedCities();
           return true;
         } else {
           showSnackbar(
-            response.message || "Erro ao deletar endereço",
+            response.message || "Erro ao deletar cidade permitida",
             "error"
           );
           return false;
         }
       } catch (error: any) {
         showSnackbar(
-          error?.message || "Erro ao deletar endereço",
+          error?.message || "Erro ao deletar cidade permitida",
           "error"
         );
         return false;
       }
     },
-    [showSnackbar, fetchAddresses]
+    [showSnackbar, fetchAllowedCities]
   );
 
   return {
-    addresses,
+    allowedCities,
     loading,
     pagination,
     snackbar,
     closeSnackbar,
-    fetchAddresses,
-    createAddress,
-    updateAddress,
-    deleteAddress,
+    fetchAllowedCities,
+    createAllowedCity,
+    updateAllowedCity,
+    deleteAllowedCity,
   };
 };

@@ -17,11 +17,6 @@ let _refreshPromise: Promise<void> | null = null;
 export const httpClient = {
   setAuthToken(token: string | null) {
     _authToken = token;
-    if (token) {
-      console.log("[httpClient] Token configurado:", token.substring(0, 20) + "...");
-    } else {
-      console.log("[httpClient] Token removido (null)");
-    }
   },
 
   setOnUnauthorized(callback: () => Promise<void>) {
@@ -77,9 +72,6 @@ export const httpClient = {
 
     if (!options?.skipAuth && _authToken) {
       headers["Authorization"] = `Bearer ${_authToken}`;
-      console.log("[httpClient] Token configurado no header Authorization");
-    } else if (!options?.skipAuth && !_authToken) {
-      console.warn("[httpClient] ⚠️ Requisição autenticada sem token! URL:", url);
     }
 
     // Preparar body
@@ -97,10 +89,7 @@ export const httpClient = {
     try {
       const res = await fetch(url, opts);
       
-      // Tentar fazer refresh token se receber 401
       if (res.status === 401 && !options?.skipAuth && _onUnauthorized && !_isRefreshing) {
-        console.log("[httpClient] Token expirado (401), tentando refresh...");
-        
         _isRefreshing = true;
         _refreshPromise = _onUnauthorized().finally(() => {
           _isRefreshing = false;
@@ -161,18 +150,8 @@ export const httpClient = {
         _onUnauthorized();
       }
 
-      // Melhorar mensagem de erro para status 500
       let message = json.message ?? res.statusText;
       if (res.status === 500) {
-        console.error(`[httpClient] Erro 500 na requisição ${method} ${url}:`, {
-          status: res.status,
-          statusText: res.statusText,
-          json: JSON.stringify(json, null, 2),
-          jsonObject: json,
-          headers: Object.fromEntries(res.headers.entries())
-        });
-        
-        // Tentar extrair mensagem mais detalhada
         if (json.error) {
           message = typeof json.error === 'string' ? json.error : JSON.stringify(json.error);
         } else if (json.message) {
@@ -220,7 +199,6 @@ export const httpClient = {
         data: responseData,
       };
     } catch (err: any) {
-      console.error(`[httpClient] Erro na requisição ${method} ${url}:`, err);
       return { 
         status: 0, 
         message: err.message || "Network error",

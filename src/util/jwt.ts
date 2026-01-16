@@ -30,8 +30,7 @@ export const decodeJWT = (token: string): JWTPayload => {
     );
 
     return JSON.parse(jsonPayload);
-  } catch (error) {
-    console.error('[JWT] Erro ao decodificar token:', error);
+  } catch {
     throw new Error('Não foi possível decodificar o token JWT');
   }
 };
@@ -54,9 +53,8 @@ export const isTokenExpired = (token: string): boolean => {
     const currentTime = Date.now();
 
     return currentTime > expirationTime;
-  } catch (error) {
-    console.error('[JWT] Erro ao verificar expiração:', error);
-    return true; // Em caso de erro, consideramos expirado
+  } catch {
+    return true;
   }
 };
 
@@ -74,8 +72,7 @@ export const getUserFromToken = (token: string) => {
       roles: payload.roles,
       tenant_city_id: payload.tenant_city_id,
     };
-  } catch (error) {
-    console.error('[JWT] Erro ao extrair usuário do token:', error);
+  } catch {
     return null;
   }
 };

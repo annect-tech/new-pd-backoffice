@@ -78,8 +78,8 @@ export const useExamsScheduled = () => {
 
           setExams(list);
           setPagination(paginationData);
+          showSnackbar("Dados carregados com sucesso", "success");
         } else {
-          console.warn("[useExamsScheduled] Resposta com status inválido ou sem dados:", response);
           setExams([]);
           setPagination((prev) => ({ ...prev, totalItems: 0, totalPages: 0 }));
           const errorMessage = response.message || "Erro ao carregar dados";
@@ -87,7 +87,6 @@ export const useExamsScheduled = () => {
           showSnackbar(errorMessage, "error");
         }
       } catch (err: any) {
-        console.error("[useExamsScheduled] Erro ao buscar exames:", err);
         setExams([]);
         setPagination((prev) => ({ ...prev, totalItems: 0, totalPages: 0 }));
         const errorMessage = err?.message || "Erro ao carregar dados";
@@ -106,15 +105,24 @@ export const useExamsScheduled = () => {
       return;
     }
 
-    const headers = ["CPF", "Nome", "Celular", "Status", "Local", "Data", "Hora"];
-    const rows = exams.map((exam) => [
-      exam.user_data.cpf,
-      `${exam.user_data.user.first_name} ${exam.user_data.user.last_name}`,
-      exam.user_data.celphone || "Não informado",
+    const headers = ["ID", "User Data ID", "CPF", "Nome", "Celular", "Status", "Local", "Data", "Hora", "Nota"];
+    const rows = exams.map((exam: any) => [
+      exam.id || "—",
+      exam.user_data_id || "—",
+      // Tenta acessar dados completos (se disponíveis), caso contrário usa fallbacks
+      exam.user_data?.cpf || "—",
+      exam.user_data?.user
+        ? `${exam.user_data.user.first_name} ${exam.user_data.user.last_name}`
+        : exam.user_data?.username || "—",
+      exam.user_data?.celphone || "Não informado",
       exam.status === "absent" ? "ausente" : exam.status === "scheduled" ? "agendado" : "presente",
-      exam.exam_scheduled_hour.exam_date.local.name,
-      exam.exam_scheduled_hour.exam_date.date,
-      exam.exam_scheduled_hour.hour,
+      exam.exam_scheduled_hour?.exam_date?.local?.name || 
+      exam.exam_schedule_info?.local_name || "—",
+      exam.exam_scheduled_hour?.exam_date?.date || 
+      exam.exam_schedule_info?.date || "—",
+      exam.exam_scheduled_hour?.hour || 
+      exam.exam_schedule_info?.hour || "—",
+      exam.score ?? "—",
     ]);
 
     const csvContent = [headers, ...rows]

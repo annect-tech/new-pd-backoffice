@@ -284,12 +284,8 @@ const CreateProfileModal: React.FC<Props> = ({
     if (!file) return;
     setUploading(true);
     try {
-      // Upload de foto via API (função já integrada no AppLayout)
       await onUploadPhoto(file);
       
-      console.log('Foto de perfil enviada com sucesso');
-      
-      // Fecha o modal após sucesso
       setTimeout(() => {
         onClose();
       }, 500);

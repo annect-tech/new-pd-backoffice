@@ -47,7 +47,6 @@ const authSlice = createSlice({
     builder.addCase("persist/REHYDRATE" as any, (state, action: any) => {
       if (action.payload?.auth?.accessToken) {
         httpClient.setAuthToken(action.payload.auth.accessToken);
-        console.log("[authSlice] Token restaurado do localStorage e configurado no httpClient");
       }
       return state;
     });
