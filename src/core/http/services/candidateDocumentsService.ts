@@ -1,4 +1,5 @@
 import { httpClient } from "../httpClient";
+import { getEndpointPrefix } from "../utils/endpointPrefix";
 
 const API_URL = import.meta.env.VITE_API_URL as string || "http://186.248.135.172:31535";
 
@@ -43,9 +44,10 @@ export const candidateDocumentsService = {
    * @param size - Itens por página (padrão: 10)
    */
   list: (page: number = 1, size: number = 10) => {
+    const prefix = getEndpointPrefix();
     return httpClient.get<PaginatedResponse<CandidateDocument>>(
       API_URL,
-      "/admin/candidate-documents",
+      `/${prefix}/candidate-documents`,
       {
         queryParams: {
           page,
@@ -59,11 +61,13 @@ export const candidateDocumentsService = {
    * Obtém documentos de um candidato específico (admin)
    * @param userDataId - ID dos dados do usuário
    */
-  getByUserDataId: (userDataId: string | number) =>
-    httpClient.get<CandidateDocument>(
+  getByUserDataId: (userDataId: string | number) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.get<CandidateDocument>(
       API_URL,
-      `/admin/candidate-documents/${userDataId}`
-    ),
+      `/${prefix}/candidate-documents/${userDataId}`
+    );
+  },
 
   /**
    * Atualiza um documento de candidato (admin)
@@ -83,22 +87,26 @@ export const candidateDocumentsService = {
     contract_doc_status?: string;
     contract_doc?: string;
     contract_doc_refuse_reason?: string;
-  }) =>
-    httpClient.patch<{ message: string }>(
+  }) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.patch<{ message: string }>(
       API_URL,
-      `/admin/candidate-documents/${userDataId}`,
+      `/${prefix}/candidate-documents/${userDataId}`,
       payload
-    ),
+    );
+  },
 
   /**
    * Deleta um documento de candidato (admin)
    * @param userDataId - ID dos dados do usuário
    */
-  delete: (userDataId: string | number) =>
-    httpClient.delete<{ message: string }>(
+  delete: (userDataId: string | number) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.delete<{ message: string }>(
       API_URL,
-      `/admin/candidate-documents/${userDataId}`
-    ),
+      `/${prefix}/candidate-documents/${userDataId}`
+    );
+  },
 
   /**
    * Faz upload de documento de candidato (admin)
@@ -106,16 +114,18 @@ export const candidateDocumentsService = {
    * @param userDataId - ID dos dados do usuário
    * @param documentType - Tipo do documento
    */
-  upload: (file: File, userDataId: string | number, documentType: string) =>
-    httpClient.uploadFile<UploadDocumentResponse>(
+  upload: (file: File, userDataId: string | number, documentType: string) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.uploadFile<UploadDocumentResponse>(
       API_URL,
-      "/admin/candidate-documents/upload",
+      `/${prefix}/candidate-documents/upload`,
       file,
       {
         user_data_id: String(userDataId),
         document_type: documentType,
       }
-    ),
+    );
+  },
 
   // ========== USER ENDPOINTS ==========
 

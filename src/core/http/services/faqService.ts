@@ -1,4 +1,5 @@
 import { httpClient } from "../httpClient";
+import { getEndpointPrefix } from "../utils/endpointPrefix";
 
 const API_URL = import.meta.env.VITE_API_URL as string || "http://186.248.135.172:31535";
 
@@ -37,9 +38,10 @@ export const faqService = {
    * @param search - Termo de busca opcional
    */
   list: (page: number = 1, size: number = 10, search?: string) => {
+    const prefix = getEndpointPrefix();
     return httpClient.get<PaginatedResponse<FAQ>>(
       API_URL,
-      "/admin/faqs",
+      `/${prefix}/faqs`,
       {
         queryParams: {
           page,
@@ -54,46 +56,54 @@ export const faqService = {
    * Obtém uma FAQ específica por ID (admin)
    * @param id - ID da FAQ
    */
-  getById: (id: string | number) =>
-    httpClient.get<FAQ>(
+  getById: (id: string | number) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.get<FAQ>(
       API_URL,
-      `/admin/faqs/${id}`
-    ),
+      `/${prefix}/faqs/${id}`
+    );
+  },
 
   /**
    * Cria uma nova FAQ (admin)
    * @param payload - Dados da FAQ
    */
-  create: (payload: FAQPayload) =>
-    httpClient.post<{ id: string; message: string }>(
+  create: (payload: FAQPayload) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.post<{ id: string; message: string }>(
       API_URL,
-      "/admin/faqs",
+      `/${prefix}/faqs`,
       payload
-    ),
+    );
+  },
 
   /**
    * Atualiza uma FAQ existente (admin)
    * @param id - ID da FAQ
    * @param payload - Dados atualizados
    */
-  update: (id: string | number, payload: Partial<FAQPayload>) =>
-    httpClient.put<{ message: string }>(
+  update: (id: string | number, payload: Partial<FAQPayload>) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.put<{ message: string }>(
       API_URL,
-      "/admin/faqs",
+      `/${prefix}/faqs`,
       id,
       payload
-    ),
+    );
+  },
 
   /**
    * Deleta uma FAQ (admin)
    * @param id - ID da FAQ
    */
-  delete: (id: string | number) =>
-    httpClient.delete<{ message: string }>(
+  delete: (id: string | number) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.delete<{ message: string }>(
       API_URL,
-      "/admin/faqs",
+      `/${prefix}/faqs`,
       id
-    ),
+    );
+  },
 
   // ========== USER ENDPOINTS ==========
 

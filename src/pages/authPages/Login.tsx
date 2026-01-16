@@ -82,14 +82,13 @@ export default function Login() {
             )}
 
             <TextField
-              label="Email, CPF ou Username"
+              label="E-mail"
               type="text"
               value={credential}
               onChange={e => setCredential(e.target.value)}
               fullWidth
               required
               autoFocus
-              helperText="Você pode usar email, CPF ou username para entrar"
               variant="outlined"
               sx={{
                 mb: 2.5,
@@ -115,7 +114,7 @@ export default function Login() {
               required
               variant="outlined"
               sx={{
-                mb: 1.5,
+                mb: 2.5,
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 1.5,
                   bgcolor: '#fafafa',

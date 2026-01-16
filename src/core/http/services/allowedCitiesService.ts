@@ -1,4 +1,5 @@
 import { httpClient } from "../httpClient";
+import { getEndpointPrefix } from "../utils/endpointPrefix";
 
 const API_URL = import.meta.env.VITE_API_URL as string || "http://186.248.135.172:31535";
 
@@ -44,9 +45,10 @@ export const allowedCitiesService = {
    * @param search - Termo de busca opcional
    */
   list: (page: number = 1, size: number = 10, search?: string) => {
+    const prefix = getEndpointPrefix();
     return httpClient.get<PaginatedResponse<AllowedCity>>(
       API_URL,
-      "/admin/allowed-cities",
+      `/${prefix}/allowed-cities`,
       {
         queryParams: {
           page,
@@ -61,44 +63,52 @@ export const allowedCitiesService = {
    * Busca uma Allowed City por ID
    * @param id - ID da Allowed City
    */
-  findOne: (id: string | number) =>
-    httpClient.get<AllowedCity>(
+  findOne: (id: string | number) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.get<AllowedCity>(
       API_URL,
-      `/admin/allowed-cities/${id}`
-    ),
+      `/${prefix}/allowed-cities/${id}`
+    );
+  },
 
   /**
    * Cria uma nova Allowed City
    * @param payload - Dados da Allowed City (name, tenant_city_id)
    */
-  create: (payload: AllowedCityPayload) =>
-    httpClient.post<CreateAllowedCityResponse>(
+  create: (payload: AllowedCityPayload) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.post<CreateAllowedCityResponse>(
       API_URL,
-      "/admin/allowed-cities",
+      `/${prefix}/allowed-cities`,
       payload
-    ),
+    );
+  },
 
   /**
    * Atualiza uma Allowed City existente
    * @param id - ID da Allowed City
    * @param payload - Dados atualizados
    */
-  update: (id: string | number, payload: Partial<AllowedCityPayload>) =>
-    httpClient.patch<UpdateAllowedCityResponse>(
+  update: (id: string | number, payload: Partial<AllowedCityPayload>) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.patch<UpdateAllowedCityResponse>(
       API_URL,
-      "/admin/allowed-cities",
+      `/${prefix}/allowed-cities`,
       id,
       payload
-    ),
+    );
+  },
 
   /**
    * Deleta uma Allowed City
    * @param id - ID da Allowed City
    */
-  delete: (id: string | number) =>
-    httpClient.delete<DeleteAllowedCityResponse>(
+  delete: (id: string | number) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.delete<DeleteAllowedCityResponse>(
       API_URL,
-      "/admin/allowed-cities",
+      `/${prefix}/allowed-cities`,
       id
-    ),
+    );
+  },
 };

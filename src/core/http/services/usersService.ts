@@ -1,4 +1,5 @@
 import { httpClient } from "../httpClient";
+import { getEndpointPrefix } from "../utils/endpointPrefix";
 
 const API_URL = import.meta.env.VITE_API_URL as string || "http://186.248.135.172:31535";
 
@@ -73,13 +74,13 @@ export interface PaginatedResponse<T> {
 export const usersService = {
   /**
    * Lista todos os usuários com paginação
-   * Requer role ADMIN ou ADMIN_MASTER
-   * Filtra por tenant do admin logado
+   * Filtra por tenant do usuário logado
    */
   listUsers: (page: number = 1, size: number = 10) => {
+    const prefix = getEndpointPrefix();
     return httpClient.get<PaginatedResponse<UserResponse>>(
       API_URL,
-      "/admin/users",
+      `/${prefix}/users`,
       {
         queryParams: {
           page,
@@ -141,12 +142,12 @@ export const usersService = {
 
   /**
    * Lista todos os perfis de usuários com paginação
-   * Requer role ADMIN ou ADMIN_MASTER
    */
   listProfiles: (page: number = 1, size: number = 10) => {
+    const prefix = getEndpointPrefix();
     return httpClient.get<PaginatedResponse<UserProfileResponse>>(
       API_URL,
-      "/admin/user-profiles",
+      `/${prefix}/user-profiles`,
       {
         queryParams: {
           page,
@@ -158,13 +159,14 @@ export const usersService = {
 
   /**
    * Obtém um perfil específico por ID
-   * Requer role ADMIN ou ADMIN_MASTER
    */
-  getProfileById: (id: string | number) =>
-    httpClient.get<UserProfileResponse>(
+  getProfileById: (id: string | number) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.get<UserProfileResponse>(
       API_URL,
-      `/admin/user-profiles/${id}`
-    ),
+      `/${prefix}/user-profiles/${id}`
+    );
+  },
 
   /**
    * Obtém o perfil do usuário logado

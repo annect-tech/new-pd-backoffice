@@ -197,14 +197,14 @@ export default function AppLayout() {
           to: APP_ROUTES.MERIT_VALIDATION,
         },
         {
-          icon: <TaskIcon />,
-          label: "Resultado das Provas",
-          to: APP_ROUTES.EXAMS,
-        },
-        {
           icon: <EmojiEventsIcon />,
           label: "Resultados Mérito",
           to: APP_ROUTES.MERIT_RESULTS,
+        },
+        {
+          icon: <TaskIcon />,
+          label: "Resultado das Provas",
+          to: APP_ROUTES.EXAMS,
         },
         {
           icon: <FormatListBulletedIcon />,
@@ -301,6 +301,7 @@ export default function AppLayout() {
               width: "100%",
               position: "relative",
               zIndex: 1100,
+              display: "none", // Temporariamente oculto
             }}
           >
             <Header onMenuClick={() => setCollapsed((p) => !p)} />

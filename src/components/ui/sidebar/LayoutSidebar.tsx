@@ -10,6 +10,9 @@ import {
   Typography,
   Divider,
   IconButton,
+  Avatar,
+  Menu,
+  MenuItem,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { Link, useNavigate } from "react-router";
@@ -17,6 +20,7 @@ import logoDesenvolve from "../../../assets/images/logo/LOGO DESENVOLVE.png";
 import logo2 from "../../../assets/images/logo/logo2.svg";
 import { APP_ROUTES } from "../../../util/constants";
 import { designSystem } from "../../../styles/designSystem";
+import { useAuth } from "../../../hooks/useAuth";
 
 const drawerWidth = 240;
 const collapsedWidth = 60;
@@ -46,7 +50,9 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
   onClose,
 }) => {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [isHovered, setIsHovered] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   // Se está colapsado, pode expandir por hover
   // Se não está colapsado (aberto por clique), não fecha no mouseLeave
@@ -67,6 +73,25 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
 
   const handleLogoClick = () => {
     navigate(APP_ROUTES.DASHBOARD);
+  };
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleProfileClick = () => {
+    navigate(APP_ROUTES.MY_PROFILE);
+    handleMenuClose();
+  };
+
+  const handleLogout = () => {
+    logout();
+    handleMenuClose();
+    navigate(APP_ROUTES.LOGIN);
   };
 
   return (
@@ -284,6 +309,116 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
           )}
         </React.Fragment>
       ))}
+    </Box>
+
+    {/* Avatar do usuário no final da sidebar */}
+    <Box
+      sx={{
+        width: "100%",
+        borderTop: "1px solid rgba(0, 0, 0, 0.06)",
+        py: 2,
+        px: isExpanded ? 2 : 1,
+        display: "flex",
+        justifyContent: isExpanded ? "flex-start" : "center",
+        alignItems: "center",
+      }}
+    >
+      <IconButton
+        onClick={handleMenuOpen}
+        sx={{
+          p: 0,
+          width: isExpanded ? "100%" : "auto",
+          justifyContent: isExpanded ? "flex-start" : "center",
+          "&:hover": {
+            bgcolor: "transparent",
+          },
+        }}
+      >
+        <Avatar
+          sx={{
+            width: isExpanded ? 40 : 36,
+            height: isExpanded ? 40 : 36,
+            background: "#E5E7EB",
+            fontWeight: 500,
+            fontSize: isExpanded ? "0.875rem" : "0.75rem",
+            color: "#9CA3AF",
+            mr: isExpanded ? 2 : 0,
+          }}
+        >
+          {user?.first_name?.[0] || user?.email?.[0] || "U"}
+        </Avatar>
+        {isExpanded && (
+          <Box sx={{ flex: 1, textAlign: "left" }}>
+            <Typography
+              variant="body2"
+              sx={{
+                fontWeight: 500,
+                color: "#1F2937",
+                fontSize: "0.875rem",
+              }}
+            >
+              {user?.first_name || user?.email || "Usuário"}
+            </Typography>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "#6B7280",
+                fontSize: "0.75rem",
+              }}
+            >
+              {user?.email || ""}
+            </Typography>
+          </Box>
+        )}
+      </IconButton>
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+        anchorOrigin={{
+          vertical: "top",
+          horizontal: isExpanded ? "right" : "left",
+        }}
+        transformOrigin={{
+          vertical: "bottom",
+          horizontal: isExpanded ? "right" : "left",
+        }}
+        slotProps={{
+          paper: {
+            sx: {
+              mt: 1,
+              minWidth: 140,
+              borderRadius: 1,
+              boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+              border: "1px solid #E5E7EB",
+              bgcolor: "#F9FAFB",
+            },
+          },
+        }}
+      >
+        <MenuItem
+          onClick={handleProfileClick}
+          sx={{
+            py: 0.75,
+            px: 2,
+            fontSize: "0.8125rem",
+            color: "#000000",
+          }}
+        >
+          Meu Perfil
+        </MenuItem>
+        <MenuItem
+          onClick={handleLogout}
+          sx={{
+            py: 0.75,
+            px: 2,
+            fontSize: "0.8125rem",
+            color: "#000000",
+          }}
+        >
+          Sair
+        </MenuItem>
+      </Menu>
     </Box>
     
   </Drawer>

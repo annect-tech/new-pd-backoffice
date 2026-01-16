@@ -1,4 +1,5 @@
 import { httpClient } from "../httpClient";
+import { getEndpointPrefix } from "../utils/endpointPrefix";
 
 const API_URL = import.meta.env.VITE_API_URL as string || "http://186.248.135.172:31535";
 
@@ -33,9 +34,10 @@ export const studentDataService = {
    * @param search - Termo de busca opcional
    */
   list: (page: number = 1, size: number = 10, search?: string) => {
+    const prefix = getEndpointPrefix();
     return httpClient.get<PaginatedResponse<StudentData>>(
       API_URL,
-      "/admin/student-data",
+      `/${prefix}/student-data`,
       {
         queryParams: {
           page,
@@ -50,44 +52,52 @@ export const studentDataService = {
    * Obtém detalhes de um aluno específico
    * @param id - ID do aluno
    */
-  getById: (id: string | number) =>
-    httpClient.get<StudentData>(
+  getById: (id: string | number) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.get<StudentData>(
       API_URL,
-      `/admin/student-data/${id}`
-    ),
+      `/${prefix}/student-data/${id}`
+    );
+  },
 
   /**
    * Cria um novo aluno
    * @param payload - Dados do aluno
    */
-  create: (payload: Partial<StudentData>) =>
-    httpClient.post<{ id: number; message: string }>(
+  create: (payload: Partial<StudentData>) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.post<{ id: number; message: string }>(
       API_URL,
-      "/admin/student-data",
+      `/${prefix}/student-data`,
       payload
-    ),
+    );
+  },
 
   /**
    * Atualiza dados de um aluno
    * @param id - ID do aluno
    * @param payload - Dados atualizados
    */
-  update: (id: string | number, payload: Partial<StudentData>) =>
-    httpClient.patch<{ message: string }>(
+  update: (id: string | number, payload: Partial<StudentData>) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.patch<{ message: string }>(
       API_URL,
-      "/admin/student-data",
+      `/${prefix}/student-data`,
       id,
       payload
-    ),
+    );
+  },
 
   /**
    * Deleta um aluno
    * @param id - ID do aluno
    */
-  delete: (id: string | number) =>
-    httpClient.delete<{ message: string }>(
+  delete: (id: string | number) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.delete<{ message: string }>(
       API_URL,
-      "/admin/student-data",
+      `/${prefix}/student-data`,
       id
-    ),
+    );
+  },
 };

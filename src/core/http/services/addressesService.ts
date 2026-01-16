@@ -1,22 +1,7 @@
 import { httpClient } from "../httpClient";
-import { store } from "../../store";
+import { getEndpointPrefix } from "../utils/endpointPrefix";
 
 const API_URL = import.meta.env.VITE_API_URL as string || "http://186.248.135.172:31535";
-
-/**
- * Determina o prefixo de endpoint baseado nas roles do usuário
- * @returns "admin" se usuário tem role ADMIN/ADMIN_MASTER, "user" caso contrário
- */
-const getEndpointPrefix = (): "admin" | "user" => {
-  const state = store.getState();
-  const userRoles = state.auth.user?.roles || [];
-  
-  const hasAdminRole = userRoles.some(
-    role => role.toUpperCase() === "ADMIN" || role.toUpperCase() === "ADMIN_MASTER"
-  );
-  
-  return hasAdminRole ? "admin" : "user";
-};
 
 export interface Address {
   id: number;

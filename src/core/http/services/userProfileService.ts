@@ -1,4 +1,5 @@
 import { httpClient } from "../httpClient";
+import { getEndpointPrefix } from "../utils/endpointPrefix";
 import type { UserProfilePayload } from "../../../interfaces/profile";
 
 const API_URL = import.meta.env.VITE_API_URL as string || "http://186.248.135.172:31535";
@@ -56,9 +57,10 @@ export const userProfileService = {
    * @param search - Termo de busca opcional
    */
   list: (page: number = 1, size: number = 10, search?: string) => {
+    const prefix = getEndpointPrefix();
     return httpClient.get<PaginatedResponse<UserProfile>>(
       API_URL,
-      "/admin/user-profiles",
+      `/${prefix}/user-profiles`,
       {
         queryParams: {
           page,
@@ -73,20 +75,23 @@ export const userProfileService = {
    * Obtém um perfil específico por ID (admin)
    * @param id - ID do perfil
    */
-  getById: (id: string | number) =>
-    httpClient.get<UserProfile>(
+  getById: (id: string | number) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.get<UserProfile>(
       API_URL,
-      `/admin/user-profiles/${id}`
-    ),
+      `/${prefix}/user-profiles/${id}`
+    );
+  },
 
   /**
    * Obtém perfil por user_id (workaround - busca e filtra no frontend)
    * @param userId - ID do usuário
    */
   getByUserId: async (userId: number): Promise<UserProfile | null> => {
+    const prefix = getEndpointPrefix();
     const response = await httpClient.get<PaginatedResponse<UserProfile>>(
       API_URL,
-      "/admin/user-profiles",
+      `/${prefix}/user-profiles`,
       {
         queryParams: {
           page: 1,
@@ -118,10 +123,11 @@ export const userProfileService = {
    */
   getByCpf: async (cpf: string): Promise<UserProfile | null> => {
     const cleanCpf = cpf.replace(/\D/g, '');
+    const prefix = getEndpointPrefix();
     
     const response = await httpClient.get<PaginatedResponse<UserProfile>>(
       API_URL,
-      "/admin/user-profiles",
+      `/${prefix}/user-profiles`,
       {
         queryParams: {
           page: 1,
@@ -151,47 +157,55 @@ export const userProfileService = {
    * Cria um novo perfil de usuário (admin)
    * @param payload - Dados do perfil
    */
-  create: (payload: UserProfilePayload & { user_id: number }) =>
-    httpClient.post<CreateUserProfileResponse>(
+  create: (payload: UserProfilePayload & { user_id: number }) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.post<CreateUserProfileResponse>(
       API_URL,
-      "/admin/user-profiles",
+      `/${prefix}/user-profiles`,
       payload
-    ),
+    );
+  },
 
   /**
    * Atualiza um perfil existente (admin)
    * @param id - ID do perfil
    * @param payload - Dados atualizados
    */
-  update: (id: string | number, payload: Partial<UserProfilePayload>) =>
-    httpClient.patch<UpdateUserProfileResponse>(
+  update: (id: string | number, payload: Partial<UserProfilePayload>) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.patch<UpdateUserProfileResponse>(
       API_URL,
-      "/admin/user-profiles",
+      `/${prefix}/user-profiles`,
       id,
       payload
-    ),
+    );
+  },
 
   /**
    * Deleta um perfil (admin)
    * @param id - ID do perfil
    */
-  delete: (id: string | number) =>
-    httpClient.delete<{ message: string }>(
+  delete: (id: string | number) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.delete<{ message: string }>(
       API_URL,
-      "/admin/user-profiles",
+      `/${prefix}/user-profiles`,
       id
-    ),
+    );
+  },
 
   /**
    * Faz upload de foto de perfil (admin)
    * @param profileId - ID do perfil
    * @param file - Arquivo de imagem
    */
-  uploadPhoto: (profileId: string, file: File) =>
-    httpClient.uploadFile<UploadPhotoResponse>(
+  uploadPhoto: (profileId: string, file: File) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.uploadFile<UploadPhotoResponse>(
       API_URL,
-      "/admin/user-profiles/upload-photo",
+      `/${prefix}/user-profiles/upload-photo`,
       file,
       { id: profileId }
-    ),
+    );
+  },
 };

@@ -1,4 +1,5 @@
 import { httpClient } from "../httpClient";
+import { getEndpointPrefix } from "../utils/endpointPrefix";
 
 const API_URL = import.meta.env.VITE_API_URL as string || "http://186.248.135.172:31535";
 
@@ -32,9 +33,10 @@ export const personaService = {
    * @param size - Itens por página (padrão: 10)
    */
   list: (page: number = 1, size: number = 10) => {
+    const prefix = getEndpointPrefix();
     return httpClient.get<PaginatedResponse<Persona>>(
       API_URL,
-      "/admin/persona",
+      `/${prefix}/persona`,
       {
         queryParams: {
           page,
@@ -48,35 +50,41 @@ export const personaService = {
    * Obtém uma persona específica por ID (admin)
    * @param id - ID da persona
    */
-  getById: (id: string | number) =>
-    httpClient.get<Persona>(
+  getById: (id: string | number) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.get<Persona>(
       API_URL,
-      `/admin/persona/${id}`
-    ),
+      `/${prefix}/persona/${id}`
+    );
+  },
 
   /**
    * Atualiza uma persona existente (admin)
    * @param id - ID da persona
    * @param payload - Dados atualizados
    */
-  update: (id: string | number, payload: Partial<PersonaPayload>) =>
-    httpClient.put<{ message: string }>(
+  update: (id: string | number, payload: Partial<PersonaPayload>) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.put<{ message: string }>(
       API_URL,
-      "/admin/persona",
+      `/${prefix}/persona`,
       id,
       payload
-    ),
+    );
+  },
 
   /**
    * Deleta uma persona (admin)
    * @param id - ID da persona
    */
-  delete: (id: string | number) =>
-    httpClient.delete<{ message: string }>(
+  delete: (id: string | number) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.delete<{ message: string }>(
       API_URL,
-      "/admin/persona",
+      `/${prefix}/persona`,
       id
-    ),
+    );
+  },
 
   // ========== USER ENDPOINTS ==========
 

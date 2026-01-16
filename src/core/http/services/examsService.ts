@@ -1,4 +1,5 @@
 import { httpClient } from "../httpClient";
+import { getEndpointPrefix } from "../utils/endpointPrefix";
 import type { Exam } from "../../../interfaces/exam";
 
 const API_URL = import.meta.env.VITE_API_URL as string || "http://186.248.135.172:31535";
@@ -20,9 +21,10 @@ export const examsService = {
    */
   list: (page: number = 1, size: number = 10, search?: string) => {
     // A rota correta para listar registros de prova (student exams)
+    const prefix = getEndpointPrefix();
     return httpClient.get<PaginatedResponse<Exam>>(
       API_URL,
-      "/admin/student-exams",
+      `/${prefix}/student-exams`,
       {
         queryParams: {
           page,
@@ -37,35 +39,41 @@ export const examsService = {
    * Obtém detalhes de um exame específico
    * @param id - ID do exame
    */
-  getById: (id: string | number) =>
-    httpClient.get<Exam>(
+  getById: (id: string | number) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.get<Exam>(
       API_URL,
-      `/admin/exam/${id}`
-    ),
+      `/${prefix}/exam/${id}`
+    );
+  },
 
   /**
    * Atualiza o status de um exame
    * @param id - ID do exame
    * @param status - Novo status
    */
-  updateStatus: (id: string | number, status: string) =>
-    httpClient.patch<{ message: string }>(
+  updateStatus: (id: string | number, status: string) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.patch<{ message: string }>(
       API_URL,
-      "/admin/exam",
+      `/${prefix}/exam`,
       id,
       { status }
-    ),
+    );
+  },
 
   /**
    * Atualiza a nota de um exame
    * @param id - ID do exame
    * @param score - Nova nota
    */
-  updateScore: (id: string | number, score: number) =>
-    httpClient.patch<{ message: string }>(
+  updateScore: (id: string | number, score: number) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.patch<{ message: string }>(
       API_URL,
-      "/admin/exam",
+      `/${prefix}/exam`,
       id,
       { score }
-    ),
+    );
+  },
 };

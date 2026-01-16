@@ -27,6 +27,7 @@ import {
   progressStyles,
 } from "../../styles/designSystem";
 import { useUsers } from "../../hooks/useUsers";
+import { useAuth } from "../../hooks/useAuth";
 import CreateUserModal from "../../components/modals/CreateUserModal";
 import type { CreateUserPayload } from "../../core/http/services/usersService";
 
@@ -34,6 +35,7 @@ export default function UserList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
   const { users, loading, error, refetch, createUser, creating, toggleUserActive, toggling, snackbar, closeSnackbar } = useUsers(1, 100);
 
   const filteredUsers = users.filter((user) => {
@@ -84,6 +86,30 @@ export default function UserList() {
 
   const handleToggleActive = async (email: string, currentStatus: boolean) => {
     await toggleUserActive(email, !currentStatus);
+  };
+
+  const handleViewProfile = (user: typeof users[0]) => {
+    if (!user.profile?.id) return;
+    
+    // Se o perfil é do próprio usuário logado, redireciona para "Meu Perfil"
+    if (currentUser?.id && user.id === currentUser.id) {
+      navigate(APP_ROUTES.MY_PROFILE);
+    } else {
+      // Caso contrário, redireciona para a página de visualização de perfil de outro usuário
+      navigate(`/usuario/${user.profile.id}`);
+    }
+  };
+
+  const handleEditProfile = (user: typeof users[0]) => {
+    if (!user.profile?.id) return;
+    
+    // Se o perfil é do próprio usuário logado, redireciona para "Meu Perfil" (que tem modo de edição)
+    if (currentUser?.id && user.id === currentUser.id) {
+      navigate(APP_ROUTES.MY_PROFILE);
+    } else {
+      // Caso contrário, redireciona para a página de edição de perfil de outro usuário
+      navigate(`/usuario/${user.profile.id}/editar`);
+    }
   };
 
   return (
@@ -307,7 +333,7 @@ export default function UserList() {
                             <span>
                               <Button
                                 variant="outlined"
-                                onClick={() => user.profile?.id && navigate(`/usuario/${user.profile.id}`)}
+                                onClick={() => handleViewProfile(user)}
                                 disabled={!user.profile?.id}
                                 sx={{
                                   borderColor: designSystem.colors.primary.main,
@@ -324,7 +350,7 @@ export default function UserList() {
                                   },
                                 }}
                               >
-                                Ver Perfil
+                                {currentUser?.id && user.id === currentUser.id ? "Meu Perfil" : "Ver Perfil"}
                               </Button>
                             </span>
                           </Tooltip>
@@ -335,7 +361,7 @@ export default function UserList() {
                             <span>
                               <Button
                                 variant="contained"
-                                onClick={() => user.profile?.id && navigate(`/usuario/${user.profile.id}/editar`)}
+                                onClick={() => handleEditProfile(user)}
                                 disabled={!user.profile?.id}
                                 sx={{
                                   backgroundColor: designSystem.colors.primary.main,

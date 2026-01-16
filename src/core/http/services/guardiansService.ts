@@ -1,4 +1,5 @@
 import { httpClient } from "../httpClient";
+import { getEndpointPrefix } from "../utils/endpointPrefix";
 import type { Guardian } from "../../../interfaces/userProfile";
 
 const API_URL = import.meta.env.VITE_API_URL as string || "http://186.248.135.172:31535";
@@ -28,9 +29,10 @@ export const guardiansService = {
    * @param search - Termo de busca opcional
    */
   list: (page: number = 1, size: number = 10, search?: string) => {
+    const prefix = getEndpointPrefix();
     return httpClient.get<PaginatedResponse<Guardian>>(
       API_URL,
-      "/admin/guardians",
+      `/${prefix}/guardians`,
       {
         queryParams: {
           page,
@@ -45,34 +47,40 @@ export const guardiansService = {
    * Cria um novo responsável (admin)
    * @param payload - Dados do responsável
    */
-  create: (payload: GuardianPayload) =>
-    httpClient.post<{ id: string; message: string }>(
+  create: (payload: GuardianPayload) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.post<{ id: string; message: string }>(
       API_URL,
-      "/admin/guardians",
+      `/${prefix}/guardians`,
       payload
-    ),
+    );
+  },
 
   /**
    * Atualiza um responsável existente (admin)
    * @param id - ID do responsável
    * @param payload - Dados atualizados
    */
-  update: (id: string | number, payload: Partial<GuardianPayload>) =>
-    httpClient.patch<{ message: string }>(
+  update: (id: string | number, payload: Partial<GuardianPayload>) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.patch<{ message: string }>(
       API_URL,
-      "/admin/guardians",
+      `/${prefix}/guardians`,
       id,
       payload
-    ),
+    );
+  },
 
   /**
    * Deleta um responsável (admin)
    * @param id - ID do responsável
    */
-  delete: (id: string | number) =>
-    httpClient.delete<{ message: string }>(
+  delete: (id: string | number) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.delete<{ message: string }>(
       API_URL,
-      "/admin/guardians",
+      `/${prefix}/guardians`,
       id
-    ),
+    );
+  },
 };

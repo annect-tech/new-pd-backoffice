@@ -194,7 +194,6 @@ const Seletivo: React.FC = () => {
   }, [enrichedUsers, filterStatus, sortOrder, debouncedSearchTerm]);
 
   useEffect(() => {
-  useEffect(() => {
     const fetchUsersDetails = async () => {
       if (!users || users.length === 0) return;
       
