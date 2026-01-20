@@ -22,7 +22,6 @@ import {
   TableRow,
   TablePagination,
   Fade,
-  Grid,
   Chip,
 } from "@mui/material";
 import {
@@ -33,7 +32,6 @@ import {
   Refresh as RefreshIcon,
   Close as CloseIcon,
 } from "@mui/icons-material";
-import { useNavigate } from "react-router";
 import { useAddresses } from "../../hooks/useAddresses";
 import { APP_ROUTES } from "../../util/constants";
 import PageHeader from "../../components/ui/page/PageHeader";
@@ -53,7 +51,6 @@ import type { AddressPayload } from "../../core/http/services/addressesService";
 type Mode = "create" | "edit";
 
 const Addresses: React.FC = () => {
-  const navigate = useNavigate();
   const {
     addresses,
     loading,
@@ -425,8 +422,14 @@ const Addresses: React.FC = () => {
           </IconButton>
         </DialogTitle>
         <DialogContent dividers sx={{ p: 3 }}>
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={4}>
+          <Box 
+            sx={{ 
+              display: 'grid', 
+              gridTemplateColumns: { xs: '1fr', sm: 'repeat(12, 1fr)' },
+              gap: 2 
+            }}
+          >
+            <Box sx={{ gridColumn: { xs: 'span 12', sm: 'span 4' } }}>
               <TextField
                 fullWidth
                 label="CEP"
@@ -436,8 +439,8 @@ const Addresses: React.FC = () => {
                 required
                 inputProps={{ maxLength: 9 }}
               />
-            </Grid>
-            <Grid item xs={12} sm={8}>
+            </Box>
+            <Box sx={{ gridColumn: { xs: 'span 12', sm: 'span 8' } }}>
               <TextField
                 fullWidth
                 label="Logradouro/Rua"
@@ -446,8 +449,8 @@ const Addresses: React.FC = () => {
                 placeholder="Ex: Avenida Paulista"
                 required
               />
-            </Grid>
-            <Grid item xs={12} sm={4}>
+            </Box>
+            <Box sx={{ gridColumn: { xs: 'span 12', sm: 'span 4' } }}>
               <TextField
                 fullWidth
                 label="Número"
@@ -456,8 +459,8 @@ const Addresses: React.FC = () => {
                 placeholder="Ex: 1578"
                 required
               />
-            </Grid>
-            <Grid item xs={12} sm={8}>
+            </Box>
+            <Box sx={{ gridColumn: { xs: 'span 12', sm: 'span 8' } }}>
               <TextField
                 fullWidth
                 label="Complemento"
@@ -465,8 +468,8 @@ const Addresses: React.FC = () => {
                 onChange={(e) => setForm({ ...form, complement: e.target.value })}
                 placeholder="Ex: Andar 5, Sala 10 (opcional)"
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
+            </Box>
+            <Box sx={{ gridColumn: { xs: 'span 12', sm: 'span 6' } }}>
               <TextField
                 fullWidth
                 label="Bairro"
@@ -475,8 +478,8 @@ const Addresses: React.FC = () => {
                 placeholder="Ex: Bela Vista"
                 required
               />
-            </Grid>
-            <Grid item xs={12} sm={4}>
+            </Box>
+            <Box sx={{ gridColumn: { xs: 'span 12', sm: 'span 4' } }}>
               <TextField
                 fullWidth
                 label="Cidade"
@@ -485,8 +488,8 @@ const Addresses: React.FC = () => {
                 placeholder="Ex: São Paulo"
                 required
               />
-            </Grid>
-            <Grid item xs={12} sm={2}>
+            </Box>
+            <Box sx={{ gridColumn: { xs: 'span 12', sm: 'span 2' } }}>
               <TextField
                 fullWidth
                 label="UF"
@@ -496,8 +499,8 @@ const Addresses: React.FC = () => {
                 required
                 inputProps={{ maxLength: 2 }}
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
+            </Box>
+            <Box sx={{ gridColumn: { xs: 'span 12', sm: 'span 6' } }}>
               <TextField
                 fullWidth
                 label="País"
@@ -505,8 +508,8 @@ const Addresses: React.FC = () => {
                 onChange={(e) => setForm({ ...form, country: e.target.value })}
                 placeholder="Brasil"
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
+            </Box>
+            <Box sx={{ gridColumn: { xs: 'span 12', sm: 'span 6' } }}>
               <TextField
                 fullWidth
                 label="Ponto de Referência"
@@ -514,8 +517,8 @@ const Addresses: React.FC = () => {
                 onChange={(e) => setForm({ ...form, reference: e.target.value })}
                 placeholder="Ex: Próximo ao metrô (opcional)"
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
+            </Box>
+            <Box sx={{ gridColumn: { xs: 'span 12', sm: 'span 6' } }}>
               <TextField
                 fullWidth
                 label="Latitude"
@@ -525,8 +528,8 @@ const Addresses: React.FC = () => {
                 placeholder="Ex: -23.561414 (opcional)"
                 inputProps={{ step: "0.000001" }}
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
+            </Box>
+            <Box sx={{ gridColumn: { xs: 'span 12', sm: 'span 6' } }}>
               <TextField
                 fullWidth
                 label="Longitude"
@@ -536,8 +539,8 @@ const Addresses: React.FC = () => {
                 placeholder="Ex: -46.655881 (opcional)"
                 inputProps={{ step: "0.000001" }}
               />
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={handleClose} variant="text">

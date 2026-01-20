@@ -91,7 +91,8 @@ export const candidateDocumentsService = {
     const prefix = getEndpointPrefix();
     return httpClient.patch<{ message: string }>(
       API_URL,
-      `/${prefix}/candidate-documents/${userDataId}`,
+      `/${prefix}/candidate-documents`,
+      userDataId,
       payload
     );
   },
@@ -104,7 +105,8 @@ export const candidateDocumentsService = {
     const prefix = getEndpointPrefix();
     return httpClient.delete<{ message: string }>(
       API_URL,
-      `/${prefix}/candidate-documents/${userDataId}`
+      `/${prefix}/candidate-documents`,
+      userDataId
     );
   },
 
@@ -176,7 +178,8 @@ export const candidateDocumentsService = {
   }) =>
     httpClient.patch<{ message: string }>(
       API_URL,
-      `/user/candidate-documents/${userDataId}`,
+      `/user/candidate-documents`,
+      userDataId,
       payload
     ),
 
@@ -187,7 +190,8 @@ export const candidateDocumentsService = {
   deleteUser: (userDataId: string | number) =>
     httpClient.delete<{ message: string }>(
       API_URL,
-      `/user/candidate-documents/${userDataId}`
+      `/user/candidate-documents`,
+      userDataId
     ),
 
   /**

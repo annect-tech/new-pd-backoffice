@@ -44,7 +44,6 @@ import PdfViewModal from "../../components/modals/PdfViewModal";
 import EnemStatusUpdaterModal from "../../components/modals/EnemStatusUpdaterModal";
 import { APP_ROUTES } from "../../util/constants";
 import { useEnemResults } from "../../hooks/useEnemResults";
-import type { EnemResult } from "../../interfaces/enemResult";
 
 const API_URL = import.meta.env.VITE_API_URL as string || "http://186.248.135.172:31535";
 

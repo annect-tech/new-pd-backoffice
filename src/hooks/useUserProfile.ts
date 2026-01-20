@@ -315,31 +315,34 @@ export const useUserProfile = () => {
           } 
           else if (response.status === 500) {
             if (response.data) {
-              if (typeof response.data === 'string') {
-                errorMessage = response.data;
-              } else if (response.data.message) {
-                errorMessage = response.data.message;
-              } else if (response.data.error) {
-                errorMessage = typeof response.data.error === 'string' 
-                  ? response.data.error 
-                  : JSON.stringify(response.data.error);
-              } else if (response.data.statusCode && response.data.message) {
-                errorMessage = response.data.message;
-              } else if (Array.isArray(response.data) && response.data.length > 0) {
-                errorMessage = response.data.join(", ");
+              // Quando há erro, response.data pode ser qualquer objeto, então tratamos como any
+              const errorData = response.data as any;
+              
+              if (typeof errorData === 'string') {
+                errorMessage = errorData;
+              } else if (errorData.message) {
+                errorMessage = errorData.message;
+              } else if (errorData.error) {
+                errorMessage = typeof errorData.error === 'string' 
+                  ? errorData.error 
+                  : JSON.stringify(errorData.error);
+              } else if (errorData.statusCode && errorData.message) {
+                errorMessage = errorData.message;
+              } else if (Array.isArray(errorData) && errorData.length > 0) {
+                errorMessage = errorData.join(", ");
               } else {
                 // Tentar encontrar qualquer mensagem de erro no objeto
-                const errorKeys = Object.keys(response.data);
+                const errorKeys = Object.keys(errorData);
                 for (const key of errorKeys) {
-                  if (typeof response.data[key] === 'string' && response.data[key].length > 0) {
-                    errorMessage = response.data[key];
+                  if (typeof errorData[key] === 'string' && errorData[key].length > 0) {
+                    errorMessage = errorData[key];
                     break;
                   }
                 }
               }
               
               // Verificar se é erro de constraint (ex: user_id já existe)
-              const errorStr = JSON.stringify(response.data).toLowerCase();
+              const errorStr = JSON.stringify(errorData).toLowerCase();
               if (errorStr.includes('unique constraint') || errorStr.includes('duplicate key') || errorStr.includes('already exists') || errorStr.includes('unique violation') || errorStr.includes('p2002')) {
                 if (errorStr.includes('user_id') || errorStr.includes('user_id_84fd5b2a')) {
                   errorMessage = "Já existe um perfil para este usuário. Não é possível criar outro perfil.";
@@ -366,16 +369,17 @@ export const useUserProfile = () => {
               // Caso 2: data é um objeto
               else if (typeof response.data === 'object') {
                 // Verificar se há erros de validação por campo (ex: { cpf: ["erro1", "erro2"] })
-                const errorKeys = Object.keys(response.data);
+                const errorData = response.data as any;
+                const errorKeys = Object.keys(errorData);
                 if (errorKeys.length > 0) {
                   const firstKey = errorKeys[0];
-                  const firstError = response.data[firstKey];
+                  const firstError = errorData[firstKey];
                   if (Array.isArray(firstError) && firstError.length > 0) {
                     errorMessage = firstError.join(", ");
                   } else if (typeof firstError === 'string') {
                     errorMessage = firstError;
-                  } else if (response.data.message) {
-                    errorMessage = response.data.message;
+                  } else if (errorData.message) {
+                    errorMessage = errorData.message;
                   }
                 } else if (response.data.message) {
                   errorMessage = response.data.message;

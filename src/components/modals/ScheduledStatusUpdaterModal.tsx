@@ -27,7 +27,7 @@ const ScheduledStatusUpdaterModal: React.FC<ScheduledStatusUpdaterModalProps> = 
   exams,
   onClose,
 }) => {
-  const [selectedExam, setSelectedExam] = useState<number | "">("");
+  const [selectedExam, setSelectedExam] = useState<string | "">("");
   const [newStatus, setNewStatus] = useState<"scheduled" | "absent" | "present">("scheduled");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -92,7 +92,7 @@ const ScheduledStatusUpdaterModal: React.FC<ScheduledStatusUpdaterModalProps> = 
               <InputLabel>Selecione o Exame</InputLabel>
               <Select
                 value={selectedExam}
-                onChange={(e) => setSelectedExam(e.target.value as number)}
+                onChange={(e) => setSelectedExam(e.target.value as string)}
                 label="Selecione o Exame"
               >
                 {exams
@@ -134,7 +134,7 @@ const ScheduledStatusUpdaterModal: React.FC<ScheduledStatusUpdaterModalProps> = 
                   Status atual:{" "}
                   <strong>
                     {getStatusLabel(
-                      exams.find((e) => e.id === selectedExam)?.status || "scheduled"
+                      exams.find((e) => String(e.id) === String(selectedExam))?.status || "scheduled"
                     )}
                   </strong>
                 </Typography>

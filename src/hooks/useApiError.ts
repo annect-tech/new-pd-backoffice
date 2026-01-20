@@ -160,7 +160,7 @@ export const useApiError = () => {
    * Melhora mensagem de erro baseado no tipo
    */
   const enhanceErrorMessage = useCallback(
-    (message: string, type: ApiErrorType, originalError?: any): string => {
+    (message: string, type: ApiErrorType, _originalError?: any): string => {
       // Se já tem uma mensagem específica, usar ela
       if (message && message !== "Erro desconhecido. Tente novamente mais tarde.") {
         // Melhorar mensagens comuns

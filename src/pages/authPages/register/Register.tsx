@@ -1,6 +1,6 @@
 // src/pages/RegisterPage.tsx
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import {
   Box,
   Button,
@@ -115,7 +115,7 @@ const RegisterPage: React.FC = () => {
                 endAdornment: (
                   <InputAdornment position="end">
                     <IconButton
-                      onClick={() => setShowPassword(p => !p)}
+                      onClick={() => setShowPassword((p: boolean) => !p)}
                       edge="end"
                       aria-label="toggle password visibility"
                     >
@@ -142,7 +142,7 @@ const RegisterPage: React.FC = () => {
                 endAdornment: (
                   <InputAdornment position="end">
                     <IconButton
-                      onClick={() => setShowPasswordConfirmation(p => !p)}
+                      onClick={() => setShowPasswordConfirmation((p: boolean) => !p)}
                       edge="end"
                       aria-label="toggle password confirmation visibility"
                     >
@@ -155,7 +155,7 @@ const RegisterPage: React.FC = () => {
 
             {(Object.keys(errors).length > 0 && Object.values(errors).some(e => e)) && (
               <Alert severity="error" sx={{ mt: 2 }}>
-                {Object.values(errors).find(e => e) || 'Por favor, corrija os erros no formulário'}
+                {Object.values(errors).find((e): e is string => typeof e === 'string' && e.length > 0) || 'Por favor, corrija os erros no formulário'}
               </Alert>
             )}
 

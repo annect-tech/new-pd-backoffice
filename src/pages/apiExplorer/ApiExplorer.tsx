@@ -4,8 +4,6 @@ import {
   Paper,
   Typography,
   Button,
-  Select,
-  MenuItem,
   TextField,
   CircularProgress,
   Alert,
@@ -13,7 +11,6 @@ import {
   AccordionSummary,
   AccordionDetails,
   Chip,
-  Grid,
   Table,
   TableBody,
   TableCell,
@@ -178,7 +175,7 @@ const ApiExplorer: React.FC = () => {
       }
 
       if (result.status >= 400) {
-        const errorMsg = result.data?.message || result.message || `Erro ${result.status}`;
+        const errorMsg = (result.data as any)?.message || result.message || `Erro ${result.status}`;
         setError(errorMsg);
         setResponse(result.data || result);
       } else {
@@ -222,7 +219,7 @@ const ApiExplorer: React.FC = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {items.slice(0, 50).map((item, idx) => (
+            {items.slice(0, 50).map((item: any, idx: number) => (
               <TableRow key={idx} hover>
                 {keys.map((key) => (
                   <TableCell key={key}>
@@ -258,9 +255,9 @@ const ApiExplorer: React.FC = () => {
         ]}
       />
 
-      <Grid container spacing={3} sx={{ mt: 2 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 2fr' }, gap: 3, mt: 2 }}>
         {/* Sidebar - Lista de Endpoints */}
-        <Grid item xs={12} md={4}>
+        <Box>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
               Endpoints Disponíveis
@@ -310,10 +307,10 @@ const ApiExplorer: React.FC = () => {
               </Accordion>
             ))}
           </Paper>
-        </Grid>
+        </Box>
 
         {/* Main Content */}
-        <Grid item xs={12} md={8}>
+        <Box>
           {selectedEndpoint ? (
             <Paper sx={{ p: 3 }}>
               {/* Endpoint Info */}
@@ -336,9 +333,9 @@ const ApiExplorer: React.FC = () => {
                   <Typography variant="subtitle2" gutterBottom>
                     Parâmetros:
                   </Typography>
-                  <Grid container spacing={2}>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: 2 }}>
                     {selectedEndpoint.queryParams.map((param) => (
-                      <Grid item xs={12} sm={6} key={param.name}>
+                      <Box key={param.name}>
                         <TextField
                           label={param.name}
                           helperText={param.description}
@@ -352,9 +349,9 @@ const ApiExplorer: React.FC = () => {
                           fullWidth
                           size="small"
                         />
-                      </Grid>
+                      </Box>
                     ))}
-                  </Grid>
+                  </Box>
                 </Box>
               )}
 
@@ -446,8 +443,8 @@ const ApiExplorer: React.FC = () => {
               </Typography>
             </Paper>
           )}
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
     </Box>
   );
 };
