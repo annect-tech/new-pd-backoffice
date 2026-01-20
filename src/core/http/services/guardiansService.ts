@@ -2,6 +2,8 @@ import { httpClient } from "../httpClient";
 import { getEndpointPrefix } from "../utils/endpointPrefix";
 import type { Guardian } from "../../../interfaces/userProfile";
 
+export type { Guardian };
+
 const API_URL = import.meta.env.VITE_API_URL as string || "http://186.248.135.172:31535";
 
 export interface GuardianPayload {

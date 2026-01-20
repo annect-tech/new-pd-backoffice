@@ -2,7 +2,6 @@ import { useState, useCallback } from "react";
 import {
   candidateDocumentsService,
   type CandidateDocument,
-  type CandidateDocumentPayload,
 } from "../core/http/services/candidateDocumentsService";
 
 interface SnackbarState {
@@ -187,7 +186,7 @@ export const useDocuments = () => {
    * Faz upload de documento de identidade (admin)
    */
   const uploadId = useCallback(
-    async (userDataId: string | number, fileName: string, file: File) => {
+    async (userDataId: string | number, _fileName: string, file: File) => {
       return uploadDocument(file, userDataId, "id_doc");
     },
     [uploadDocument]
@@ -197,7 +196,7 @@ export const useDocuments = () => {
    * Faz upload de documento de endereço (admin)
    */
   const uploadAddress = useCallback(
-    async (userDataId: string | number, fileName: string, file: File) => {
+    async (userDataId: string | number, _fileName: string, file: File) => {
       return uploadDocument(file, userDataId, "address_doc");
     },
     [uploadDocument]
@@ -207,7 +206,7 @@ export const useDocuments = () => {
    * Faz upload de histórico escolar (admin)
    */
   const uploadSchoolHistory = useCallback(
-    async (userDataId: string | number, fileName: string, file: File) => {
+    async (userDataId: string | number, _fileName: string, file: File) => {
       return uploadDocument(file, userDataId, "school_history_doc");
     },
     [uploadDocument]

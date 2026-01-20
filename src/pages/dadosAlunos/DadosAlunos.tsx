@@ -48,7 +48,6 @@ import {
 import AgentModal from "../../components/modals/AgentModal";
 import PsychologistModal from "../../components/modals/PsychologistModal";
 import EditStudentModal from "../../components/modals/EditStudentModal";
-import { useStudentData } from "../../hooks/useStudentData";
 import { useSelective } from "../../hooks/useSelective";
 import { studentDataService } from "../../core/http/services/studentDataService";
 

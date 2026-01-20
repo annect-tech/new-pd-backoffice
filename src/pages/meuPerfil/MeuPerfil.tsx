@@ -6,8 +6,6 @@ import {
   Paper,
   useTheme,
   Button,
-  Breadcrumbs,
-  Link,
   CircularProgress,
   TextField,
   Snackbar,
@@ -15,13 +13,11 @@ import {
   IconButton,
 } from '@mui/material';
 import {
-  NavigateNext as NavigateNextIcon,
   PhotoCamera as PhotoCameraIcon,
   Edit as EditIcon,
   Save as SaveIcon,
   Cancel as CancelIcon,
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router';
 import { APP_ROUTES } from '../../util/constants';
 import { useMyProfile } from '../../hooks/useUsers';
 import { useUserProfile } from '../../hooks/useUserProfile';
@@ -45,7 +41,6 @@ const formatDate = (dateString: string): string => {
 
 const MeuPerfil: React.FC = () => {
   const theme = useTheme();
-  const navigate = useNavigate();
   const { user } = useAuth();
   const { profile, loading: profileLoading, error: profileError, fetchMyProfile } = useMyProfile();
   const { updateProfile, uploadPhoto, snackbar: profileSnackbar, closeSnackbar: closeProfileSnackbar } = useUserProfile();
@@ -306,6 +301,14 @@ const MeuPerfil: React.FC = () => {
             </Button>
           </Box>
         </Box>
+      </Box>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+        <CircularProgress />
       </Box>
     );
   }

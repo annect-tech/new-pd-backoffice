@@ -39,10 +39,9 @@ export const useAcademicMerit = () => {
     setSnackbar((prev) => ({ ...prev, open: false }));
   }, []);
 
-  const fetchMerits = useCallback(async (page: number = 1, size: number = 10, status?: string) => {
+  const fetchMerits = useCallback(async (page: number = 1, _size: number = 10, status?: string) => {
     // Garantir que os parâmetros são números
     const pageNum = typeof page === 'number' ? page : 1;
-    const sizeNum = typeof size === 'number' ? size : 10;
     const statusFilter = status || "pending";
     
     setLoading(true);

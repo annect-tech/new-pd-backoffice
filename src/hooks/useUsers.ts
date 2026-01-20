@@ -89,10 +89,8 @@ export function useUsers(page: number = 1, size: number = 10) {
     setError(null);
     
     try {
-      // Remover birth_date do payload se existir (backend não aceita esse campo)
-      const { birth_date, ...payloadWithoutBirthDate } = payload;
-      
-      const response = await usersService.createUser(payloadWithoutBirthDate);
+      // O backend não aceita birth_date no CreateUser, então enviamos o payload como está
+      const response = await usersService.createUser(payload);
       
       if (response.status === 201 || response.status === 200) {
         // Recarregar lista de usuários após criar
@@ -110,8 +108,8 @@ export function useUsers(page: number = 1, size: number = 10) {
           if (response.data) {
             if (typeof response.data === 'string') {
               errorMessage = response.data;
-            } else if (response.data.message) {
-              errorMessage = response.data.message;
+            } else if ((response.data as any).message) {
+              errorMessage = (response.data as any).message;
             } else if (Array.isArray(response.data) && response.data.length > 0) {
               errorMessage = response.data.join(", ");
             }

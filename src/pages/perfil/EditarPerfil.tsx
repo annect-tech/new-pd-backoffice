@@ -19,7 +19,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router';
 import { APP_ROUTES } from '../../util/constants';
-import { usersService, type UserProfileResponse } from '../../core/http/services/usersService';
+import { usersService } from '../../core/http/services/usersService';
 
 const EditarPerfil: React.FC = () => {
   const navigate = useNavigate();

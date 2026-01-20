@@ -224,7 +224,7 @@ const Perfil: React.FC = () => {
                   {username}
                 </Typography>
                 <Typography variant="body1" color="text.secondary" mt={1}>
-                  Membro desde {formatDate(userProfile.created_at)}
+                  {userProfile.created_at && `Membro desde ${formatDate(userProfile.created_at)}`}
                 </Typography>
               </Box>
               <Button

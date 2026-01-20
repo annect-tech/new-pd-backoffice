@@ -53,6 +53,7 @@ export interface UserProfileResponse {
   birth_date?: string;
   hire_date?: string;
   created_at?: string;
+  equipment_patrimony?: string;
   user_display?: {
     username: string;
     first_name: string;
@@ -184,8 +185,6 @@ export const usersService = {
           profiles = response.data;
         } else if (response.data?.data && Array.isArray(response.data.data)) {
           profiles = response.data.data;
-        } else if (response.data?.results && Array.isArray(response.data.results)) {
-          profiles = response.data.results;
         }
         
         if (profiles.length > 0) {

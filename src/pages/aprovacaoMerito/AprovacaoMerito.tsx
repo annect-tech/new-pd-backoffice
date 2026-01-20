@@ -51,6 +51,10 @@ const AprovacaoMerito: React.FC = () => {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos timeout
           
+          if (!currentMerit.document) {
+            throw new Error('Documento não disponível');
+          }
+          
           const response = await fetch(currentMerit.document, {
             method: 'HEAD',
             signal: controller.signal,

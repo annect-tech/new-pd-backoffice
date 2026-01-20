@@ -32,6 +32,11 @@ interface CreateUserModalProps {
   onClose: () => void;
 }
 
+// Tipo local que inclui birth_date para o formulário (mas não será enviado ao backend)
+interface CreateUserFormData extends CreateUserPayload {
+  birth_date?: string;
+}
+
 const CreateUserModal: React.FC<CreateUserModalProps> = ({
   open,
   loading,
@@ -39,7 +44,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
   onClose,
 }) => {
   const { tenantCities, fetchTenantCities } = useTenantCities();
-  const [formData, setFormData] = useState<CreateUserPayload>({
+  const [formData, setFormData] = useState<CreateUserFormData>({
     username: "",
     first_name: "",
     last_name: "",
@@ -50,7 +55,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
     tenant_city_id: "",
     birth_date: "",
   });
-  const [errors, setErrors] = useState<Partial<Record<keyof CreateUserPayload, string>>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof CreateUserFormData, string>>>({});
   const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -67,7 +72,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
         password: "",
         tenant_city_id: "",
         birth_date: "",
-      });
+      } as CreateUserFormData);
       setErrors({});
       setFormError(null);
       setShowPassword(false);
@@ -79,7 +84,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
     }
   }, [open]);
 
-  const handleChange = (field: keyof CreateUserPayload) => (
+  const handleChange = (field: keyof CreateUserFormData) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     let value = e.target.value;

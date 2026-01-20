@@ -56,7 +56,6 @@ const ResultadoProvas: React.FC = () => {
     setModalOpen,
     handleOpenGeneralMenu,
     handleCloseGeneralMenu,
-    handleOpenRowMenu,
     handleCloseRowMenu,
     goToDetail,
     snackbar,
@@ -181,8 +180,6 @@ const ResultadoProvas: React.FC = () => {
             users = resp.data;
           } else if (resp.data?.data && Array.isArray(resp.data.data)) {
             users = resp.data.data;
-          } else if (resp.data?.results && Array.isArray(resp.data.results)) {
-            users = resp.data.results;
           }
           
           uniqueUserIds.forEach((userId) => {
