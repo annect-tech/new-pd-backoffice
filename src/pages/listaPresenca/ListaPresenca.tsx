@@ -1,31 +1,8 @@
 /**
  * Lista de Presença - Gestão de Exames Agendados
- * 
- * OTIMIZAÇÕES IMPLEMENTADAS (baseadas no RELATORIO_ANALISE_LISTA_PRESENCA.md):
- * 
- * 1. Busca Otimizada de Usuários:
- *    - ANTES: Buscava TODOS os usuários do sistema (100+ requisições)
- *    - AGORA: Busca APENAS os usuários dos exames retornados
- *    - MELHORIA: ~98% de redução no tempo de carregamento
- * 
- * 2. Requisições em Paralelo:
- *    - Usa Promise.all para buscar múltiplos usuários simultaneamente
- *    - Processa em chunks de 10 para evitar sobrecarga
- * 
- * 3. Estrutura de Dados Corrigida:
- *    - Interfaces TypeScript atualizadas para refletir resposta real da API
- *    - Preparado para quando o backend implementar JOINs (Solução 1 do relatório)
- * 
- * 4. Exportação Corrigida:
- *    - Funciona com a estrutura atual da API
- *    - Suporta tanto dados atuais (IDs) quanto futuros (objetos completos)
- * 
- * PRÓXIMAS MELHORIAS (quando backend for corrigido):
- * - Backend deve retornar dados completos com JOINs (user_data, exam_schedule_info)
- * - Remover toda a lógica de busca de usuários deste componente
- * - Simplificar código em ~60%
- * 
- * Ver: RELATORIO_ANALISE_LISTA_PRESENCA.md para análise completa
+ *
+ * A API retorna dados completos incluindo user_data e exam_scheduled_hour
+ * conforme documentação Swagger.
  */
 import React, { useState, useEffect, useMemo } from "react";
 import {
@@ -57,7 +34,6 @@ import {
   MoreVert as MoreVertIcon,
 } from "@mui/icons-material";
 import { useExamsScheduled } from "../../hooks/useExamsScheduled";
-import { usersService } from "../../core/http/services/usersService";
 import ScheduledStatusUpdaterModal from "../../components/modals/ScheduledStatusUpdaterModal";
 import { APP_ROUTES } from "../../util/constants";
 import PageHeader from "../../components/ui/page/PageHeader";
@@ -97,83 +73,25 @@ const ListaPresenca: React.FC = () => {
   const [openUpdater, setOpenUpdater] = useState(false);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [usersMap, setUsersMap] = useState<Map<number, any>>(new Map());
-  const [loadingUsers, setLoadingUsers] = useState(false);
-  
-  const loading = examsLoading || loadingUsers;
 
-  // Buscar APENAS os usuários necessários (dos exames retornados)
-  // Esta é uma solução otimizada até que o backend seja corrigido
-  useEffect(() => {
-    const fetchRequiredUsers = async () => {
-      if (!Array.isArray(exams) || exams.length === 0) {
-        setUsersMap(new Map());
-        return;
-      }
-
-      setLoadingUsers(true);
-      try {
-        const userIds = [...new Set(exams.map((exam: any) => Number(exam.user_data_id)))];
-        
-        const chunkSize = 10;
-        const chunks: number[][] = [];
-        for (let i = 0; i < userIds.length; i += chunkSize) {
-          chunks.push(userIds.slice(i, i + chunkSize));
-        }
-        
-        const allUsers: any[] = [];
-        for (const chunk of chunks) {
-          const userPromises = chunk.map(async (userId) => {
-            try {
-              const response = await usersService.getUserById(userId);
-              if (response.status >= 200 && response.status < 300 && response.data) {
-                return response.data;
-              }
-              return null;
-            } catch {
-              return null;
-            }
-          });
-          
-          const chunkResults = await Promise.all(userPromises);
-          allUsers.push(...chunkResults.filter(Boolean));
-        }
-        
-        const map = new Map();
-        allUsers.forEach((user: any) => {
-          if (user && user.id) {
-            map.set(Number(user.id), user);
-          }
-        });
-        
-        setUsersMap(map);
-      } catch {
-      } finally {
-        setLoadingUsers(false);
-      }
-    };
-    
-    fetchRequiredUsers();
-  }, [exams]);
-
-  // Transform exams to rows com merge de auth_users
+  // Transform exams to rows - dados já vêm completos da API
   const rows = useMemo(() => {
     if (!Array.isArray(exams) || exams.length === 0) {
       return [];
     }
-    
-    return exams.map((exam: any) => {
-      const userId = Number(exam.user_data_id);
-      const authUser = usersMap.get(userId);
-      
-      // Nome: username ou "—"
-      const completeName = authUser?.username || "—";
-      
+
+    return exams.map((exam) => {
+      const userData = exam.user_data;
+      const user = userData?.user;
+      const completeName = user
+        ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
+        : "—";
+
       return {
         id: exam.id,
-        cpf: authUser?.cpf || "—",
-        name: completeName,
-        celphone: authUser?.celphone || "Não informado",
+        cpf: userData?.cpf || "—",
+        name: completeName || "—",
+        celphone: userData?.celphone || "Não informado",
         status:
           exam.status === "absent"
             ? "ausente"
@@ -186,12 +104,12 @@ const ListaPresenca: React.FC = () => {
         originalStatus: exam.status,
       };
     });
-  }, [exams, usersMap]);
+  }, [exams]);
 
-  // Filter rows (filtro de status + busca local por nome/CPF/username)
+  // Filter rows (filtro de status + busca local por nome/CPF)
   const filtered = useMemo(() => {
     let result = rows;
-    
+
     // Filtrar por status
     if (filterStatus !== "all") {
       result = result.filter((row) => {
@@ -201,33 +119,22 @@ const ListaPresenca: React.FC = () => {
         return true;
       });
     }
-    
+
     // Busca local por termo
     if (searchTerm.trim()) {
       const search = searchTerm.trim().toLowerCase();
       result = result.filter((row) => {
-        const exam = exams.find((e: any) => String(e.id) === String(row.id));
-        const userId = Number(exam?.user_data_id);
-        const authUser = usersMap.get(userId);
-        
-        // Buscar em: CPF, Nome, Username, Email
-        const searchableText = [
-          row.cpf,
-          row.name,
-          authUser?.username,
-          authUser?.email,
-          row.celphone,
-        ]
+        const searchableText = [row.cpf, row.name, row.celphone]
           .filter(Boolean)
           .join(" ")
           .toLowerCase();
-        
+
         return searchableText.includes(search);
       });
     }
-    
+
     return result;
-  }, [rows, filterStatus, searchTerm, exams, usersMap]);
+  }, [rows, filterStatus, searchTerm]);
 
   useEffect(() => {
     // Buscar sem termo de pesquisa - faremos filtro local
@@ -429,17 +336,17 @@ const ListaPresenca: React.FC = () => {
                 </Box>
               </Toolbar>
 
-              {loading ? (
+              {examsLoading ? (
                 <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" p={4}>
                   <CircularProgress {...progressStyles} />
-                  <Typography 
-                    sx={{ 
-                      mt: 2, 
+                  <Typography
+                    sx={{
+                      mt: 2,
                       color: designSystem.colors.text.disabled,
-                      fontSize: "0.875rem" 
+                      fontSize: "0.875rem",
                     }}
                   >
-                    {loadingUsers ? "Carregando dados dos usuários..." : "Carregando exames..."}
+                    Carregando exames...
                   </Typography>
                 </Box>
               ) : error ? (

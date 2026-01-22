@@ -154,7 +154,7 @@ const Dashboard: React.FC = () => {
                 variant="h4"
                 sx={{
                   fontWeight: 600,
-                  color: "#1F2937",
+                  color: (theme) => theme.palette.mode === "dark" ? "#FFFFFF" : "#1F2937",
                   mb: 1,
                   fontSize: { xs: "1.75rem", sm: "2rem", md: "2.25rem" },
                 }}
@@ -164,7 +164,7 @@ const Dashboard: React.FC = () => {
               <Typography
                 variant="body1"
                 sx={{
-                  color: "#6B7280",
+                  color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#6B7280",
                   fontSize: { xs: "0.95rem", sm: "1rem" },
                 }}
               >
@@ -181,7 +181,7 @@ const Dashboard: React.FC = () => {
                   variant="h5"
                   sx={{
                     fontWeight: 600,
-                    color: "#1F2937",
+                    color: (theme) => theme.palette.mode === "dark" ? "#FFFFFF" : "#1F2937",
                     fontSize: { xs: "1.1rem", sm: "1.25rem" },
                   }}
                 >
@@ -233,7 +233,7 @@ const Dashboard: React.FC = () => {
                   variant="h5"
                   sx={{
                     fontWeight: 600,
-                    color: "#1F2937",
+                    color: (theme) => theme.palette.mode === "dark" ? "#FFFFFF" : "#1F2937",
                     fontSize: { xs: "1.1rem", sm: "1.25rem" },
                   }}
                 >

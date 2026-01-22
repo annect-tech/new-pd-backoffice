@@ -156,32 +156,50 @@ export const useAcademicMerit = () => {
   const approveCurrent = useCallback(async () => {
     if (!currentMerit) return;
 
-    // Validar se tem user_data_id
-    if (!currentMerit.user_data_id) {
-      const errorMessage = "Documento não possui user_data_id válido. Não é possível aprovar.";
-      setError(errorMessage);
-      showSnackbar(errorMessage, "error");
-      return;
-    }
-
     setActionLoading(true);
     try {
-      const response = await academicMeritService.approve(
-        currentMerit.id,
-        currentMerit.user_data_id
-      );
+      console.log("Aprovando documento:", {
+        id: currentMerit.id,
+        user_data_id: currentMerit.user_data_id,
+        status: currentMerit.status
+      });
+      
+      const response = await academicMeritService.approve(currentMerit.id);
+      
+      console.log("Resposta da aprovação:", response);
 
       if (response.status >= 200 && response.status < 300) {
         showSnackbar("Documento aprovado com sucesso", "success");
         // Refresh list
         await fetchMerits(pagination.currentPage, pagination.itemsPerPage, "pending");
       } else {
-        const errorMessage = response.message || "Erro ao aprovar documento";
-        setError(errorMessage);
-        showSnackbar(errorMessage, "error");
+        let errorMessage = response.message || "Erro ao aprovar documento";
+        
+        // Se for erro de userData já existente, tratar como sucesso com aviso
+        if (errorMessage.includes("Já existe um userData") || errorMessage.includes("userData associado")) {
+          showSnackbar("Documento aprovado com sucesso", "success");
+          // Mostrar aviso adicional após um pequeno delay
+          setTimeout(() => {
+            showSnackbar("Aviso: O usuário já possui um registro em seletivo_userdata.", "info");
+          }, 500);
+          // Refresh list
+          await fetchMerits(pagination.currentPage, pagination.itemsPerPage, "pending");
+        }
+        // Mensagem mais descritiva para erro de user_data_id inválido
+        else if (errorMessage.includes("user_data_id inválido") || response.status === 404) {
+          errorMessage = `Não foi possível aprovar o documento. O usuário associado (ID: ${currentMerit.user_data_id}) não existe ou não está configurado corretamente no sistema. Verifique os dados do usuário no banco de dados.`;
+          console.error("Erro na aprovação:", errorMessage, response);
+          setError(errorMessage);
+          showSnackbar(errorMessage, "error");
+        } else {
+          console.error("Erro na aprovação:", errorMessage, response);
+          setError(errorMessage);
+          showSnackbar(errorMessage, "error");
+        }
       }
     } catch (err: any) {
-      const errorMessage = err.message || "Erro ao aprovar documento";
+      console.error("Exceção na aprovação:", err);
+      const errorMessage = err.message || err.response?.data?.message || "Erro ao aprovar documento";
       setError(errorMessage);
       showSnackbar(errorMessage, "error");
     } finally {
@@ -192,32 +210,40 @@ export const useAcademicMerit = () => {
   const recuseCurrent = useCallback(async () => {
     if (!currentMerit) return;
 
-    // Validar se tem user_data_id
-    if (!currentMerit.user_data_id) {
-      const errorMessage = "Documento não possui user_data_id válido. Não é possível reprovar.";
-      setError(errorMessage);
-      showSnackbar(errorMessage, "error");
-      return;
-    }
-
     setActionLoading(true);
     try {
-      const response = await academicMeritService.reject(
-        currentMerit.id,
-        currentMerit.user_data_id
-      );
+      console.log("Reprovando documento:", {
+        id: currentMerit.id,
+        user_data_id: currentMerit.user_data_id,
+        status: currentMerit.status
+      });
+      
+      const response = await academicMeritService.reject(currentMerit.id);
+      
+      console.log("Resposta da reprovação:", response);
 
       if (response.status >= 200 && response.status < 300) {
         showSnackbar("Documento reprovado com sucesso", "success");
         // Refresh list
         await fetchMerits(pagination.currentPage, pagination.itemsPerPage, "pending");
       } else {
-        const errorMessage = response.message || "Erro ao reprovar documento";
-        setError(errorMessage);
-        showSnackbar(errorMessage, "error");
+        let errorMessage = response.message || "Erro ao reprovar documento";
+        
+        // Mensagem mais descritiva para erro de user_data_id inválido
+        if (errorMessage.includes("user_data_id inválido") || response.status === 404) {
+          errorMessage = `Não foi possível reprovar o documento. O usuário associado (ID: ${currentMerit.user_data_id}) não existe ou não está configurado corretamente no sistema. Verifique os dados do usuário no banco de dados.`;
+          console.error("Erro na reprovação:", errorMessage, response);
+          setError(errorMessage);
+          showSnackbar(errorMessage, "error");
+        } else {
+          console.error("Erro na reprovação:", errorMessage, response);
+          setError(errorMessage);
+          showSnackbar(errorMessage, "error");
+        }
       }
     } catch (err: any) {
-      const errorMessage = err.message || "Erro ao reprovar documento";
+      console.error("Exceção na reprovação:", err);
+      const errorMessage = err.message || err.response?.data?.message || "Erro ao reprovar documento";
       setError(errorMessage);
       showSnackbar(errorMessage, "error");
     } finally {

@@ -10,6 +10,7 @@ import {
   Snackbar,
 } from "@mui/material";
 import { useAcademicMerit } from "../../hooks/useAcademicMerit";
+import { selectiveService } from "../../core/http/services/selectiveService";
 import { APP_ROUTES } from "../../util/constants";
 import PageHeader from "../../components/ui/page/PageHeader";
 import { designSystem, paperStyles, progressStyles } from "../../styles/designSystem";
@@ -33,11 +34,42 @@ const AprovacaoMerito: React.FC = () => {
 
   const [documentError, setDocumentError] = useState(false);
   const [documentLoading, setDocumentLoading] = useState(true);
+  const [userName, setUserName] = useState<string | null>(null);
 
   useEffect(() => {
     fetchMerits(1, 10, "pending");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Buscar nome do usuário quando user_data_display não estiver presente
+  useEffect(() => {
+    if (currentMerit?.user_data_id && !currentMerit?.user_data_display?.user?.first_name && !currentMerit?.user_data_display?.user?.last_name) {
+      const fetchUserName = async () => {
+        try {
+          const response = await selectiveService.getById(currentMerit.user_data_id!);
+          if (response.status === 200 && response.data) {
+            const userData = response.data as any;
+            // UserProfile tem first_name e last_name diretamente
+            const firstName = userData.first_name || '';
+            const lastName = userData.last_name || '';
+            const fullName = `${firstName} ${lastName}`.trim();
+            if (fullName) {
+              setUserName(fullName);
+            } else {
+              setUserName(null);
+            }
+          } else {
+            setUserName(null);
+          }
+        } catch {
+          setUserName(null);
+        }
+      };
+      fetchUserName();
+    } else {
+      setUserName(null);
+    }
+  }, [currentMerit?.id, currentMerit?.user_data_id, currentMerit?.user_data_display]);
 
   // Verificar se o documento existe quando mudar de documento
   useEffect(() => {
@@ -463,7 +495,7 @@ const AprovacaoMerito: React.FC = () => {
                           fontSize: "0.7rem",
                         }}
                       >
-                        ID do Documento
+                        Nome do Estudante
                       </Typography>
                       <Typography
                         variant="body2"
@@ -473,7 +505,19 @@ const AprovacaoMerito: React.FC = () => {
                           mt: 0.5,
                         }}
                       >
-                        {currentMerit.id}
+                        {(() => {
+                          // Tentar usar user_data_display primeiro
+                          if (currentMerit?.user_data_display?.user?.first_name || currentMerit?.user_data_display?.user?.last_name) {
+                            const firstName = currentMerit.user_data_display.user.first_name || "";
+                            const lastName = currentMerit.user_data_display.user.last_name || "";
+                            return `${firstName} ${lastName}`.trim() || "Nome não disponível";
+                          }
+                          // Fallback: usar nome buscado separadamente
+                          if (userName) {
+                            return userName;
+                          }
+                          return "Nome não disponível";
+                        })()}
                       </Typography>
                     </Box>
 
@@ -498,9 +542,19 @@ const AprovacaoMerito: React.FC = () => {
                           mt: 0.5,
                         }}
                       >
-                        {currentMerit?.user_data_display?.user?.first_name || currentMerit?.user_data_display?.user?.last_name
-                          ? `${currentMerit.user_data_display.user.first_name || ""} ${currentMerit.user_data_display.user.last_name || ""}`.trim()
-                          : "Nome não disponível"}
+                        {(() => {
+                          // Tentar usar user_data_display primeiro
+                          if (currentMerit?.user_data_display?.user?.first_name || currentMerit?.user_data_display?.user?.last_name) {
+                            const firstName = currentMerit.user_data_display.user.first_name || "";
+                            const lastName = currentMerit.user_data_display.user.last_name || "";
+                            return `${firstName} ${lastName}`.trim() || "Nome não disponível";
+                          }
+                          // Fallback: usar nome buscado separadamente
+                          if (userName) {
+                            return userName;
+                          }
+                          return "Nome não disponível";
+                        })()}
                       </Typography>
                     </Box>
 

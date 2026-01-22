@@ -14,7 +14,9 @@ export interface PaginatedResponse<T> {
 
 export const selectiveService = {
   /**
-   * Lista todos os usuários do seletivo com paginação
+   * Lista todos os candidatos do seletivo com paginação
+   * Busca dados do auth_user (endpoint /user/users)
+   * O backend deve retornar dados completos com relacionamentos (seletivo_userdata, endereços, etc)
    * @param page - Número da página (padrão: 1)
    * @param size - Itens por página (padrão: 10)
    * @param search - Termo de busca opcional
@@ -23,7 +25,7 @@ export const selectiveService = {
     const prefix = getEndpointPrefix();
     return httpClient.get<PaginatedResponse<UserProfile>>(
       API_URL,
-      `/${prefix}/user-data`,
+      `/${prefix}/users`,
       {
         queryParams: {
           page,
@@ -35,7 +37,8 @@ export const selectiveService = {
   },
 
   /**
-   * Obtém detalhes de um usuário específico do seletivo
+   * Obtém detalhes de um candidato específico do seletivo
+   * Tenta buscar pelo endpoint /user/user-data que retorna dados completos
    * @param id - ID do usuário
    */
   getById: (id: string | number) => {

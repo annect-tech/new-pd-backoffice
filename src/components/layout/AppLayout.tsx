@@ -1,9 +1,8 @@
-import { useState, useMemo, useEffect } from "react";
-import { Box, ThemeProvider, CssBaseline } from "@mui/material";
+import { useState, useEffect, useMemo } from "react";
+import { Box } from "@mui/material";
 import { Outlet } from "react-router";
 import Header from "../ui/header/Header";
 import LayoutSidebar from "../ui/sidebar/LayoutSidebar";
-import getTheme from "../../assets/styles/theme";
 import { APP_ROUTES } from "../../util/constants";
 import { useAuthContext } from "../../app/providers/AuthProvider";
 import { useUserProfile } from "../../hooks/useUserProfile";
@@ -29,8 +28,6 @@ import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(true);
-  const themeMode = "light";
-  const theme = useMemo(() => getTheme(themeMode), [themeMode]);
   const { user, accessToken } = useAuthContext();
   const { fetchProfileByUserId, fetchProfileByCpf, createProfile, uploadPhoto } = useUserProfile();
   const [showCreateProfile, setShowCreateProfile] = useState(false);
@@ -265,21 +262,21 @@ export default function AppLayout() {
   ];
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Box display="flex" height="100vh" sx={{ position: "relative" }}>
-        {/* Overlay para melhor legibilidade */}
-        <Box
-          sx={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            bgcolor: "rgba(255, 255, 255, 0.7)",
-            zIndex: 0,
-          }}
-        />
+    <Box display="flex" height="100vh" sx={{ position: "relative" }}>
+      {/* Overlay para melhor legibilidade */}
+      <Box
+        sx={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          bgcolor: (theme) => theme.palette.mode === "dark" 
+            ? "rgba(0, 0, 0, 0.5)" 
+            : "rgba(255, 255, 255, 0.7)",
+          zIndex: 0,
+        }}
+      />
 
         <LayoutSidebar
           collapsed={collapsed}
@@ -320,7 +317,6 @@ export default function AppLayout() {
             <Outlet />
           </Box>
         </Box>
-      </Box>
 
       {/* Modal de Criação de Perfil */}
       <CreateProfileModal
@@ -332,6 +328,6 @@ export default function AppLayout() {
         onUploadPhoto={handleUploadPhoto}
         onClose={() => setShowCreateProfile(false)}
       />
-    </ThemeProvider>
+    </Box>
   );
 }

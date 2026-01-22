@@ -49,15 +49,13 @@ export const useSelective = () => {
 
         if (response.status >= 200 && response.status < 300 && response.data) {
           const raw = response.data as any;
-          // Tentar diferentes formatos de resposta
+          // A resposta do backend /user/user-data retorna: { currentPage, itemsPerPage, totalItems, totalPages, data: [] }
+          
           let list: any[] = [];
           if (Array.isArray(raw?.data)) {
             list = raw.data;
           } else if (Array.isArray(raw)) {
             list = raw;
-          } else if (raw?.data && typeof raw.data === 'object' && !Array.isArray(raw.data)) {
-            // Se data for um objeto, pode ser que os dados estejam em outra propriedade
-            list = [];
           }
 
           setUsers(list);

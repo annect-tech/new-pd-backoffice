@@ -28,7 +28,6 @@ import {
   Download as DownloadIcon,
 } from "@mui/icons-material";
 import { useExams } from "../../hooks/useExams";
-import { usersService } from "../../core/http/services/usersService";
 import NoteUpdaterModal from "../../components/modals/NoteUpdaterModal";
 import { APP_ROUTES } from "../../util/constants";
 import PageHeader from "../../components/ui/page/PageHeader";
@@ -70,31 +69,18 @@ const ResultadoProvas: React.FC = () => {
   const [downloadAnchor, setDownloadAnchor] = useState<null | HTMLElement>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [userInfoMap, setUserInfoMap] = useState<Record<string, { name?: string; cpf?: string }>>({});
-  const [loadingUsers, setLoadingUsers] = useState(false);
 
-  // Transform exams to rows
+  // Transform exams to rows - dados já vêm completos da API
   const rows = useMemo(() => {
     return exams.map((exam) => {
       const userData = exam.user_data;
       const user = userData?.user;
-      const userDataId = (exam as any)?.user_data_id;
-      const userIdKey = userDataId ? String(userDataId) : undefined;
 
-      // CPF: prioriza dados do mapa, depois nested data, depois ID
-      const cpf =
-        (userIdKey && userInfoMap[userIdKey]?.cpf) ||
-        userData?.cpf ||
-        (userDataId ? String(userDataId) : "N/A");
-      
-      // Nome: prioriza dados do mapa, depois nested data, depois fallback
-      const nome =
-        (userIdKey && userInfoMap[userIdKey]?.name) ||
-        (user?.first_name || user?.last_name
-          ? `${user?.first_name ?? ""} ${user?.last_name ?? ""}`.trim()
-          : userDataId
-          ? `Usuário ${userDataId}`
-          : "N/A");
+      // CPF e Nome direto da API
+      const cpf = userData?.cpf || "N/A";
+      const nome = user
+        ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
+        : "N/A";
 
       // Normalizar status para exibição/filtragem
       const statusMap: Record<string, string> = {
@@ -110,16 +96,16 @@ const ResultadoProvas: React.FC = () => {
       return {
         id: exam.id,
         cpf,
-        name: nome,
+        name: nome || "N/A",
         score: exam.score ?? null,
         status: statusNormalizado,
         local: exam.exam_scheduled_hour?.exam_date?.local?.name ?? "N/A",
         date: exam.exam_scheduled_hour?.exam_date?.date ?? "N/A",
         hour: exam.exam_scheduled_hour?.hour ?? "N/A",
-        user_data_id: userDataId,
+        user_data_id: exam.user_data_id,
       };
     });
-  }, [exams, userInfoMap]);
+  }, [exams]);
 
   // Filter rows
   const filtered = useMemo(() => {
@@ -148,65 +134,6 @@ const ResultadoProvas: React.FC = () => {
     fetchExams(1, 10);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Buscar dados de usuário (nome/cpf) a partir de user_data_id
-  useEffect(() => {
-    if (!exams || exams.length === 0) return;
-
-    const uniqueUserIds = [
-      ...new Set(
-        exams
-          .map((e) => (e as any)?.user_data_id)
-          .filter(Boolean)
-          .map((id) => String(id))
-      ),
-    ];
-
-    if (uniqueUserIds.length === 0) {
-      return;
-    }
-
-    const fetchUsers = async () => {
-      setLoadingUsers(true);
-      const map: Record<string, { name?: string; cpf?: string }> = {};
-      
-      try {
-        const resp = await usersService.listAllUsers(1, 1000);
-        
-        if (resp.status === 200 && resp.data) {
-          let users: any[] = [];
-          
-          if (Array.isArray(resp.data)) {
-            users = resp.data;
-          } else if (resp.data?.data && Array.isArray(resp.data.data)) {
-            users = resp.data.data;
-          }
-          
-          uniqueUserIds.forEach((userId) => {
-            const user = users.find((u) => String(u.id) === userId);
-            
-            if (user) {
-              const firstName = user.first_name || "";
-              const lastName = user.last_name || "";
-              const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
-              
-              map[userId] = {
-                name: fullName || user.username || undefined,
-                cpf: user.cpf || undefined,
-              };
-            }
-          });
-        }
-        
-        setUserInfoMap((prev) => ({ ...prev, ...map }));
-      } catch {
-      } finally {
-        setLoadingUsers(false);
-      }
-    };
-
-    fetchUsers();
-  }, [exams]);
 
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
@@ -402,23 +329,15 @@ const ResultadoProvas: React.FC = () => {
                   <Alert severity="error">{error}</Alert>
                 </Box>
               ) : (
-                <>
-                  {loadingUsers && (
-                    <Box sx={{ px: 2, py: 1 }}>
-                      <Alert severity="info" sx={{ fontSize: "0.875rem" }}>
-                        Carregando dados dos usuários...
-                      </Alert>
-                    </Box>
-                  )}
                 <TableContainer sx={{ maxWidth: "100%" }}>
                   <Table stickyHeader size="small" sx={{ tableLayout: "fixed", width: "100%" }}>
                     <TableHead>
                       <TableRow>
                         <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 120 }}>
-                          ID Resultado
+                          CPF
                         </TableCell>
                         <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 200 }}>
-                          ID Usuário
+                          Nome
                         </TableCell>
                         <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 100 }}>
                           Score
@@ -476,7 +395,6 @@ const ResultadoProvas: React.FC = () => {
                     {...tablePaginationStyles}
                   />
                 </TableContainer>
-                </>
               )}
             </Paper>
           </Fade>

@@ -46,15 +46,17 @@ const PageHeader: React.FC<PageHeaderProps> = ({
               const isLast = index === breadcrumbs.length - 1;
 
               if (isLast) {
-                return (
-                  <Typography
-                    key={index}
-                    color="#1F2937"
-                    fontWeight={500}
-                  >
-                    {item.label}
-                  </Typography>
-                );
+              return (
+                <Typography
+                  key={index}
+                  sx={{
+                    color: (theme) => theme.palette.mode === "dark" ? "#FFFFFF" : "#1F2937",
+                    fontWeight: 500,
+                  }}
+                >
+                  {item.label}
+                </Typography>
+              );
               }
 
               return (
@@ -64,7 +66,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
                   variant="body1"
                   onClick={() => item.path && navigate(item.path)}
                   sx={{
-                    color: "#9333EA",
+                    color: (theme) => theme.palette.mode === "dark" ? "#C084FC" : "#9333EA",
                     textDecoration: "none",
                     cursor: "pointer",
                     display: "flex",
@@ -90,7 +92,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
             variant="h4"
             sx={{
               fontWeight: 600,
-              color: "#1F2937",
+              color: (theme) => theme.palette.mode === "dark" ? "#FFFFFF" : "#1F2937",
               mb: subtitle ? 1 : description ? 3 : 0,
               fontSize: { xs: "1.75rem", sm: "2rem", md: "2.25rem" },
             }}
@@ -102,7 +104,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
             <Typography
               variant="body1"
               sx={{
-                color: "#6B7280",
+                color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#6B7280",
                 fontSize: { xs: "0.95rem", sm: "1rem" },
                 mb: description ? 3 : 0,
               }}
@@ -117,9 +119,11 @@ const PageHeader: React.FC<PageHeaderProps> = ({
               elevation={0}
               sx={{
                 p: 3,
-                backgroundColor: "#F9FAFB",
+                backgroundColor: (theme) => theme.palette.mode === "dark" ? "#181818" : "#F9FAFB",
                 borderRadius: 3,
-                border: "1px solid #E5E7EB",
+                border: (theme) => theme.palette.mode === "dark" 
+                  ? "1px solid rgba(255, 255, 255, 0.1)" 
+                  : "1px solid #E5E7EB",
                 position: "relative",
                 overflow: "hidden",
                 "&::before": {
@@ -133,7 +137,13 @@ const PageHeader: React.FC<PageHeaderProps> = ({
                 },
               }}
             >
-              <Typography variant="body2" color="#4B5563" sx={{ lineHeight: 1.7 }}>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: (theme) => theme.palette.mode === "dark" ? "#FFFFFF" : "#4B5563",
+                  lineHeight: 1.7 
+                }}
+              >
                 {description}
               </Typography>
             </Paper>

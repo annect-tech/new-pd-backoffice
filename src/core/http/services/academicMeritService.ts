@@ -72,17 +72,15 @@ export const academicMeritService = {
   /**
    * Aprova um documento de mérito acadêmico (atualiza status para APPROVED)
    * @param id - ID do documento
-   * @param user_data_id - ID do user_data (opcional, mas pode ser necessário)
    */
-  approve: (id: string | number, user_data_id?: string) => {
+  approve: (id: string | number) => {
     const prefix = getEndpointPrefix();
     return httpClient.put<AcademicMerit>(
       API_URL,
       `/${prefix}/academic-merit-documents`,
       id,
       { 
-        status: "APPROVED",
-        ...(user_data_id && { user_data_id })
+        status: "APPROVED"
       }
     );
   },
@@ -90,17 +88,32 @@ export const academicMeritService = {
   /**
    * Reprova um documento de mérito acadêmico (atualiza status para REJECTED)
    * @param id - ID do documento
-   * @param user_data_id - ID do user_data (opcional, mas pode ser necessário)
    */
-  reject: (id: string | number, user_data_id?: string) => {
+  reject: (id: string | number) => {
     const prefix = getEndpointPrefix();
     return httpClient.put<AcademicMerit>(
       API_URL,
       `/${prefix}/academic-merit-documents`,
       id,
       { 
-        status: "REJECTED",
-        ...(user_data_id && { user_data_id })
+        status: "REJECTED"
+      }
+    );
+  },
+
+  /**
+   * Atualiza o status de um documento de mérito acadêmico
+   * @param id - ID do documento
+   * @param status - Novo status (PENDING, APPROVED, REJECTED)
+   */
+  updateStatus: (id: string | number, status: "PENDING" | "APPROVED" | "REJECTED") => {
+    const prefix = getEndpointPrefix();
+    return httpClient.put<AcademicMerit>(
+      API_URL,
+      `/${prefix}/academic-merit-documents`,
+      id,
+      { 
+        status
       }
     );
   },

@@ -26,9 +26,11 @@ import {
   Search as SearchIcon,
   FilterList as FilterListIcon,
   Download as DownloadIcon,
+  MoreVert as MoreVertIcon,
 } from "@mui/icons-material";
 import { useAcademicMerit } from "../../hooks/useAcademicMerit";
 import { selectiveService } from "../../core/http/services/selectiveService";
+import { academicMeritService } from "../../core/http/services/academicMeritService";
 import PdfViewModal from "../../components/modals/PdfViewModal";
 import { APP_ROUTES } from "../../util/constants";
 import PageHeader from "../../components/ui/page/PageHeader";
@@ -53,13 +55,15 @@ const ResultadosMerito: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<
-    "all" | "aprovado" | "reprovado"
+    "all" | "pendente" | "aprovado" | "reprovado"
   >("all");
   const [filterAnchor, setFilterAnchor] = useState<null | HTMLElement>(null);
   const [downloadAnchor, setDownloadAnchor] = useState<null | HTMLElement>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
+  const [statusMenuAnchor, setStatusMenuAnchor] = useState<{ element: HTMLElement; id: string | number } | null>(null);
+  const [updatingStatus, setUpdatingStatus] = useState<string | number | null>(null);
   const [localSnackbar, setLocalSnackbar] = useState<{
     open: boolean;
     message: string;
@@ -124,6 +128,7 @@ const ResultadosMerito: React.FC = () => {
           row.id.toString().includes(searchTerm)
       )
       .filter((row) => {
+        if (filterStatus === "pendente") return row.status === "pendente";
         if (filterStatus === "aprovado") return row.status === "aprovado";
         if (filterStatus === "reprovado") return row.status === "reprovado";
         return true;
@@ -208,9 +213,127 @@ const ResultadosMerito: React.FC = () => {
   const openDownloadMenu = (e: React.MouseEvent<HTMLElement>) =>
     setDownloadAnchor(e.currentTarget);
   const closeFilterMenu = () => setFilterAnchor(null);
-  const applyFilter = (status: "all" | "aprovado" | "reprovado") => {
+  const applyFilter = (status: "all" | "pendente" | "aprovado" | "reprovado") => {
     setFilterStatus(status);
     closeFilterMenu();
+  };
+
+  const openStatusMenu = (e: React.MouseEvent<HTMLElement>, id: string | number) => {
+    e.stopPropagation();
+    setStatusMenuAnchor({ element: e.currentTarget, id });
+  };
+
+  const closeStatusMenu = () => {
+    setStatusMenuAnchor(null);
+  };
+
+  const handleUpdateStatus = async (id: string | number, newStatus: "PENDING" | "APPROVED" | "REJECTED") => {
+    setUpdatingStatus(id);
+    closeStatusMenu();
+    
+    try {
+      const response = await academicMeritService.updateStatus(id, newStatus);
+      
+      if (response.status >= 200 && response.status < 300) {
+        const statusMap: Record<string, string> = {
+          "PENDING": "pendente",
+          "APPROVED": "aprovado",
+          "REJECTED": "reprovado",
+        };
+        setLocalSnackbar({
+          open: true,
+          message: `Status alterado para ${statusMap[newStatus]} com sucesso`,
+          severity: "success",
+        });
+        // Recarregar a lista
+        await fetchAllMerits(1, 1000);
+      } else {
+        let errorMessage = response.message || "Erro ao alterar status";
+        const merit = allMerits.find(m => String(m.id) === String(id));
+        
+        // Se for erro de userData já existente, tratar como sucesso com aviso
+        if (errorMessage.includes("Já existe um userData") || errorMessage.includes("userData associado")) {
+          const statusMap: Record<string, string> = {
+            "PENDING": "pendente",
+            "APPROVED": "aprovado",
+            "REJECTED": "reprovado",
+          };
+          setLocalSnackbar({
+            open: true,
+            message: `Status alterado para ${statusMap[newStatus]} com sucesso`,
+            severity: "success",
+          });
+          // Mostrar aviso adicional após um pequeno delay
+          setTimeout(() => {
+            setLocalSnackbar({
+              open: true,
+              message: "Aviso: O usuário já possui um registro em seletivo_userdata.",
+              severity: "info",
+            });
+          }, 500);
+          // Recarregar a lista
+          await fetchAllMerits(1, 1000);
+        }
+        // Mensagem mais descritiva para erro de user_data_id inválido
+        else if (errorMessage.includes("user_data_id inválido") || response.status === 404) {
+          errorMessage = `Não foi possível alterar o status. O usuário associado (ID: ${merit?.user_data_id || "desconhecido"}) não existe ou não está configurado corretamente no sistema. Verifique os dados do usuário no banco de dados.`;
+          setLocalSnackbar({
+            open: true,
+            message: errorMessage,
+            severity: "error",
+          });
+        } else {
+          setLocalSnackbar({
+            open: true,
+            message: errorMessage,
+            severity: "error",
+          });
+        }
+      }
+    } catch (err: any) {
+      let errorMessage = err.message || "Erro ao alterar status";
+      const merit = allMerits.find(m => String(m.id) === String(id));
+      
+      if (errorMessage.includes("user_data_id inválido")) {
+        errorMessage = `Não foi possível alterar o status. O usuário associado (ID: ${merit?.user_data_id || "desconhecido"}) não existe ou não está configurado corretamente no sistema. Verifique os dados do usuário no banco de dados.`;
+        setLocalSnackbar({
+          open: true,
+          message: errorMessage,
+          severity: "error",
+        });
+      }
+      else if (errorMessage.includes("Já existe um userData") || errorMessage.includes("userData associado")) {
+        const statusMap: Record<string, string> = {
+          "PENDING": "pendente",
+          "APPROVED": "aprovado",
+          "REJECTED": "reprovado",
+        };
+        setLocalSnackbar({
+          open: true,
+          message: `Status alterado para ${statusMap[newStatus]} com sucesso`,
+          severity: "success",
+        });
+        // Mostrar aviso adicional após um pequeno delay
+        setTimeout(() => {
+          setLocalSnackbar({
+            open: true,
+            message: "Aviso: O usuário já possui um registro em seletivo_userdata.",
+            severity: "info",
+          });
+        }, 500);
+        // Recarregar a lista
+        await fetchAllMerits(1, 1000);
+      }
+      else {
+        setLocalSnackbar({
+          open: true,
+          message: errorMessage,
+          severity: "error",
+        });
+      }
+    } finally {
+      setUpdatingStatus(null);
+    }
   };
 
   // Constrói URL completa do PDF
@@ -283,6 +406,8 @@ const ResultadosMerito: React.FC = () => {
         return "#4CAF50";
       case "reprovado":
         return "#F44336";
+      case "pendente":
+        return "#FF9800";
       default:
         return "#FF9800";
     }
@@ -295,7 +420,7 @@ const ResultadosMerito: React.FC = () => {
           <PageHeader
             title="Resultados Mérito"
             subtitle="Gerenciamento de Méritos Acadêmicos"
-            description="Esta página permite visualizar os RESULTADOS DOS MÉRITOS ACADÊMICOS dos candidatos. Você pode pesquisar por nome ou ID, filtrar por status (aprovado/reprovado), exportar os dados em CSV e visualizar os documentos PDF de cada mérito. Utilize o botão 'Ver PDF' para abrir o documento completo."
+            description="Esta página permite visualizar os RESULTADOS DOS MÉRITOS ACADÊMICOS dos candidatos. Você pode pesquisar por nome ou ID, filtrar por status (pendente/aprovado/reprovado), exportar os dados em CSV, visualizar os documentos PDF e alterar o status de cada mérito. Utilize o botão 'Ver PDF' para abrir o documento completo e o menu de ações (⋮) para alterar o status."
             breadcrumbs={[
               { label: "Dashboard", path: APP_ROUTES.DASHBOARD },
               { label: "Resultados Mérito" },
@@ -326,6 +451,9 @@ const ResultadosMerito: React.FC = () => {
                   >
                     <MenuItem onClick={() => applyFilter("all")}>
                       Todos ({rows.length})
+                    </MenuItem>
+                    <MenuItem onClick={() => applyFilter("pendente")}>
+                      Pendentes ({rows.filter((r) => r.status === "pendente").length})
                     </MenuItem>
                     <MenuItem onClick={() => applyFilter("aprovado")}>
                       Aprovados ({rows.filter((r) => r.status === "aprovado").length})
@@ -388,12 +516,15 @@ const ResultadosMerito: React.FC = () => {
                         <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 180 }}>
                           Atualizado em
                         </TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 100, textAlign: "center" }}>
+                          Ações
+                        </TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {paginatedData.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
+                          <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
                             <Typography color="textSecondary">
                               {searchTerm || filterStatus !== "all"
                                 ? "Nenhum resultado encontrado"
@@ -441,6 +572,24 @@ const ResultadosMerito: React.FC = () => {
                             </TableCell>
                             <TableCell>{row.criadoEm}</TableCell>
                             <TableCell>{row.atualizadoEm}</TableCell>
+                            <TableCell align="center">
+                              {updatingStatus === row.id ? (
+                                <CircularProgress size={20} />
+                              ) : (
+                                <IconButton
+                                  size="small"
+                                  onClick={(e) => openStatusMenu(e, row.id)}
+                                  sx={{
+                                    color: designSystem.colors.text.secondary,
+                                    "&:hover": {
+                                      backgroundColor: designSystem.colors.background.secondary,
+                                    },
+                                  }}
+                                >
+                                  <MoreVertIcon fontSize="small" />
+                                </IconButton>
+                              )}
+                            </TableCell>
                           </TableRow>
                         ))
                       )}
@@ -504,6 +653,32 @@ const ResultadosMerito: React.FC = () => {
           {localSnackbar.message}
         </Alert>
       </Snackbar>
+
+      {/* Menu de alteração de status */}
+      <Menu
+        anchorEl={statusMenuAnchor?.element || null}
+        open={Boolean(statusMenuAnchor)}
+        onClose={closeStatusMenu}
+      >
+        <MenuItem
+          onClick={() => statusMenuAnchor && handleUpdateStatus(statusMenuAnchor.id, "PENDING")}
+          disabled={updatingStatus === statusMenuAnchor?.id}
+        >
+          Marcar como Pendente
+        </MenuItem>
+        <MenuItem
+          onClick={() => statusMenuAnchor && handleUpdateStatus(statusMenuAnchor.id, "APPROVED")}
+          disabled={updatingStatus === statusMenuAnchor?.id}
+        >
+          Marcar como Aprovado
+        </MenuItem>
+        <MenuItem
+          onClick={() => statusMenuAnchor && handleUpdateStatus(statusMenuAnchor.id, "REJECTED")}
+          disabled={updatingStatus === statusMenuAnchor?.id}
+        >
+          Marcar como Reprovado
+        </MenuItem>
+      </Menu>
     </Box>
   );
 };

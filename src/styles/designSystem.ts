@@ -16,16 +16,30 @@ export const designSystem = {
       tertiary: "#4B5563",
       disabled: "#6B7280",
       hint: "#9CA3AF",
+      // Dark mode
+      primaryDark: "#FFFFFF",
+      secondaryDark: "#B0B0B0",
+      tertiaryDark: "#9E9E9E",
+      disabledDark: "#7A7A7A",
+      hintDark: "#6B7280",
     },
     background: {
       primary: "#FFFFFF",
       secondary: "#F9FAFB",
       tertiary: "#F3F4F6",
+      // Dark mode
+      primaryDark: "#1E1E1E",
+      secondaryDark: "#2C2C2C",
+      tertiaryDark: "#3C3C3C",
     },
     border: {
       main: "#E5E7EB",
       light: "#D1D5DB",
       dark: "#9CA3AF",
+      // Dark mode
+      mainDark: "rgba(255, 255, 255, 0.1)",
+      lightDark: "rgba(255, 255, 255, 0.15)",
+      darkDark: "rgba(255, 255, 255, 0.2)",
     },
     success: {
       main: "#10B981",
@@ -65,6 +79,10 @@ export const designSystem = {
     small: "0 1px 3px rgba(0,0,0,0.04)",
     medium: "0 4px 12px rgba(0,0,0,0.1)",
     large: "0 10px 40px rgba(0,0,0,0.1)",
+    // Dark mode
+    smallDark: "0 1px 3px rgba(0,0,0,0.3)",
+    mediumDark: "0 4px 12px rgba(0,0,0,0.4)",
+    largeDark: "0 10px 40px rgba(0,0,0,0.5)",
   },
   transitions: {
     fast: "0.2s ease",
@@ -79,8 +97,12 @@ export const paperStyles = {
   sx: {
     borderRadius: 3,
     overflow: "hidden",
-    border: `1px solid ${designSystem.colors.border.main}`,
-    boxShadow: designSystem.shadows.small,
+    border: (theme) => `1px solid ${theme.palette.mode === "dark" 
+      ? designSystem.colors.border.mainDark 
+      : designSystem.colors.border.main}`,
+    boxShadow: (theme) => theme.palette.mode === "dark" 
+      ? designSystem.shadows.smallDark 
+      : designSystem.shadows.small,
   },
 };
 
@@ -91,8 +113,12 @@ export const toolbarStyles = {
     justifyContent: "space-between",
     gap: 2,
     p: 3,
-    backgroundColor: designSystem.colors.background.primary,
-    borderBottom: `1px solid ${designSystem.colors.border.main}`,
+    backgroundColor: (theme) => theme.palette.mode === "dark" 
+      ? designSystem.colors.background.secondaryDark 
+      : designSystem.colors.background.primary,
+    borderBottom: (theme) => `1px solid ${theme.palette.mode === "dark" 
+      ? designSystem.colors.border.mainDark 
+      : designSystem.colors.border.main}`,
   },
 };
 
@@ -100,10 +126,16 @@ export const toolbarStyles = {
 export const tableHeadStyles = {
   sx: {
     // match Seletivo visual: soft background, darker text, slightly larger border
-    backgroundColor: "#F9FAFB",
-    color: "#374151",
+    backgroundColor: (theme) => theme.palette.mode === "dark" 
+      ? designSystem.colors.background.secondaryDark 
+      : "#F9FAFB",
+    color: (theme) => theme.palette.mode === "dark" 
+      ? designSystem.colors.text.secondaryDark 
+      : "#374151",
     fontWeight: 600,
-    borderBottom: `2px solid ${designSystem.colors.border.main}`,
+    borderBottom: (theme) => `2px solid ${theme.palette.mode === "dark" 
+      ? designSystem.colors.border.mainDark 
+      : designSystem.colors.border.main}`,
     fontSize: "0.875rem",
   },
 };
@@ -114,13 +146,19 @@ export const tableRowHoverStyles = {
   sx: {
     // alternate row backgrounds and hover color to match Seletivo
     "&:nth-of-type(odd)": {
-      backgroundColor: "#FFFFFF",
+      backgroundColor: (theme) => theme.palette.mode === "dark" 
+        ? designSystem.colors.background.secondaryDark 
+        : "#FFFFFF",
     },
     "&:nth-of-type(even)": {
-      backgroundColor: "#F9FAFB",
+      backgroundColor: (theme) => theme.palette.mode === "dark" 
+        ? designSystem.colors.background.tertiaryDark 
+        : "#F9FAFB",
     },
     "&:hover": {
-      backgroundColor: "#FAF5FF !important",
+      backgroundColor: (theme) => theme.palette.mode === "dark" 
+        ? "rgba(166, 80, 240, 0.15) !important" 
+        : "#FAF5FF !important",
     },
     transition: `background-color ${designSystem.transitions.fast}`,
   },
@@ -129,9 +167,13 @@ export const tableRowHoverStyles = {
 // Estilos de IconButton
 export const iconButtonStyles = {
   sx: {
-    color: designSystem.colors.text.disabled,
+    color: (theme) => theme.palette.mode === "dark" 
+      ? designSystem.colors.text.disabledDark 
+      : designSystem.colors.text.disabled,
     "&:hover": {
-      backgroundColor: designSystem.colors.primary.lightest,
+      backgroundColor: (theme) => theme.palette.mode === "dark" 
+        ? "rgba(166, 80, 240, 0.15)" 
+        : designSystem.colors.primary.lightest,
       color: designSystem.colors.primary.main,
     },
   },
@@ -141,16 +183,22 @@ export const iconButtonStyles = {
 export const textFieldStyles = {
   sx: {
     "& .MuiInput-underline:before": {
-      borderBottomColor: designSystem.colors.border.light,
+      borderBottomColor: (theme) => theme.palette.mode === "dark" 
+        ? designSystem.colors.border.lightDark 
+        : designSystem.colors.border.light,
     },
     "& .MuiInput-underline:hover:before": {
-      borderBottomColor: designSystem.colors.border.dark,
+      borderBottomColor: (theme) => theme.palette.mode === "dark" 
+        ? designSystem.colors.border.darkDark 
+        : designSystem.colors.border.dark,
     },
     "& .MuiInput-underline:after": {
       borderBottomColor: designSystem.colors.primary.main,
     },
     "& input": {
-      color: designSystem.colors.text.primary,
+      color: (theme) => theme.palette.mode === "dark" 
+        ? designSystem.colors.text.primaryDark 
+        : designSystem.colors.text.primary,
     },
   },
 };
@@ -190,8 +238,12 @@ export const progressStyles = {
 // Estilos de TablePagination
 export const tablePaginationStyles = {
   sx: {
-    borderTop: `1px solid ${designSystem.colors.border.main}`,
-    backgroundColor: designSystem.colors.background.secondary,
+    borderTop: (theme) => `1px solid ${theme.palette.mode === "dark" 
+      ? designSystem.colors.border.mainDark 
+      : designSystem.colors.border.main}`,
+    backgroundColor: (theme) => theme.palette.mode === "dark" 
+      ? designSystem.colors.background.secondaryDark 
+      : designSystem.colors.background.secondary,
   },
 };
 
@@ -199,9 +251,15 @@ export const tablePaginationStyles = {
 export const dataGridStyles = {
   border: "none",
   "& .MuiDataGrid-columnHeaders": {
-    backgroundColor: designSystem.colors.background.secondary, // #F9FAFB - igual ao Seletivo
-    color: designSystem.colors.text.secondary, // #374151
-    borderBottom: `2px solid ${designSystem.colors.border.main}`,
+    backgroundColor: (theme) => theme.palette.mode === "dark" 
+      ? designSystem.colors.background.secondaryDark 
+      : designSystem.colors.background.secondary,
+    color: (theme) => theme.palette.mode === "dark" 
+      ? designSystem.colors.text.secondaryDark 
+      : designSystem.colors.text.secondary,
+    borderBottom: (theme) => `2px solid ${theme.palette.mode === "dark" 
+      ? designSystem.colors.border.mainDark 
+      : designSystem.colors.border.main}`,
     "& .MuiDataGrid-columnHeaderTitle": {
       fontWeight: 600,
       fontSize: "0.875rem",
@@ -209,23 +267,37 @@ export const dataGridStyles = {
   },
   "& .MuiDataGrid-row": {
     "&:nth-of-type(odd)": {
-      backgroundColor: designSystem.colors.background.primary, // #FFFFFF
+      backgroundColor: (theme) => theme.palette.mode === "dark" 
+        ? designSystem.colors.background.secondaryDark 
+        : designSystem.colors.background.primary,
     },
     "&:nth-of-type(even)": {
-      backgroundColor: designSystem.colors.background.secondary, // #F9FAFB
+      backgroundColor: (theme) => theme.palette.mode === "dark" 
+        ? designSystem.colors.background.tertiaryDark 
+        : designSystem.colors.background.secondary,
     },
     "&:hover": {
-      backgroundColor: `${designSystem.colors.primary.lightest} !important`, // #FAF5FF - hover roxo
+      backgroundColor: (theme) => theme.palette.mode === "dark" 
+        ? "rgba(166, 80, 240, 0.15) !important" 
+        : `${designSystem.colors.primary.lightest} !important`,
       cursor: "pointer",
     },
   },
   "& .MuiDataGrid-cell": {
-    borderBottom: `1px solid ${designSystem.colors.border.main}`,
+    borderBottom: (theme) => `1px solid ${theme.palette.mode === "dark" 
+      ? designSystem.colors.border.mainDark 
+      : designSystem.colors.border.main}`,
     fontSize: "0.875rem",
-    color: designSystem.colors.text.secondary,
+    color: (theme) => theme.palette.mode === "dark" 
+      ? designSystem.colors.text.secondaryDark 
+      : designSystem.colors.text.secondary,
   },
   "& .MuiDataGrid-footerContainer": {
-    borderTop: `1px solid ${designSystem.colors.border.main}`,
-    backgroundColor: designSystem.colors.background.secondary, // #F9FAFB - footer cinza
+    borderTop: (theme) => `1px solid ${theme.palette.mode === "dark" 
+      ? designSystem.colors.border.mainDark 
+      : designSystem.colors.border.main}`,
+    backgroundColor: (theme) => theme.palette.mode === "dark" 
+      ? designSystem.colors.background.secondaryDark 
+      : designSystem.colors.background.secondary,
   },
 };

@@ -26,6 +26,7 @@ import PageHeader from "../../components/ui/page/PageHeader";
 import {
   designSystem,
   paperStyles,
+  toolbarStyles,
   iconButtonStyles,
   progressStyles,
   tableHeadStyles,
@@ -203,18 +204,15 @@ export default function DocumentsList() {
           <Fade in timeout={1000}>
             <Paper {...paperStyles}>
               <Toolbar
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: 2,
-                  p: 3,
-                  backgroundColor: designSystem.colors.background.primary,
-                  borderBottom: `1px solid ${designSystem.colors.border.main}`,
-                }}
+                {...toolbarStyles}
               >
                 <Box display="flex" alignItems="center" sx={{ flex: 1, minWidth: 240, maxWidth: 420 }}>
-                  <SearchIcon sx={{ mr: 1, color: designSystem.colors.text.disabled }} />
+                  <SearchIcon sx={{ 
+                    mr: 1, 
+                    color: (theme) => theme.palette.mode === "dark" 
+                      ? designSystem.colors.text.disabledDark 
+                      : designSystem.colors.text.disabled 
+                  }} />
                   <TextField
                     placeholder="Pesquisar por CPF, nome, email..."
                     variant="standard"
@@ -241,23 +239,28 @@ export default function DocumentsList() {
                 </Box>
               ) : (
                 <TableContainer sx={{ overflowX: "auto", width: "100%" }}>
-                  <Table stickyHeader size="small" sx={{ minWidth: 900 }}>
+                  <Table size="small" sx={{ minWidth: 900 }}>
                     <TableHead>
                       <TableRow>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 80 }}>ID</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 200 }}>Nome do Usuário</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 120 }} align="center">Identidade</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 120 }} align="center">Endereço</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 120 }} align="center">Histórico</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 120 }} align="center">Contrato</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 180 }}>Enviado em</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 80 }}>ID</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 200 }}>Nome do Usuário</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 120 }} align="center">Identidade</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 120 }} align="center">Endereço</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 120 }} align="center">Histórico</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 120 }} align="center">Contrato</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 180 }}>Enviado em</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {paginatedRows.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
-                            <Typography color="textSecondary">
+                          <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                            <Typography 
+                              sx={{ 
+                                color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#6B7280",
+                                fontSize: "0.95rem" 
+                              }}
+                            >
                               {searchTerm ? "Nenhum resultado encontrado" : "Nenhum documento disponível"}
                             </Typography>
                           </TableCell>
@@ -265,25 +268,81 @@ export default function DocumentsList() {
                       ) : (
                         paginatedRows.map((row) => (
                           <TableRow key={row.id} {...tableRowHoverStyles}>
-                            <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            <TableCell sx={{ 
+                              color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#374151",
+                              fontSize: "0.875rem", 
+                              py: 1.5, 
+                              width: 80 
+                            }}>
                               {row.userId}
                             </TableCell>
-                            <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            <TableCell
+                              sx={{
+                                color: (theme) => theme.palette.mode === "dark" ? "#FFFFFF" : "#1F2937",
+                                fontWeight: 500,
+                                fontSize: "0.875rem",
+                                py: 1.5,
+                                width: 200,
+                                maxWidth: 200,
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                              }}
+                            >
                               {row.userName}
                             </TableCell>
-                            <TableCell align="center">
+                            <TableCell 
+                              align="center"
+                              sx={{
+                                fontSize: "0.875rem",
+                                py: 1.5,
+                                width: 120
+                              }}
+                            >
                               {renderDocCell(row, "idDoc")}
                             </TableCell>
-                            <TableCell align="center">
+                            <TableCell 
+                              align="center"
+                              sx={{
+                                fontSize: "0.875rem",
+                                py: 1.5,
+                                width: 120
+                              }}
+                            >
                               {renderDocCell(row, "addressDoc")}
                             </TableCell>
-                            <TableCell align="center">
+                            <TableCell 
+                              align="center"
+                              sx={{
+                                fontSize: "0.875rem",
+                                py: 1.5,
+                                width: 120
+                              }}
+                            >
                               {renderDocCell(row, "schoolDoc")}
                             </TableCell>
-                            <TableCell align="center">
+                            <TableCell 
+                              align="center"
+                              sx={{
+                                fontSize: "0.875rem",
+                                py: 1.5,
+                                width: 120
+                              }}
+                            >
                               {renderDocCell(row, "contractDoc")}
                             </TableCell>
-                            <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            <TableCell
+                              sx={{
+                                color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#374151",
+                                fontSize: "0.875rem",
+                                py: 1.5,
+                                width: 180,
+                                maxWidth: 180,
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                              }}
+                            >
                               {row.createdAt}
                             </TableCell>
                           </TableRow>

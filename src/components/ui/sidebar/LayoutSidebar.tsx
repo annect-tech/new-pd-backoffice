@@ -13,14 +13,18 @@ import {
   Avatar,
   Menu,
   MenuItem,
+  Tooltip,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
+import Brightness4Icon from "@mui/icons-material/Brightness4";
+import Brightness7Icon from "@mui/icons-material/Brightness7";
 import { Link, useNavigate } from "react-router";
 import logoDesenvolve from "../../../assets/images/logo/LOGO DESENVOLVE.png";
 import logo2 from "../../../assets/images/logo/logo2.svg";
 import { APP_ROUTES } from "../../../util/constants";
 import { designSystem } from "../../../styles/designSystem";
 import { useAuth } from "../../../hooks/useAuth";
+import { useThemeMode } from "../../../app/providers/ThemeProvider";
 
 const drawerWidth = 240;
 const collapsedWidth = 60;
@@ -51,6 +55,7 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
 }) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { mode, toggleTheme } = useThemeMode();
   const [isHovered, setIsHovered] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
@@ -109,8 +114,10 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
           boxSizing: "border-box",
           overflowX: "hidden",
           transition: "width 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-          bgcolor: "#FFFFFF",
-          borderRight: "none",
+          bgcolor: (theme) => theme.palette.mode === "dark" ? "#1E1E1E" : "#FFFFFF",
+          borderRight: (theme) => theme.palette.mode === "dark" 
+            ? "1px solid rgba(255, 255, 255, 0.1)" 
+            : "none",
           display: "flex",
           flexDirection: "column",
           alignItems: isExpanded ? "flex-start" : "center",
@@ -130,8 +137,10 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
           alignItems: "center",
           px: isExpanded ? 2.5 : 0,
           width: "100%",
-          backgroundColor: "#FFFFFF",
-          borderBottom: "1px solid rgba(0, 0, 0, 0.04)",
+          backgroundColor: (theme) => theme.palette.mode === "dark" ? "#1E1E1E" : "#FFFFFF",
+          borderBottom: (theme) => theme.palette.mode === "dark" 
+            ? "1px solid rgba(255, 255, 255, 0.1)" 
+            : "1px solid rgba(0, 0, 0, 0.04)",
         }}
       >
         {/* Logo */}
@@ -177,11 +186,13 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
             onClick={onClose}
             size="small"
             sx={{
-              color: "#9CA3AF",
+              color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#9CA3AF",
               transition: "all 0.2s ease",
               "&:hover": {
                 color: designSystem.colors.primary.main,
-                backgroundColor: "rgba(166, 80, 240, 0.08)",
+                backgroundColor: (theme) => theme.palette.mode === "dark" 
+                  ? "rgba(166, 80, 240, 0.15)" 
+                  : "rgba(166, 80, 240, 0.08)",
                 transform: "rotate(90deg)",
               },
             }}
@@ -206,7 +217,7 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#6B7280",
+                  color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#6B7280",
                   fontWeight: 700,
                   fontSize: "0.6875rem",
                   textTransform: "uppercase",
@@ -242,7 +253,7 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
                   width: "100%",
                   borderRadius: 2,
                   mb: 0.5,
-                  color: "#6B7280",
+                  color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#6B7280",
                   position: "relative",
                   transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
                   "&::before": {
@@ -258,18 +269,24 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
                     transition: "height 0.2s ease",
                   },
                   "&:hover": {
-                    color: "#1F2937",
-                    backgroundColor: "rgba(166, 80, 240, 0.06)",
+                    color: (theme) => theme.palette.mode === "dark" ? "#FFFFFF" : "#1F2937",
+                    backgroundColor: (theme) => theme.palette.mode === "dark" 
+                      ? "rgba(166, 80, 240, 0.15)" 
+                      : "rgba(166, 80, 240, 0.06)",
                     transform: "translateX(2px)",
                     "& .MuiListItemIcon-root": {
                       color: designSystem.colors.primary.main,
                     },
                   },
                   "&.active": {
-                    backgroundColor: "rgba(166, 80, 240, 0.1)",
+                    backgroundColor: (theme) => theme.palette.mode === "dark" 
+                      ? "rgba(166, 80, 240, 0.2)" 
+                      : "rgba(166, 80, 240, 0.1)",
                     color: designSystem.colors.primary.main,
                     fontWeight: 600,
-                    boxShadow: "0 2px 4px rgba(166, 80, 240, 0.08)",
+                    boxShadow: (theme) => theme.palette.mode === "dark" 
+                      ? "0 2px 4px rgba(166, 80, 240, 0.2)" 
+                      : "0 2px 4px rgba(166, 80, 240, 0.08)",
                     "&::before": {
                       height: "70%",
                     },
@@ -305,17 +322,92 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
             ))}
           </List>
           {groupIndex < menuGroups.length - 1 && isExpanded && (
-            <Divider sx={{ my: 2.5, mx: 2.5, borderColor: "rgba(0, 0, 0, 0.06)" }} />
+            <Divider 
+              sx={{ 
+                my: 2.5, 
+                mx: 2.5, 
+                borderColor: (theme) => theme.palette.mode === "dark" 
+                  ? "rgba(255, 255, 255, 0.1)" 
+                  : "rgba(0, 0, 0, 0.06)" 
+              }} 
+            />
           )}
         </React.Fragment>
       ))}
+    </Box>
+
+    {/* Toggle de tema */}
+    <Box
+      sx={{
+        width: "100%",
+        borderTop: (theme) => `1px solid ${theme.palette.mode === "dark" ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.06)"}`,
+        py: 1.5,
+        px: isExpanded ? 2 : 1,
+        display: "flex",
+        justifyContent: isExpanded ? "flex-start" : "center",
+        alignItems: "center",
+      }}
+    >
+      <Tooltip title={mode === "dark" ? "Tema claro" : "Tema escuro"}>
+        <Box
+          component="button"
+          onClick={toggleTheme}
+          sx={{
+            width: isExpanded ? "100%" : "auto",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: isExpanded ? "flex-start" : "center",
+            px: isExpanded ? 2 : 1,
+            py: 1.5,
+            borderRadius: 2,
+            border: "none",
+            background: "transparent",
+            cursor: "pointer",
+            color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#6B7280",
+            transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+            "&:hover": {
+              backgroundColor: (theme) => theme.palette.mode === "dark" 
+                ? "rgba(166, 80, 240, 0.15)" 
+                : "rgba(166, 80, 240, 0.06)",
+              color: designSystem.colors.primary.main,
+              transform: "translateX(2px)",
+            },
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              minWidth: 0,
+              marginRight: isExpanded ? 2.5 : 0,
+              color: "inherit",
+              fontSize: "1.25rem",
+            }}
+          >
+            {mode === "dark" ? <Brightness7Icon /> : <Brightness4Icon />}
+          </Box>
+          {isExpanded && (
+            <Typography
+              variant="body2"
+              sx={{
+                fontWeight: 500,
+                fontSize: "0.875rem",
+                color: "inherit",
+              }}
+            >
+              {mode === "dark" ? "Tema Claro" : "Tema Escuro"}
+            </Typography>
+          )}
+        </Box>
+      </Tooltip>
     </Box>
 
     {/* Avatar do usuário no final da sidebar */}
     <Box
       sx={{
         width: "100%",
-        borderTop: "1px solid rgba(0, 0, 0, 0.06)",
+        borderTop: (theme) => `1px solid ${theme.palette.mode === "dark" ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.06)"}`,
         py: 2,
         px: isExpanded ? 2 : 1,
         display: "flex",
@@ -338,10 +430,10 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
           sx={{
             width: isExpanded ? 40 : 36,
             height: isExpanded ? 40 : 36,
-            background: "#E5E7EB",
+            background: (theme) => theme.palette.mode === "dark" ? "#3C3C3C" : "#E5E7EB",
             fontWeight: 500,
             fontSize: isExpanded ? "0.875rem" : "0.75rem",
-            color: "#9CA3AF",
+            color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#9CA3AF",
             mr: isExpanded ? 2 : 0,
           }}
         >
@@ -353,7 +445,7 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
               variant="body2"
               sx={{
                 fontWeight: 500,
-                color: "#1F2937",
+                color: (theme) => theme.palette.mode === "dark" ? "#FFFFFF" : "#1F2937",
                 fontSize: "0.875rem",
               }}
             >
@@ -362,7 +454,7 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
             <Typography
               variant="caption"
               sx={{
-                color: "#6B7280",
+                color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#6B7280",
                 fontSize: "0.75rem",
               }}
             >
@@ -383,18 +475,22 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
           vertical: "bottom",
           horizontal: isExpanded ? "right" : "left",
         }}
-        slotProps={{
-          paper: {
-            sx: {
-              mt: 1,
-              minWidth: 140,
-              borderRadius: 1,
-              boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-              border: "1px solid #E5E7EB",
-              bgcolor: "#F9FAFB",
-            },
-          },
-        }}
+            slotProps={{
+              paper: {
+                sx: {
+                  mt: 1,
+                  minWidth: 140,
+                  borderRadius: 1,
+                  boxShadow: (theme) => theme.palette.mode === "dark" 
+                    ? "0 1px 3px rgba(0,0,0,0.3)" 
+                    : "0 1px 3px rgba(0,0,0,0.08)",
+                  border: (theme) => theme.palette.mode === "dark" 
+                    ? "1px solid rgba(255, 255, 255, 0.1)" 
+                    : "1px solid #E5E7EB",
+                  bgcolor: (theme) => theme.palette.mode === "dark" ? "#2C2C2C" : "#F9FAFB",
+                },
+              },
+            }}
       >
         <MenuItem
           onClick={handleProfileClick}
@@ -402,7 +498,7 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
             py: 0.75,
             px: 2,
             fontSize: "0.8125rem",
-            color: "#000000",
+            color: (theme) => theme.palette.mode === "dark" ? "#FFFFFF" : "#000000",
           }}
         >
           Meu Perfil
@@ -413,7 +509,7 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
             py: 0.75,
             px: 2,
             fontSize: "0.8125rem",
-            color: "#000000",
+            color: (theme) => theme.palette.mode === "dark" ? "#FFFFFF" : "#000000",
           }}
         >
           Sair
