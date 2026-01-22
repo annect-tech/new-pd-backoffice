@@ -405,13 +405,32 @@ const ListaPresenca: React.FC = () => {
                             key={row.id}
                             {...tableRowHoverStyles}
                           >
-                            <TableCell sx={{ color: designSystem.colors.text.secondary, fontSize: "0.875rem", py: 1.5 }}>
+                            <TableCell sx={{ 
+                              color: (theme) => theme.palette.mode === "dark" 
+                                ? designSystem.colors.text.secondaryDark 
+                                : designSystem.colors.text.secondary, 
+                              fontSize: "0.875rem", 
+                              py: 1.5 
+                            }}>
                               {row.cpf}
                             </TableCell>
-                            <TableCell sx={{ color: designSystem.colors.text.primary, fontWeight: 500, fontSize: "0.875rem", py: 1.5 }}>
+                            <TableCell sx={{ 
+                              color: (theme) => theme.palette.mode === "dark" 
+                                ? designSystem.colors.text.primaryDark 
+                                : designSystem.colors.text.primary, 
+                              fontWeight: 500, 
+                              fontSize: "0.875rem", 
+                              py: 1.5 
+                            }}>
                               {row.name}
                             </TableCell>
-                            <TableCell sx={{ color: designSystem.colors.text.secondary, fontSize: "0.875rem", py: 1.5 }}>
+                            <TableCell sx={{ 
+                              color: (theme) => theme.palette.mode === "dark" 
+                                ? designSystem.colors.text.secondaryDark 
+                                : designSystem.colors.text.secondary, 
+                              fontSize: "0.875rem", 
+                              py: 1.5 
+                            }}>
                               {row.celphone}
                             </TableCell>
                             <TableCell sx={{ py: 1.5 }}>
@@ -426,13 +445,31 @@ const ListaPresenca: React.FC = () => {
                                 {row.status}
                               </Typography>
                             </TableCell>
-                            <TableCell sx={{ color: designSystem.colors.text.secondary, fontSize: "0.875rem", py: 1.5 }}>
+                            <TableCell sx={{ 
+                              color: (theme) => theme.palette.mode === "dark" 
+                                ? designSystem.colors.text.secondaryDark 
+                                : designSystem.colors.text.secondary, 
+                              fontSize: "0.875rem", 
+                              py: 1.5 
+                            }}>
                               {row.local}
                             </TableCell>
-                            <TableCell sx={{ color: designSystem.colors.text.secondary, fontSize: "0.875rem", py: 1.5 }}>
+                            <TableCell sx={{ 
+                              color: (theme) => theme.palette.mode === "dark" 
+                                ? designSystem.colors.text.secondaryDark 
+                                : designSystem.colors.text.secondary, 
+                              fontSize: "0.875rem", 
+                              py: 1.5 
+                            }}>
                               {row.date}
                             </TableCell>
-                            <TableCell sx={{ color: designSystem.colors.text.secondary, fontSize: "0.875rem", py: 1.5 }}>
+                            <TableCell sx={{ 
+                              color: (theme) => theme.palette.mode === "dark" 
+                                ? designSystem.colors.text.secondaryDark 
+                                : designSystem.colors.text.secondary, 
+                              fontSize: "0.875rem", 
+                              py: 1.5 
+                            }}>
                               {row.hour}
                             </TableCell>
                           </TableRow>
