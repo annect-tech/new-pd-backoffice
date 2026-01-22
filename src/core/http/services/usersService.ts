@@ -23,8 +23,8 @@ export interface CreateUserPayload {
   cpf: string;
   password: string;
   tenant_city_id: string;
-  // birth_date não é aceito pelo backend no CreateUser
-  // birth_date?: string;
+  cellphone: string;
+  birth_date: string;
 }
 
 export interface CreateUserResponse {

@@ -17,6 +17,7 @@ import AllowedCities from "../../pages/allowedCities/AllowedCities";
 import Addresses from "../../pages/addresses/Addresses";
 import Contratos from "../../pages/contratos/Contratos";
 import Documentos from "../../pages/documentos/Documentos";
+import DocumentosCotas from "../../pages/documentosCotas/DocumentosCotas";
 import Usuarios from "../../pages/usuarios/Usuarios";
 import Perfil from "../../pages/perfil/Perfil";
 import EditarPerfil from "../../pages/perfil/EditarPerfil";
@@ -89,6 +90,14 @@ export const AppRoutes = () => (
         element={
           <RoleGuard allowedRoles={["ADMIN", "ADMIN_MASTER"]}>
             <Documentos />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path={APP_ROUTES.QUOTA_DOCUMENTS}
+        element={
+          <RoleGuard allowedRoles={["ADMIN", "ADMIN_MASTER"]}>
+            <DocumentosCotas />
           </RoleGuard>
         }
       />

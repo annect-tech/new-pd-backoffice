@@ -24,6 +24,7 @@ import { formatCpf, removeCpfMask } from "../../util/formatters";
 import { VALIDATION_PATTERNS } from "../../util/constants";
 import type { CreateUserPayload } from "../../core/http/services/usersService";
 import { useTenantCities } from "../../hooks/useTenantCities";
+import { applyPhoneMask, removePhoneMask, applyDateMask } from "../../util/masks";
 
 interface CreateUserModalProps {
   open: boolean;
@@ -32,9 +33,9 @@ interface CreateUserModalProps {
   onClose: () => void;
 }
 
-// Tipo local que inclui birth_date para o formulário (mas não será enviado ao backend)
-interface CreateUserFormData extends CreateUserPayload {
-  birth_date?: string;
+// Tipo local que inclui birth_date para o formulário
+interface CreateUserFormData extends Omit<CreateUserPayload, 'birth_date'> {
+  birth_date: string;
 }
 
 const CreateUserModal: React.FC<CreateUserModalProps> = ({
@@ -53,8 +54,12 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
     cpf: "",
     password: "",
     tenant_city_id: "",
+    cellphone: "",
     birth_date: "",
   });
+  
+  // Estado separado para exibição da data (DD/MM/YYYY)
+  const [birthDateDisplay, setBirthDateDisplay] = useState("");
   const [errors, setErrors] = useState<Partial<Record<keyof CreateUserFormData, string>>>({});
   const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -71,8 +76,10 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
         cpf: "",
         password: "",
         tenant_city_id: "",
+        cellphone: "",
         birth_date: "",
       } as CreateUserFormData);
+      setBirthDateDisplay("");
       setErrors({});
       setFormError(null);
       setShowPassword(false);
@@ -92,6 +99,22 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
     // Apply CPF mask
     if (field === "cpf") {
       value = formatCpf(value);
+    }
+    
+    // Apply phone mask
+    if (field === "cellphone") {
+      value = applyPhoneMask(value);
+    }
+    
+    // Apply date mask for display
+    if (field === "birth_date") {
+      value = applyDateMask(value);
+      setBirthDateDisplay(value);
+      // Atualizar formData com o valor formatado (mantém o formato DD/MM/YYYY)
+      setFormData((prev) => ({ ...prev, [field]: value }));
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
+      setFormError(null);
+      return;
     }
 
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -137,10 +160,45 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
       newErrors.tenant_city_id = "Tenant City é obrigatória";
     }
 
-    // birth_date não é mais obrigatório (backend não aceita no CreateUser)
-    // if (!formData.birth_date) {
-    //   newErrors.birth_date = "Data de nascimento é obrigatória";
-    // }
+    if (!formData.cellphone || !formData.cellphone.trim()) {
+      newErrors.cellphone = "Celular é obrigatório";
+    } else {
+      const phoneNumbers = removePhoneMask(formData.cellphone);
+      if (phoneNumbers.length < 10 || phoneNumbers.length > 11) {
+        newErrors.cellphone = "Celular deve ter 10 ou 11 dígitos";
+      }
+    }
+
+    // Validar data usando birthDateDisplay que é o valor exibido
+    const dateToValidate = (birthDateDisplay || formData.birth_date || "").trim();
+    if (!dateToValidate || dateToValidate.length === 0) {
+      newErrors.birth_date = "Data de nascimento é obrigatória";
+    } else if (dateToValidate.length < 10) {
+      newErrors.birth_date = "A data deve estar no formato DD/MM/YYYY ou DD-MM-YYYY";
+    } else {
+      // Validar formato DD/MM/YYYY ou DD-MM-YYYY
+      const datePattern = /^(\d{2})[\/\-](\d{2})[\/\-](\d{4})$/;
+      if (!datePattern.test(dateToValidate)) {
+        newErrors.birth_date = "A data deve estar no formato DD/MM/YYYY ou DD-MM-YYYY";
+      } else {
+        // Validar se a data é válida
+        const parts = dateToValidate.match(datePattern);
+        if (parts) {
+          const [, day, month, year] = parts;
+          const dayNum = parseInt(day, 10);
+          const monthNum = parseInt(month, 10);
+          const yearNum = parseInt(year, 10);
+          
+          if (monthNum < 1 || monthNum > 12) {
+            newErrors.birth_date = "Mês inválido";
+          } else if (dayNum < 1 || dayNum > 31) {
+            newErrors.birth_date = "Dia inválido";
+          } else if (yearNum < 1900 || yearNum > new Date().getFullYear()) {
+            newErrors.birth_date = "Ano inválido";
+          }
+        }
+      }
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -155,21 +213,43 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
     }
 
     try {
-      // Remover birth_date do payload (backend não aceita esse campo no CreateUser)
-      const { birth_date, ...formDataWithoutBirthDate } = formData;
+      // Usar birthDateDisplay que já está formatado (DD/MM/YYYY)
+      let dateValue = (birthDateDisplay || formData.birth_date || "").trim();
       
-      // Preparar payload removendo campos vazios opcionais
+      // Validar se a data foi preenchida
+      if (!dateValue || dateValue.length < 10) {
+        setFormError("Data de nascimento é obrigatória e deve estar no formato DD/MM/YYYY");
+        setErrors((prev) => ({ ...prev, birth_date: "Data de nascimento é obrigatória" }));
+        return;
+      }
+      
+      // Converter de DD/MM/YYYY para DD-MM-YYYY
+      let formattedBirthDate = dateValue;
+      if (formattedBirthDate.includes('/')) {
+        formattedBirthDate = formattedBirthDate.replace(/\//g, '-');
+      }
+      
+      // Garantir que está no formato DD-MM-YYYY (10 caracteres)
+      if (formattedBirthDate.length !== 10 || !/^\d{2}-\d{2}-\d{4}$/.test(formattedBirthDate)) {
+        setFormError("A data deve estar no formato DD/MM/YYYY");
+        setErrors((prev) => ({ ...prev, birth_date: "A data deve estar no formato DD/MM/YYYY ou DD-MM-YYYY" }));
+        return;
+      }
+      
+      // Preparar payload - garantir que todos os campos obrigatórios estão presentes
       const payload: CreateUserPayload = {
-        username: formDataWithoutBirthDate.username,
-        first_name: formDataWithoutBirthDate.first_name,
-        last_name: formDataWithoutBirthDate.last_name,
-        email: formDataWithoutBirthDate.email,
+        username: formData.username.trim(),
+        first_name: formData.first_name.trim(),
+        last_name: formData.last_name.trim(),
+        email: formData.email.trim(),
         cpf: removeCpfMask(formData.cpf),
-        password: formDataWithoutBirthDate.password,
-        tenant_city_id: formDataWithoutBirthDate.tenant_city_id,
+        password: formData.password,
+        tenant_city_id: formData.tenant_city_id,
+        cellphone: removePhoneMask(formData.cellphone), // Enviar apenas números como string
+        birth_date: formattedBirthDate, // Enviar no formato DD-MM-YYYY (ex: "01-01-2000")
         // social_name é opcional, só incluir se não estiver vazio
-        ...(formDataWithoutBirthDate.social_name?.trim() && {
-          social_name: formDataWithoutBirthDate.social_name.trim(),
+        ...(formData.social_name?.trim() && {
+          social_name: formData.social_name.trim(),
         }),
       };
       
@@ -289,19 +369,31 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
               <TextField
                 label="Data de Nascimento"
                 name="birth_date"
-                type="date"
-                value={formData.birth_date}
+                value={birthDateDisplay}
                 onChange={handleChange("birth_date")}
                 error={!!errors.birth_date}
-                helperText={errors.birth_date}
+                helperText={errors.birth_date || "Formato: DD/MM/YYYY"}
                 required
                 fullWidth
                 disabled={loading}
-                InputLabelProps={{
-                  shrink: true,
-                }}
+                placeholder="DD/MM/YYYY"
+                inputProps={{ maxLength: 10 }}
               />
             </Box>
+
+            <TextField
+              label="Celular"
+              name="cellphone"
+              value={formData.cellphone}
+              onChange={handleChange("cellphone")}
+              error={!!errors.cellphone}
+              helperText={errors.cellphone || "Formato: (00) 00000-0000"}
+              required
+              fullWidth
+              disabled={loading}
+              placeholder="(00) 00000-0000"
+              inputProps={{ maxLength: 15 }}
+            />
 
             <TextField
               label="Senha"

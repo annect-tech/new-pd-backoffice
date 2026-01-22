@@ -36,6 +36,7 @@ export const APP_ROUTES = {
   CONTRACTS: "/contratos",
   EXAM_DATES: "/datas-prova",
   DOCUMENTS: "/documentos",
+  QUOTA_DOCUMENTS: "/documentos-cotas",
   USERS_LIST: "/usuarios",
   PROFILE: "/usuario/:id",
   PROFILE_EDIT: "/usuario/:id/editar",

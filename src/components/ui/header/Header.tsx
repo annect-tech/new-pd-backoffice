@@ -7,10 +7,12 @@ import {
   Avatar,
   Menu,
   MenuItem,
+  Typography,
 } from "@mui/material";
 import { useNavigate } from "react-router";
 import { useAuth } from "../../../hooks/useAuth";
 import { APP_ROUTES } from "../../../util/constants";
+import logoDesenvolve from "../../../assets/images/logo/LOGO DESENVOLVE.png";
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -54,18 +56,40 @@ const Header: React.FC<HeaderProps> = () => {
       }}
     >
       <Toolbar sx={{ justifyContent: "space-between", py: 1, minHeight: 60 }}>
-        {/* Menu Toggle */}
-        <Box sx={{ display: "flex", alignItems: "center" }}>
-
+        {/* Logo */}
+        <Box
+          onClick={() => navigate(APP_ROUTES.DASHBOARD)}
+          sx={{
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            transition: "transform 0.2s ease, opacity 0.2s ease",
+            "&:hover": {
+              opacity: 0.85,
+              transform: "scale(1.02)",
+            },
+          }}
+        >
+          <Box
+            component="img"
+            src={logoDesenvolve}
+            alt="Desenvolve"
+            sx={{
+              height: 40,
+              width: "auto",
+            }}
+          />
         </Box>
 
         {/* Perfil com dropdown */}
-        <Box sx={{ display: "flex", alignItems: "center" }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
           <IconButton
             onClick={handleMenuOpen}
             sx={{
-              bgcolor: "#FEFEFE",
-              p: 0.5,
+              p: 0,
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
               "&:hover": {
                 bgcolor: "transparent",
               },
@@ -73,16 +97,39 @@ const Header: React.FC<HeaderProps> = () => {
           >
             <Avatar
               sx={{
-                width: 28,
-                height: 28,
+                width: 40,
+                height: 40,
                 background: "#E5E7EB",
                 fontWeight: 500,
-                fontSize: "0.75rem",
+                fontSize: "0.875rem",
                 color: "#9CA3AF",
               }}
             >
               {user?.first_name?.[0] || user?.email?.[0] || "U"}
             </Avatar>
+            <Box sx={{ display: "flex", flexDirection: "column", textAlign: "left" }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  fontWeight: 500,
+                  color: "#1F2937",
+                  fontSize: "0.875rem",
+                  lineHeight: 1.2,
+                }}
+              >
+                {user?.first_name || user?.email || "Usuário"}
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "#6B7280",
+                  fontSize: "0.75rem",
+                  lineHeight: 1.2,
+                }}
+              >
+                {user?.email || ""}
+              </Typography>
+            </Box>
           </IconButton>
           <Menu
             anchorEl={anchorEl}

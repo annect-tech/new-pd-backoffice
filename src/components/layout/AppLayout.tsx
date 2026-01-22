@@ -25,6 +25,7 @@ import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import PersonIcon from "@mui/icons-material/Person";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import DescriptionIcon from "@mui/icons-material/Description";
 
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(true);
@@ -253,6 +254,11 @@ export default function AppLayout() {
           to: APP_ROUTES.DOCUMENTS,
         },
         {
+          icon: <DescriptionIcon />,
+          label: "Documentos de Cotas",
+          to: APP_ROUTES.QUOTA_DOCUMENTS,
+        },
+        {
           icon: <PersonIcon />,
           label: "Usuários",
           to: APP_ROUTES.USERS_LIST,
@@ -298,7 +304,6 @@ export default function AppLayout() {
               width: "100%",
               position: "relative",
               zIndex: 1100,
-              display: "none", // Temporariamente oculto
             }}
           >
             <Header onMenuClick={() => setCollapsed((p) => !p)} />

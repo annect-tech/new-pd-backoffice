@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import {
   Drawer,
@@ -19,8 +20,8 @@ import CloseIcon from "@mui/icons-material/Close";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
 import { Link, useNavigate } from "react-router";
-import logoDesenvolve from "../../../assets/images/logo/LOGO DESENVOLVE.png";
-import logo2 from "../../../assets/images/logo/logo2.svg";
+import logoAberta from "../../../assets/images/logo/logo aberta.png";
+import logoFechada from "../../../assets/images/logo/logo fechada.png";
 import { APP_ROUTES } from "../../../util/constants";
 import { designSystem } from "../../../styles/designSystem";
 import { useAuth } from "../../../hooks/useAuth";
@@ -56,8 +57,8 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { mode, toggleTheme } = useThemeMode();
-  const [isHovered, setIsHovered] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [isHovered, setIsHovered] = useState(false);
 
   // Se está colapsado, pode expandir por hover
   // Se não está colapsado (aberto por clique), não fecha no mouseLeave
@@ -89,14 +90,13 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
   };
 
   const handleProfileClick = () => {
-    navigate(APP_ROUTES.MY_PROFILE);
     handleMenuClose();
+    navigate(APP_ROUTES.MY_PROFILE);
   };
 
   const handleLogout = () => {
-    logout();
     handleMenuClose();
-    navigate(APP_ROUTES.LOGIN);
+    logout();
   };
 
   return (
@@ -120,7 +120,7 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
             : "none",
           display: "flex",
           flexDirection: "column",
-          alignItems: isExpanded ? "flex-start" : "center",
+          alignItems: "flex-start",
           position: "fixed",
           height: "100vh",
           top: 0,
@@ -133,9 +133,9 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
         sx={{
           minHeight: 72,
           display: "flex",
-          justifyContent: isExpanded ? "space-between" : "center",
+          justifyContent: "space-between",
           alignItems: "center",
-          px: isExpanded ? 2.5 : 0,
+          px: 0,
           width: "100%",
           backgroundColor: (theme) => theme.palette.mode === "dark" ? "#1E1E1E" : "#FFFFFF",
           borderBottom: (theme) => theme.palette.mode === "dark" 
@@ -150,7 +150,10 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
             cursor: "pointer",
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
+            justifyContent: "flex-start",
+            width: collapsedWidth,
+            flexShrink: 0,
+            pl: -0.2,
             transition: "transform 0.2s ease, opacity 0.2s ease",
             "&:hover": {
               opacity: 0.85,
@@ -161,17 +164,17 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
           {isExpanded ? (
             <Box
               component="img"
-              src={logoDesenvolve}
+              src={logoAberta}
               alt="Desenvolve"
               sx={{
-                width: 180,
+                width: 32,
                 height: "auto",
               }}
             />
           ) : (
             <Box
               component="img"
-              src={logo2}
+              src={logoFechada}
               alt="Desenvolve"
               sx={{
                 width: 32,
@@ -238,7 +241,7 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
               px: 1,
               display: "flex",
               flexDirection: "column",
-              alignItems: isExpanded ? "flex-start" : "center",
+              alignItems: "flex-start",
             }}
           >
             {group.menus.map(({ icon, label, to }) => (
@@ -247,8 +250,8 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
                 component={Link}
                 to={to}
                 sx={{
-                  justifyContent: isExpanded ? "flex-start" : "center",
-                  px: isExpanded ? 2 : 1,
+                  justifyContent: "flex-start",
+                  px: 1,
                   py: 1.5,
                   width: "100%",
                   borderRadius: 2,
@@ -298,26 +301,35 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
               >
                 <ListItemIcon
                   sx={{
-                    minWidth: 0,
+                    minWidth: collapsedWidth - 16,
+                    width: collapsedWidth - 16,
                     justifyContent: "center",
-                    marginRight: isExpanded ? 2.5 : 0,
+                    marginRight: 0,
                     color: "inherit",
                     fontSize: "1.25rem",
-                    transition: "all 0.2s ease",
+                    transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+                    flexShrink: 0,
                   }}
                 >
                   {icon}
                 </ListItemIcon>
-                {isExpanded && (
-                  <ListItemText
-                    primary={label}
-                    primaryTypographyProps={{
-                      fontSize: "0.875rem",
-                      fontWeight: 500,
-                    }}
-                    sx={{ flexGrow: 1, minWidth: 0 }}
-                  />
-                )}
+                <ListItemText
+                  primary={label}
+                  primaryTypographyProps={{
+                    fontSize: "0.875rem",
+                    fontWeight: 500,
+                  }}
+                  sx={{
+                    flexGrow: 1,
+                    minWidth: 0,
+                    opacity: isExpanded ? 1 : 0,
+                    width: isExpanded ? "auto" : 0,
+                    overflow: "hidden",
+                    whiteSpace: "nowrap",
+                    transition: "opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+                    transitionDelay: isExpanded ? "0.05s" : "0s",
+                  }}
+                />
               </ListItemButton>
             ))}
           </List>
@@ -334,6 +346,8 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
           )}
         </React.Fragment>
       ))}
+      {/* Espaço em branco no final para evitar problemas de scroll */}
+      <Box sx={{ py: 3 }} />
     </Box>
 
     {/* Toggle de tema */}
@@ -475,22 +489,22 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
           vertical: "bottom",
           horizontal: isExpanded ? "right" : "left",
         }}
-            slotProps={{
-              paper: {
-                sx: {
-                  mt: 1,
-                  minWidth: 140,
-                  borderRadius: 1,
-                  boxShadow: (theme) => theme.palette.mode === "dark" 
-                    ? "0 1px 3px rgba(0,0,0,0.3)" 
-                    : "0 1px 3px rgba(0,0,0,0.08)",
-                  border: (theme) => theme.palette.mode === "dark" 
-                    ? "1px solid rgba(255, 255, 255, 0.1)" 
-                    : "1px solid #E5E7EB",
-                  bgcolor: (theme) => theme.palette.mode === "dark" ? "#2C2C2C" : "#F9FAFB",
-                },
-              },
-            }}
+        slotProps={{
+          paper: {
+            sx: {
+              mt: 1,
+              minWidth: 140,
+              borderRadius: 1,
+              boxShadow: (theme) => theme.palette.mode === "dark" 
+                ? "0 1px 3px rgba(0,0,0,0.3)" 
+                : "0 1px 3px rgba(0,0,0,0.08)",
+              border: (theme) => theme.palette.mode === "dark" 
+                ? "1px solid rgba(255, 255, 255, 0.1)" 
+                : "1px solid #E5E7EB",
+              bgcolor: (theme) => theme.palette.mode === "dark" ? "#2C2C2C" : "#F9FAFB",
+            },
+          },
+        }}
       >
         <MenuItem
           onClick={handleProfileClick}
@@ -516,7 +530,6 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
         </MenuItem>
       </Menu>
     </Box>
-    
   </Drawer>
   );
 };
