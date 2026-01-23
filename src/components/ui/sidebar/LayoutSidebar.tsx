@@ -11,21 +11,13 @@ import {
   Typography,
   Divider,
   IconButton,
-  Avatar,
-  Menu,
-  MenuItem,
-  Tooltip,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import Brightness4Icon from "@mui/icons-material/Brightness4";
-import Brightness7Icon from "@mui/icons-material/Brightness7";
 import { Link, useNavigate } from "react-router";
-import logoAberta from "../../../assets/images/logo/logo aberta.png";
-import logoFechada from "../../../assets/images/logo/logo fechada.png";
+import logo2 from "../../../assets/images/logo/logo2.svg";
+import logoDesenvolve from "../../../assets/images/logo/LOGO DESENVOLVE.png";
 import { APP_ROUTES } from "../../../util/constants";
 import { designSystem } from "../../../styles/designSystem";
-import { useAuth } from "../../../hooks/useAuth";
-import { useThemeMode } from "../../../app/providers/ThemeProvider";
 
 const drawerWidth = 240;
 const collapsedWidth = 60;
@@ -55,9 +47,6 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
   onClose,
 }) => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
-  const { mode, toggleTheme } = useThemeMode();
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [isHovered, setIsHovered] = useState(false);
 
   // Se está colapsado, pode expandir por hover
@@ -79,24 +68,6 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
 
   const handleLogoClick = () => {
     navigate(APP_ROUTES.DASHBOARD);
-  };
-
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleProfileClick = () => {
-    handleMenuClose();
-    navigate(APP_ROUTES.MY_PROFILE);
-  };
-
-  const handleLogout = () => {
-    handleMenuClose();
-    logout();
   };
 
   return (
@@ -132,6 +103,7 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
       <Toolbar
         sx={{
           minHeight: 72,
+          height: 72,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -141,6 +113,8 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
           borderBottom: (theme) => theme.palette.mode === "dark" 
             ? "1px solid rgba(255, 255, 255, 0.1)" 
             : "1px solid rgba(0, 0, 0, 0.04)",
+          position: "relative",
+          overflow: "visible",
         }}
       >
         {/* Logo */}
@@ -150,11 +124,12 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
             cursor: "pointer",
             display: "flex",
             alignItems: "center",
-            justifyContent: "flex-start",
-            width: collapsedWidth,
+            justifyContent: isExpanded ? "flex-start" : "center",
+            width: isExpanded ? "100%" : "100%",
             flexShrink: 0,
-            pl: -0.2,
+            px: isExpanded ? 2 : 0,
             transition: "transform 0.2s ease, opacity 0.2s ease",
+            position: "relative",
             "&:hover": {
               opacity: 0.85,
               transform: "scale(1.02)",
@@ -164,21 +139,31 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
           {isExpanded ? (
             <Box
               component="img"
-              src={logoAberta}
+              src={logoDesenvolve}
               alt="Desenvolve"
               sx={{
-                width: 32,
-                height: "auto",
+                width: "auto",
+                height: 72,
+                maxWidth: "calc(100% - 8px)",
+                objectFit: "contain",
+                transform: "scale(1.28)",
+                transformOrigin: "left center",
+                position: "relative",
+                zIndex: 1,
+                marginLeft: "-20px",  
               }}
             />
           ) : (
             <Box
               component="img"
-              src={logoFechada}
+              src={logo2}
               alt="Desenvolve"
               sx={{
-                width: 32,
-                height: "auto",
+                width: 35,
+                height: 35,
+                objectFit: "contain",
+                margin: "0 auto",
+                display: "block",
               }}
             />
           )}
@@ -238,10 +223,10 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
             sx={{
               width: "100%",
               p: 0,
-              px: 1,
+              px: isExpanded ? 1 : 0,
               display: "flex",
               flexDirection: "column",
-              alignItems: "flex-start",
+              alignItems: isExpanded ? "flex-start" : "center",
             }}
           >
             {group.menus.map(({ icon, label, to }) => (
@@ -250,8 +235,8 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
                 component={Link}
                 to={to}
                 sx={{
-                  justifyContent: "flex-start",
-                  px: 1,
+                  justifyContent: isExpanded ? "flex-start" : "center",
+                  px: isExpanded ? 1 : 0,
                   py: 1.5,
                   width: "100%",
                   borderRadius: 2,
@@ -260,7 +245,7 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
                   position: "relative",
                   transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
                   "&::before": {
-                    content: '""',
+                    content: isExpanded ? '""' : "none",
                     position: "absolute",
                     left: 0,
                     top: "50%",
@@ -276,7 +261,7 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
                     backgroundColor: (theme) => theme.palette.mode === "dark" 
                       ? "rgba(166, 80, 240, 0.15)" 
                       : "rgba(166, 80, 240, 0.06)",
-                    transform: "translateX(2px)",
+                    transform: isExpanded ? "translateX(2px)" : "none",
                     "& .MuiListItemIcon-root": {
                       color: designSystem.colors.primary.main,
                     },
@@ -301,8 +286,8 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
               >
                 <ListItemIcon
                   sx={{
-                    minWidth: collapsedWidth - 16,
-                    width: collapsedWidth - 16,
+                    minWidth: isExpanded ? collapsedWidth - 16 : collapsedWidth,
+                    width: isExpanded ? collapsedWidth - 16 : collapsedWidth,
                     justifyContent: "center",
                     marginRight: 0,
                     color: "inherit",
@@ -348,187 +333,6 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
       ))}
       {/* Espaço em branco no final para evitar problemas de scroll */}
       <Box sx={{ py: 3 }} />
-    </Box>
-
-    {/* Toggle de tema */}
-    <Box
-      sx={{
-        width: "100%",
-        borderTop: (theme) => `1px solid ${theme.palette.mode === "dark" ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.06)"}`,
-        py: 1.5,
-        px: isExpanded ? 2 : 1,
-        display: "flex",
-        justifyContent: isExpanded ? "flex-start" : "center",
-        alignItems: "center",
-      }}
-    >
-      <Tooltip title={mode === "dark" ? "Tema claro" : "Tema escuro"}>
-        <Box
-          component="button"
-          onClick={toggleTheme}
-          sx={{
-            width: isExpanded ? "100%" : "auto",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: isExpanded ? "flex-start" : "center",
-            px: isExpanded ? 2 : 1,
-            py: 1.5,
-            borderRadius: 2,
-            border: "none",
-            background: "transparent",
-            cursor: "pointer",
-            color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#6B7280",
-            transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-            "&:hover": {
-              backgroundColor: (theme) => theme.palette.mode === "dark" 
-                ? "rgba(166, 80, 240, 0.15)" 
-                : "rgba(166, 80, 240, 0.06)",
-              color: designSystem.colors.primary.main,
-              transform: "translateX(2px)",
-            },
-          }}
-        >
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              minWidth: 0,
-              marginRight: isExpanded ? 2.5 : 0,
-              color: "inherit",
-              fontSize: "1.25rem",
-            }}
-          >
-            {mode === "dark" ? <Brightness7Icon /> : <Brightness4Icon />}
-          </Box>
-          {isExpanded && (
-            <Typography
-              variant="body2"
-              sx={{
-                fontWeight: 500,
-                fontSize: "0.875rem",
-                color: "inherit",
-              }}
-            >
-              {mode === "dark" ? "Tema Claro" : "Tema Escuro"}
-            </Typography>
-          )}
-        </Box>
-      </Tooltip>
-    </Box>
-
-    {/* Avatar do usuário no final da sidebar */}
-    <Box
-      sx={{
-        width: "100%",
-        borderTop: (theme) => `1px solid ${theme.palette.mode === "dark" ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.06)"}`,
-        py: 2,
-        px: isExpanded ? 2 : 1,
-        display: "flex",
-        justifyContent: isExpanded ? "flex-start" : "center",
-        alignItems: "center",
-      }}
-    >
-      <IconButton
-        onClick={handleMenuOpen}
-        sx={{
-          p: 0,
-          width: isExpanded ? "100%" : "auto",
-          justifyContent: isExpanded ? "flex-start" : "center",
-          "&:hover": {
-            bgcolor: "transparent",
-          },
-        }}
-      >
-        <Avatar
-          sx={{
-            width: isExpanded ? 40 : 36,
-            height: isExpanded ? 40 : 36,
-            background: (theme) => theme.palette.mode === "dark" ? "#3C3C3C" : "#E5E7EB",
-            fontWeight: 500,
-            fontSize: isExpanded ? "0.875rem" : "0.75rem",
-            color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#9CA3AF",
-            mr: isExpanded ? 2 : 0,
-          }}
-        >
-          {user?.first_name?.[0] || user?.email?.[0] || "U"}
-        </Avatar>
-        {isExpanded && (
-          <Box sx={{ flex: 1, textAlign: "left" }}>
-            <Typography
-              variant="body2"
-              sx={{
-                fontWeight: 500,
-                color: (theme) => theme.palette.mode === "dark" ? "#FFFFFF" : "#1F2937",
-                fontSize: "0.875rem",
-              }}
-            >
-              {user?.first_name || user?.email || "Usuário"}
-            </Typography>
-            <Typography
-              variant="caption"
-              sx={{
-                color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#6B7280",
-                fontSize: "0.75rem",
-              }}
-            >
-              {user?.email || ""}
-            </Typography>
-          </Box>
-        )}
-      </IconButton>
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-        anchorOrigin={{
-          vertical: "top",
-          horizontal: isExpanded ? "right" : "left",
-        }}
-        transformOrigin={{
-          vertical: "bottom",
-          horizontal: isExpanded ? "right" : "left",
-        }}
-        slotProps={{
-          paper: {
-            sx: {
-              mt: 1,
-              minWidth: 140,
-              borderRadius: 1,
-              boxShadow: (theme) => theme.palette.mode === "dark" 
-                ? "0 1px 3px rgba(0,0,0,0.3)" 
-                : "0 1px 3px rgba(0,0,0,0.08)",
-              border: (theme) => theme.palette.mode === "dark" 
-                ? "1px solid rgba(255, 255, 255, 0.1)" 
-                : "1px solid #E5E7EB",
-              bgcolor: (theme) => theme.palette.mode === "dark" ? "#2C2C2C" : "#F9FAFB",
-            },
-          },
-        }}
-      >
-        <MenuItem
-          onClick={handleProfileClick}
-          sx={{
-            py: 0.75,
-            px: 2,
-            fontSize: "0.8125rem",
-            color: (theme) => theme.palette.mode === "dark" ? "#FFFFFF" : "#000000",
-          }}
-        >
-          Meu Perfil
-        </MenuItem>
-        <MenuItem
-          onClick={handleLogout}
-          sx={{
-            py: 0.75,
-            px: 2,
-            fontSize: "0.8125rem",
-            color: (theme) => theme.palette.mode === "dark" ? "#FFFFFF" : "#000000",
-          }}
-        >
-          Sair
-        </MenuItem>
-      </Menu>
     </Box>
   </Drawer>
   );

@@ -128,16 +128,16 @@ const CadastroAlunos: React.FC = () => {
         borderWidth: "2px",
       },
       "& fieldset": {
-        borderColor: (theme) => theme.palette.mode === "dark" 
+        borderColor: (theme: any) => theme.palette.mode === "dark" 
           ? designSystem.colors.border.mainDark 
           : designSystem.colors.border.main,
       },
-      backgroundColor: (theme) => theme.palette.mode === "dark" 
+      backgroundColor: (theme: any) => theme.palette.mode === "dark" 
         ? "#2C2C2C" 
         : "#FFFFFF",
     },
     "& .MuiInputLabel-root": {
-      color: (theme) => theme.palette.mode === "dark" 
+      color: (theme: any) => theme.palette.mode === "dark" 
         ? designSystem.colors.text.secondaryDark 
         : designSystem.colors.text.secondary,
     },
@@ -145,7 +145,7 @@ const CadastroAlunos: React.FC = () => {
       color: designSystem.colors.primary.main,
     },
     "& .MuiInputBase-input": {
-      color: (theme) => theme.palette.mode === "dark" 
+      color: (theme: any) => theme.palette.mode === "dark" 
         ? designSystem.colors.text.primaryDark 
         : designSystem.colors.text.primary,
     },

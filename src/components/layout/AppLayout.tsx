@@ -30,6 +30,8 @@ import DescriptionIcon from "@mui/icons-material/Description";
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(true);
   const { user, accessToken } = useAuthContext();
+  const drawerWidth = 240;
+  const collapsedWidth = 60;
   const { fetchProfileByUserId, fetchProfileByCpf, createProfile, uploadPhoto } = useUserProfile();
   const [showCreateProfile, setShowCreateProfile] = useState(false);
   const [profileData, setProfileData] = useState<UserProfilePayload>({});
@@ -269,21 +271,6 @@ export default function AppLayout() {
 
   return (
     <Box display="flex" height="100vh" sx={{ position: "relative" }}>
-      {/* Overlay para melhor legibilidade */}
-      <Box
-        sx={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          bgcolor: (theme) => theme.palette.mode === "dark" 
-            ? "rgba(0, 0, 0, 0.5)" 
-            : "rgba(255, 255, 255, 0.7)",
-          zIndex: 0,
-        }}
-      />
-
         <LayoutSidebar
           collapsed={collapsed}
           menuGroups={sidebarMenuGroups}
@@ -306,15 +293,19 @@ export default function AppLayout() {
               zIndex: 1100,
             }}
           >
-            <Header onMenuClick={() => setCollapsed((p) => !p)} />
+            <Header 
+              onMenuClick={() => setCollapsed((p) => !p)} 
+              sidebarCollapsed={collapsed}
+            />
           </Box>
           <Box
             component="main"
             flexGrow={1}
             overflow="auto"
             sx={{
-              marginLeft: "60px", // Espaço para o sidebar colapsado
-              width: "calc(100% - 60px)",
+              marginLeft: collapsed ? `${collapsedWidth}px` : `${drawerWidth}px`,
+              width: collapsed ? `calc(100% - ${collapsedWidth}px)` : `calc(100% - ${drawerWidth}px)`,
+              transition: "margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
               overflowX: "hidden",
               boxSizing: "border-box",
             }}

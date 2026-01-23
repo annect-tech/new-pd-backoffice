@@ -310,24 +310,24 @@ export default function UserList() {
                           <Typography
                             variant="h6"
                             fontWeight={600}
+                            noWrap
                             sx={{ 
                               color: (theme) => theme.palette.mode === "dark" 
                                 ? designSystem.colors.text.primaryDark 
                                 : designSystem.colors.text.primary,
                               fontSize: "1.1rem",
-                              noWrap: true
                             }}
                           >
                             {getUserDisplayName(user)}
                           </Typography>
                           <Typography
                             variant="body2"
+                            noWrap
                             sx={{ 
                               color: (theme) => theme.palette.mode === "dark" 
                                 ? designSystem.colors.text.disabledDark 
                                 : designSystem.colors.text.disabled,
                               fontSize: "0.875rem",
-                              noWrap: true
                             }}
                           >
                             {getUserEmail(user)}

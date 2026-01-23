@@ -1,4 +1,5 @@
 // Design System - Paleta de cores e estilos padronizados
+import type { Theme } from "@mui/material/styles";
 
 export const designSystem = {
   colors: {
@@ -97,10 +98,10 @@ export const paperStyles = {
   sx: {
     borderRadius: 3,
     overflow: "hidden",
-    border: (theme) => `1px solid ${theme.palette.mode === "dark" 
+    border: (theme: Theme) => `1px solid ${theme.palette.mode === "dark" 
       ? designSystem.colors.border.mainDark 
       : designSystem.colors.border.main}`,
-    boxShadow: (theme) => theme.palette.mode === "dark" 
+    boxShadow: (theme: Theme) => theme.palette.mode === "dark" 
       ? designSystem.shadows.smallDark 
       : designSystem.shadows.small,
   },
@@ -113,10 +114,10 @@ export const toolbarStyles = {
     justifyContent: "space-between",
     gap: 2,
     p: 3,
-    backgroundColor: (theme) => theme.palette.mode === "dark" 
+    backgroundColor: (theme: Theme) => theme.palette.mode === "dark" 
       ? designSystem.colors.background.secondaryDark 
       : designSystem.colors.background.primary,
-    borderBottom: (theme) => `1px solid ${theme.palette.mode === "dark" 
+    borderBottom: (theme: Theme) => `1px solid ${theme.palette.mode === "dark" 
       ? designSystem.colors.border.mainDark 
       : designSystem.colors.border.main}`,
   },
@@ -126,14 +127,14 @@ export const toolbarStyles = {
 export const tableHeadStyles = {
   sx: {
     // match Seletivo visual: soft background, darker text, slightly larger border
-    backgroundColor: (theme) => theme.palette.mode === "dark" 
+    backgroundColor: (theme: Theme) => theme.palette.mode === "dark" 
       ? designSystem.colors.background.secondaryDark 
       : "#F9FAFB",
-    color: (theme) => theme.palette.mode === "dark" 
+    color: (theme: Theme) => theme.palette.mode === "dark" 
       ? designSystem.colors.text.secondaryDark 
       : "#374151",
     fontWeight: 600,
-    borderBottom: (theme) => `2px solid ${theme.palette.mode === "dark" 
+    borderBottom: (theme: Theme) => `2px solid ${theme.palette.mode === "dark" 
       ? designSystem.colors.border.mainDark 
       : designSystem.colors.border.main}`,
     fontSize: "0.875rem",
@@ -146,17 +147,17 @@ export const tableRowHoverStyles = {
   sx: {
     // alternate row backgrounds and hover color to match Seletivo
     "&:nth-of-type(odd)": {
-      backgroundColor: (theme) => theme.palette.mode === "dark" 
+      backgroundColor: (theme: Theme) => theme.palette.mode === "dark" 
         ? designSystem.colors.background.secondaryDark 
         : "#FFFFFF",
     },
     "&:nth-of-type(even)": {
-      backgroundColor: (theme) => theme.palette.mode === "dark" 
+      backgroundColor: (theme: Theme) => theme.palette.mode === "dark" 
         ? designSystem.colors.background.tertiaryDark 
         : "#F9FAFB",
     },
     "&:hover": {
-      backgroundColor: (theme) => theme.palette.mode === "dark" 
+      backgroundColor: (theme: Theme) => theme.palette.mode === "dark" 
         ? "rgba(166, 80, 240, 0.15) !important" 
         : "#FAF5FF !important",
     },
@@ -167,11 +168,11 @@ export const tableRowHoverStyles = {
 // Estilos de IconButton
 export const iconButtonStyles = {
   sx: {
-    color: (theme) => theme.palette.mode === "dark" 
+    color: (theme: Theme) => theme.palette.mode === "dark" 
       ? designSystem.colors.text.disabledDark 
       : designSystem.colors.text.disabled,
     "&:hover": {
-      backgroundColor: (theme) => theme.palette.mode === "dark" 
+      backgroundColor: (theme: Theme) => theme.palette.mode === "dark" 
         ? "rgba(166, 80, 240, 0.15)" 
         : designSystem.colors.primary.lightest,
       color: designSystem.colors.primary.main,
@@ -183,12 +184,12 @@ export const iconButtonStyles = {
 export const textFieldStyles = {
   sx: {
     "& .MuiInput-underline:before": {
-      borderBottomColor: (theme) => theme.palette.mode === "dark" 
+      borderBottomColor: (theme: Theme) => theme.palette.mode === "dark" 
         ? designSystem.colors.border.lightDark 
         : designSystem.colors.border.light,
     },
     "& .MuiInput-underline:hover:before": {
-      borderBottomColor: (theme) => theme.palette.mode === "dark" 
+      borderBottomColor: (theme: Theme) => theme.palette.mode === "dark" 
         ? designSystem.colors.border.darkDark 
         : designSystem.colors.border.dark,
     },
@@ -196,7 +197,7 @@ export const textFieldStyles = {
       borderBottomColor: designSystem.colors.primary.main,
     },
     "& input": {
-      color: (theme) => theme.palette.mode === "dark" 
+      color: (theme: Theme) => theme.palette.mode === "dark" 
         ? designSystem.colors.text.primaryDark 
         : designSystem.colors.text.primary,
     },
@@ -238,10 +239,10 @@ export const progressStyles = {
 // Estilos de TablePagination
 export const tablePaginationStyles = {
   sx: {
-    borderTop: (theme) => `1px solid ${theme.palette.mode === "dark" 
+    borderTop: (theme: Theme) => `1px solid ${theme.palette.mode === "dark" 
       ? designSystem.colors.border.mainDark 
       : designSystem.colors.border.main}`,
-    backgroundColor: (theme) => theme.palette.mode === "dark" 
+    backgroundColor: (theme: Theme) => theme.palette.mode === "dark" 
       ? designSystem.colors.background.secondaryDark 
       : designSystem.colors.background.secondary,
   },
@@ -251,13 +252,13 @@ export const tablePaginationStyles = {
 export const dataGridStyles = {
   border: "none",
   "& .MuiDataGrid-columnHeaders": {
-    backgroundColor: (theme) => theme.palette.mode === "dark" 
+    backgroundColor: (theme: Theme) => theme.palette.mode === "dark" 
       ? designSystem.colors.background.secondaryDark 
       : designSystem.colors.background.secondary,
-    color: (theme) => theme.palette.mode === "dark" 
+    color: (theme: Theme) => theme.palette.mode === "dark" 
       ? designSystem.colors.text.secondaryDark 
       : designSystem.colors.text.secondary,
-    borderBottom: (theme) => `2px solid ${theme.palette.mode === "dark" 
+    borderBottom: (theme: Theme) => `2px solid ${theme.palette.mode === "dark" 
       ? designSystem.colors.border.mainDark 
       : designSystem.colors.border.main}`,
     "& .MuiDataGrid-columnHeaderTitle": {
@@ -267,36 +268,36 @@ export const dataGridStyles = {
   },
   "& .MuiDataGrid-row": {
     "&:nth-of-type(odd)": {
-      backgroundColor: (theme) => theme.palette.mode === "dark" 
+      backgroundColor: (theme: Theme) => theme.palette.mode === "dark" 
         ? designSystem.colors.background.secondaryDark 
         : designSystem.colors.background.primary,
     },
     "&:nth-of-type(even)": {
-      backgroundColor: (theme) => theme.palette.mode === "dark" 
+      backgroundColor: (theme: Theme) => theme.palette.mode === "dark" 
         ? designSystem.colors.background.tertiaryDark 
         : designSystem.colors.background.secondary,
     },
     "&:hover": {
-      backgroundColor: (theme) => theme.palette.mode === "dark" 
+      backgroundColor: (theme: Theme) => theme.palette.mode === "dark" 
         ? "rgba(166, 80, 240, 0.15) !important" 
         : `${designSystem.colors.primary.lightest} !important`,
       cursor: "pointer",
     },
   },
   "& .MuiDataGrid-cell": {
-    borderBottom: (theme) => `1px solid ${theme.palette.mode === "dark" 
+    borderBottom: (theme: Theme) => `1px solid ${theme.palette.mode === "dark" 
       ? designSystem.colors.border.mainDark 
       : designSystem.colors.border.main}`,
     fontSize: "0.875rem",
-    color: (theme) => theme.palette.mode === "dark" 
+    color: (theme: Theme) => theme.palette.mode === "dark" 
       ? designSystem.colors.text.secondaryDark 
       : designSystem.colors.text.secondary,
   },
   "& .MuiDataGrid-footerContainer": {
-    borderTop: (theme) => `1px solid ${theme.palette.mode === "dark" 
+    borderTop: (theme: Theme) => `1px solid ${theme.palette.mode === "dark" 
       ? designSystem.colors.border.mainDark 
       : designSystem.colors.border.main}`,
-    backgroundColor: (theme) => theme.palette.mode === "dark" 
+    backgroundColor: (theme: Theme) => theme.palette.mode === "dark" 
       ? designSystem.colors.background.secondaryDark 
       : designSystem.colors.background.secondary,
   },
