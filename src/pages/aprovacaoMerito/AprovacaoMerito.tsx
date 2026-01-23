@@ -257,7 +257,14 @@ const AprovacaoMerito: React.FC = () => {
                   textAlign: "center",
                 }}
               >
-                <Typography variant="h6" color={designSystem.colors.text.primary}>
+                <Typography 
+                  variant="h6" 
+                  sx={{
+                    color: (theme) => theme.palette.mode === "dark" 
+                      ? designSystem.colors.text.primaryDark 
+                      : designSystem.colors.text.primary
+                  }}
+                >
                   Não há documentos pendentes para avaliação.
                 </Typography>
               </Paper>
