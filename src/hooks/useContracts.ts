@@ -140,7 +140,19 @@ export const useContracts = () => {
   const createContract = useCallback(
     async (payload: Partial<Contract>) => {
       try {
-        const response = await contractsService.create(payload);
+        // Garantir que user_data_id seja um número
+        if (!payload.user_data_id) {
+          throw new Error("user_data_id é obrigatório");
+        }
+        const userDataId = typeof payload.user_data_id === 'string' 
+          ? parseInt(payload.user_data_id, 10) 
+          : payload.user_data_id;
+        
+        if (isNaN(userDataId)) {
+          throw new Error("user_data_id deve ser um número válido");
+        }
+        
+        const response = await contractsService.create({ user_data_id: userDataId });
 
         if (response.status >= 200 && response.status < 300) {
           showSnackbar("Contrato criado com sucesso", "success");
