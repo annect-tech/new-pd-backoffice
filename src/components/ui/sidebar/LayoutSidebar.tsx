@@ -14,8 +14,8 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { Link, useNavigate } from "react-router";
-import logo2 from "../../../assets/images/logo/logo2.svg";
-import logoDesenvolve from "../../../assets/images/logo/LOGO DESENVOLVE.png";
+import logoAberta from "../../../assets/images/logo/logo aberta.png";
+import logoFechada from "../../../assets/images/logo/logo fechada.png";
 import { APP_ROUTES } from "../../../util/constants";
 import { designSystem } from "../../../styles/designSystem";
 
@@ -122,51 +122,35 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
           onClick={handleLogoClick}
           sx={{
             cursor: "pointer",
+            width: collapsedWidth,
+            height: 72,
+            flexShrink: 0,
+            position: "relative",
             display: "flex",
             alignItems: "center",
-            justifyContent: isExpanded ? "flex-start" : "center",
-            width: isExpanded ? "100%" : "100%",
-            flexShrink: 0,
-            px: isExpanded ? 2 : 0,
-            transition: "transform 0.2s ease, opacity 0.2s ease",
-            position: "relative",
+            justifyContent: "center",
+            transition: "opacity 0.2s ease",
             "&:hover": {
               opacity: 0.85,
-              transform: "scale(1.02)",
             },
           }}
         >
-          {isExpanded ? (
-            <Box
-              component="img"
-              src={logoDesenvolve}
-              alt="Desenvolve"
-              sx={{
-                width: "auto",
-                height: 72,
-                maxWidth: "calc(100% - 8px)",
-                objectFit: "contain",
-                transform: "scale(1.28)",
-                transformOrigin: "left center",
-                position: "relative",
-                zIndex: 1,
-                marginLeft: "-20px",  
-              }}
-            />
-          ) : (
-            <Box
-              component="img"
-              src={logo2}
-              alt="Desenvolve"
-              sx={{
-                width: 35,
-                height: 35,
-                objectFit: "contain",
-                margin: "0 auto",
-                display: "block",
-              }}
-            />
-          )}
+          <Box
+            component="img"
+            src={isExpanded ? logoAberta : logoFechada}
+            alt="Desenvolve"
+            sx={{
+              width: 35,
+              height: 35,
+              objectFit: "contain",
+              display: "block",
+              position: "absolute",
+              left: -10,
+              top: "50%",
+              transform: "translateY(-50%)",
+              transition: "opacity 0.2s ease",
+            }}
+          />
         </Box>
 
         {!collapsed && onClose && (

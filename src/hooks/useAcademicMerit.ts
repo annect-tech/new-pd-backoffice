@@ -47,7 +47,8 @@ export const useAcademicMerit = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await academicMeritService.list(pageNum, 100, undefined);
+      // Usar endpoint detailed que retorna user_data_display completo
+      const response = await academicMeritService.listDetailed(pageNum, 100, undefined);
 
       if (response.status >= 200 && response.status < 300 && response.data) {
         const raw = response.data as any;
@@ -99,7 +100,8 @@ export const useAcademicMerit = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await academicMeritService.list(pageNum, sizeNum);
+      // Usar endpoint detailed que retorna user_data_display completo
+      const response = await academicMeritService.listDetailed(pageNum, sizeNum);
       
       if (response.status >= 200 && response.status < 300 && response.data) {
         const raw = response.data as any;

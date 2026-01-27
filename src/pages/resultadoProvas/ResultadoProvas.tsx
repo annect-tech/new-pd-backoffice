@@ -157,13 +157,14 @@ const ResultadoProvas: React.FC = () => {
   };
 
   const handleExportCSV = () => {
-    if (rows.length === 0) {
+    // Usar filtered em vez de rows para respeitar os filtros aplicados
+    if (filtered.length === 0) {
       // O snackbar será gerenciado pelo hook
       return;
     }
 
     const headers = ["CPF", "Nome", "Score", "Status"];
-    const csvRows = rows.map((row) => [
+    const csvRows = filtered.map((row) => [
       row.cpf,
       row.name,
       row.score?.toString() || "N/A",

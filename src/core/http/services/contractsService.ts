@@ -70,11 +70,11 @@ export const contractsService = {
 
   /**
    * Cria um novo contrato
-   * @param payload - Dados do contrato
+   * @param payload - Dados do contrato (precisa de user_data_id)
    */
-  create: (payload: Partial<Contract>) => {
+  create: (payload: { user_data_id: number }) => {
     const prefix = getEndpointPrefix();
-    return httpClient.post<{ id: string; message: string }>(
+    return httpClient.post<{ message: string }>(
       API_URL,
       `/${prefix}/contract`,
       payload

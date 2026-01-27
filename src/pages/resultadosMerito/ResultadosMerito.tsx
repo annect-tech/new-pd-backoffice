@@ -378,10 +378,11 @@ const ResultadosMerito: React.FC = () => {
   };
 
   const handleExportCSV = () => {
-    if (rows.length === 0) return;
+    // Usar filtered em vez de rows para respeitar os filtros aplicados
+    if (filtered.length === 0) return;
 
     const headers = ["ID", "Aluno", "Status", "Criado em", "Atualizado em"];
-    const csvRows = rows.map((row) => [
+    const csvRows = filtered.map((row) => [
       row.id,
       row.aluno,
       row.status,

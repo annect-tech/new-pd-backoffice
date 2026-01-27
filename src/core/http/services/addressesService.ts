@@ -112,9 +112,9 @@ export const addressesService = {
 
   /**
    * Cria um novo endereço
-   * @param payload - Dados do endereço
+   * @param payload - Dados do endereço (pode ser AddressPayload ou formato da API em português)
    */
-  create: (payload: AddressPayload) => {
+  create: (payload: AddressPayload | any) => {
     const prefix = getEndpointPrefix();
     return httpClient.post<CreateAddressResponse>(
       API_URL,
@@ -126,9 +126,9 @@ export const addressesService = {
   /**
    * Atualiza um endereço existente
    * @param id - ID do endereço
-   * @param payload - Dados atualizados
+   * @param payload - Dados atualizados (pode ser AddressPayload ou formato da API em português)
    */
-  update: (id: number | string, payload: Partial<AddressPayload>) => {
+  update: (id: number | string, payload: Partial<AddressPayload> | any) => {
     const prefix = getEndpointPrefix();
     return httpClient.patch<UpdateAddressResponse>(
       API_URL,

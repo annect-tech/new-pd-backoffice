@@ -64,11 +64,32 @@ export const useAddresses = () => {
           const raw = response.data as any;
           const list = Array.isArray(raw?.data) ? raw.data : Array.isArray(raw) ? raw : [];
 
-          setAddresses(list);
+          // Converter dados da API (português) para formato do frontend (inglês)
+          const convertedList = list.map((item: any) => ({
+            id: item.id,
+            cep: item.cep,
+            street: item.logradouro || item.street,
+            number: item.numero || item.number,
+            complement: item.complemento || item.complement,
+            neighborhood: item.bairro || item.neighborhood,
+            city: item.cidade || item.city,
+            state: item.uf || item.state,
+            country: item.country || "Brasil",
+            latitude: item.latitude || null,
+            longitude: item.longitude || null,
+            reference: item.reference || null,
+            tenant_city_id: item.tenant_city_id || "",
+            is_deleted: item.is_deleted || false,
+            createdAt: item.createdAt || item.created_at,
+            updatedAt: item.updatedAt || item.updated_at,
+            deletedAt: item.deletedAt || item.deleted_at,
+          }));
+
+          setAddresses(convertedList);
           setPagination({
             currentPage: Number(raw?.currentPage ?? page),
             itemsPerPage: Number(raw?.itemsPerPage ?? size),
-            totalItems: Number(raw?.totalItems ?? list.length),
+            totalItems: Number(raw?.totalItems ?? convertedList.length),
             totalPages: Number(raw?.totalPages ?? 0),
           });
           showSnackbar("Dados carregados com sucesso", "success");

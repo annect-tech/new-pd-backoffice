@@ -5,15 +5,30 @@ const API_URL = import.meta.env.VITE_API_URL as string || "http://186.248.135.17
 
 export interface AllowedCity {
   id: string;
-  name: string;
+  cidade: string;
+  uf: string;
+  active: boolean;
+  rua: string | null;
+  numero: string | null;
+  complemento: string | null;
+  bairro: string | null;
+  cnpj: string | null;
   tenant_city_id: string | null;
-  createdAt: string;
-  updatedAt: string;
+  // Campos legados para compatibilidade (se a API ainda retornar)
+  name?: string;
+  createdAt?: string;
 }
 
 export interface AllowedCityPayload {
-  name: string;
-  tenant_city_id?: string;
+  cidade: string;
+  uf: string;
+  active: boolean;
+  rua: string;
+  numero: string;
+  complemento: string;
+  bairro: string;
+  cnpj: string;
+  tenant_city_id: string;
 }
 
 export interface PaginatedResponse<T> {
