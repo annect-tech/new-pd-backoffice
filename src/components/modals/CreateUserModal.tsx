@@ -433,7 +433,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
               >
                 {tenantCities.map((tenantCity) => (
                   <MenuItem key={tenantCity.id} value={tenantCity.id}>
-                    {tenantCity.domain}
+                    {tenantCity.name ?? tenantCity.domain ?? "Sem domínio"}
                   </MenuItem>
                 ))}
               </Select>

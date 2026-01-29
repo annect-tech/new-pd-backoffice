@@ -62,6 +62,26 @@ export const removePhoneMask = (value: string): string => {
 };
 
 /**
+ * Aplica máscara de CNPJ no formato: 00.000.000/0001-00
+ */
+export const applyCnpjMask = (value: string): string => {
+  if (!value) return '';
+  const numbers = value.replace(/\D/g, '').slice(0, 14);
+  if (numbers.length <= 2) return numbers;
+  if (numbers.length <= 5) return `${numbers.slice(0, 2)}.${numbers.slice(2)}`;
+  if (numbers.length <= 8) return `${numbers.slice(0, 2)}.${numbers.slice(2, 5)}.${numbers.slice(5)}`;
+  if (numbers.length <= 12) return `${numbers.slice(0, 2)}.${numbers.slice(2, 5)}.${numbers.slice(5, 8)}/${numbers.slice(8)}`;
+  return `${numbers.slice(0, 2)}.${numbers.slice(2, 5)}.${numbers.slice(5, 8)}/${numbers.slice(8, 12)}-${numbers.slice(12)}`;
+};
+
+/**
+ * Remove a máscara do CNPJ, retornando apenas os dígitos
+ */
+export const removeCnpjMask = (value: string): string => {
+  return value.replace(/\D/g, '');
+};
+
+/**
  * Formata data de YYYY-MM-DD para DD/MM/YYYY
  */
 export const formatDateToDDMMYYYY = (dateString: string): string => {

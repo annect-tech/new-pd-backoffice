@@ -9,6 +9,7 @@ import {
   Box,
   Divider,
   IconButton,
+  Toolbar,
   useTheme,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
@@ -45,10 +46,13 @@ interface SidebarProps {
 const LayoutSidebar: React.FC<SidebarProps> = ({
   collapsed,
   menuGroups,
+  onClose,
 }) => {
   const navigate = useNavigate();
   const theme = useTheme();
   const [isHovered, setIsHovered] = useState(false);
+
+  const handleLogoClick = () => navigate(APP_ROUTES.DASHBOARD);
   const isDark = theme.palette.mode === "dark";
 
   // Se está colapsado, pode expandir por hover

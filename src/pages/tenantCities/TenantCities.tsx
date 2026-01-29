@@ -65,7 +65,9 @@ const TenantCities: React.FC = () => {
   const [mode, setMode] = useState<Mode>("create");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<TenantCityPayload>({
+    name: "",
     domain: "",
+    tag: "",
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [page, setPage] = useState(0);
@@ -79,10 +81,14 @@ const TenantCities: React.FC = () => {
   const handleOpen = (m: Mode, tenantCity?: typeof tenantCities[0]) => {
     setMode(m);
     if (m === "edit" && tenantCity) {
-      setForm({ domain: tenantCity.domain ?? "" });
+      setForm({
+        name: tenantCity.name ?? "",
+        domain: tenantCity.domain ?? "",
+        tag: tenantCity.tag ?? "",
+      });
       setEditingId(tenantCity.id);
     } else {
-      setForm({ domain: "" });
+      setForm({ name: "", domain: "", tag: "" });
       setEditingId(null);
     }
     setOpen(true);
@@ -90,13 +96,22 @@ const TenantCities: React.FC = () => {
 
   const handleClose = () => {
     setOpen(false);
-    setForm({ domain: "" });
+    setForm({ name: "", domain: "", tag: "" });
     setEditingId(null);
   };
 
   const handleSubmit = async () => {
+    const nameTrim = (form.name ?? "").trim();
     const domainTrim = (form.domain ?? "").trim();
-    const payload: TenantCityPayload = domainTrim ? { domain: domainTrim } : {};
+    const tagTrim = (form.tag ?? "").trim();
+
+    if (!nameTrim || !domainTrim || !tagTrim) return;
+
+    const payload: TenantCityPayload = {
+      name: nameTrim,
+      domain: domainTrim,
+      tag: tagTrim,
+    };
 
     if (mode === "create") {
       await createTenantCity(payload);
@@ -210,7 +225,9 @@ const TenantCities: React.FC = () => {
                       <TableHead {...tableHeadStyles}>
                         <TableRow>
                           <TableCell>ID</TableCell>
+                          <TableCell>Nome</TableCell>
                           <TableCell>Domínio</TableCell>
+                          <TableCell>Tag</TableCell>
                           <TableCell>Criado em</TableCell>
                           <TableCell align="right">Ações</TableCell>
                         </TableRow>
@@ -218,7 +235,7 @@ const TenantCities: React.FC = () => {
                       <TableBody>
                         {tenantCities.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
+                            <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
                               <Typography color={designSystem.colors.text.disabled}>
                                 {searchTerm
                                   ? "Nenhuma Tenant City encontrada"
@@ -235,7 +252,17 @@ const TenantCities: React.FC = () => {
                               <TableCell>{tenantCity.id}</TableCell>
                               <TableCell>
                                 <Typography fontWeight={500}>
+                                  {tenantCity.name ?? "—"}
+                                </Typography>
+                              </TableCell>
+                              <TableCell>
+                                <Typography>
                                   {tenantCity.domain ?? "Sem domínio"}
+                                </Typography>
+                              </TableCell>
+                              <TableCell>
+                                <Typography>
+                                  {tenantCity.tag ?? "—"}
                                 </Typography>
                               </TableCell>
                               <TableCell>
@@ -294,14 +321,34 @@ const TenantCities: React.FC = () => {
           <TextField
             autoFocus
             margin="dense"
+            label="Nome"
+            fullWidth
+            variant="outlined"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            placeholder="Ex: Cidade Exemplo"
+            required
+          />
+          <TextField
+            margin="dense"
             label="Domínio"
             fullWidth
             variant="outlined"
             value={form.domain}
             onChange={(e) => setForm({ ...form, domain: e.target.value })}
             placeholder="Ex: exemplo.com.br"
-            helperText="Opcional (máximo 100 caracteres)"
+            required
             inputProps={{ maxLength: 100 }}
+          />
+          <TextField
+            margin="dense"
+            label="Tag"
+            fullWidth
+            variant="outlined"
+            value={form.tag}
+            onChange={(e) => setForm({ ...form, tag: e.target.value })}
+            placeholder="Ex: cidade-exemplo"
+            required
           />
         </DialogContent>
         <DialogActions>
@@ -311,6 +358,7 @@ const TenantCities: React.FC = () => {
           <Button
             onClick={handleSubmit}
             variant="outlined"
+            disabled={!form.name?.trim() || !form.domain?.trim() || !form.tag?.trim()}
           >
             {mode === "create" ? "Criar" : "Salvar"}
           </Button>

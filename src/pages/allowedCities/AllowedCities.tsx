@@ -23,6 +23,10 @@ import {
   TablePagination,
   Fade,
   Chip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import {
   Search as SearchIcon,
@@ -32,7 +36,10 @@ import {
   Refresh as RefreshIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router";
+import { useAuthContext } from "../../app/providers/AuthProvider";
 import { useAllowedCities } from "../../hooks/useAllowedCities";
+import { useTenantCities } from "../../hooks/useTenantCities";
+import { applyCnpjMask, removeCnpjMask } from "../../util/masks";
 import { APP_ROUTES } from "../../util/constants";
 import PageHeader from "../../components/ui/page/PageHeader";
 import {
@@ -47,11 +54,13 @@ import {
   tablePaginationStyles,
 } from "../../styles/designSystem";
 import type { AllowedCityPayload } from "../../core/http/services/allowedCitiesService";
+import type { TenantCity } from "../../core/http/services/tenantCitiesService";
 
 type Mode = "create" | "edit";
 
 const AllowedCities: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuthContext();
   const {
     allowedCities,
     loading,
@@ -64,6 +73,25 @@ const AllowedCities: React.FC = () => {
     fetchAllowedCities,
     fetchError,
   } = useAllowedCities();
+  const { tenantCities, fetchTenantCities } = useTenantCities();
+
+  // Filtrar apenas a tenant do usuário logado (backend retorna 403 se não corresponder)
+  const userTenantId = user?.tenant_city_id ?? "";
+  const allowedTenantCities = tenantCities.filter((tc) => tc.id === userTenantId);
+  // Se a tenant do usuário não estiver na lista, adicionar como opção (ex.: API retorna lista limitada)
+  const selectableTenants: TenantCity[] =
+    allowedTenantCities.length > 0
+      ? allowedTenantCities
+      : userTenantId
+        ? [{
+            id: userTenantId,
+            domain: "Sua Tenant City",
+            name: "Sua Tenant City",
+            tag: null,
+            createdAt: "",
+            updatedAt: "",
+          }]
+        : [];
 
   const [searchTerm, setSearchTerm] = useState("");
   const [mode, setMode] = useState<Mode>("create");
@@ -90,6 +118,9 @@ const AllowedCities: React.FC = () => {
 
   const handleOpen = (m: Mode, allowedCity?: typeof allowedCities[0]) => {
     setMode(m);
+    if (tenantCities.length === 0) {
+      fetchTenantCities(1, 100);
+    }
     if (m === "edit" && allowedCity) {
       setForm({
         cidade: allowedCity.cidade || "",
@@ -97,9 +128,9 @@ const AllowedCities: React.FC = () => {
         active: allowedCity.active ?? true,
         rua: allowedCity.rua || "",
         numero: allowedCity.numero || "",
-        complemento: allowedCity.complemento || "",
+        complemento: allowedCity.complemento && allowedCity.complemento !== "—" ? allowedCity.complemento : "",
         bairro: allowedCity.bairro || "",
-        cnpj: allowedCity.cnpj || "",
+        cnpj: applyCnpjMask(allowedCity.cnpj || ""),
         tenant_city_id: allowedCity.tenant_city_id || "",
       });
       setEditingId(allowedCity.id);
@@ -113,7 +144,7 @@ const AllowedCities: React.FC = () => {
         complemento: "",
         bairro: "",
         cnpj: "",
-        tenant_city_id: "",
+        tenant_city_id: userTenantId && selectableTenants.length === 1 ? userTenantId : "",
       });
       setEditingId(null);
     }
@@ -143,17 +174,19 @@ const AllowedCities: React.FC = () => {
       return;
     }
 
+    const complementoTrim = form.complemento?.trim();
     const payload: AllowedCityPayload = {
       cidade: form.cidade.trim(),
       uf: form.uf.trim().toUpperCase(),
       active: form.active,
       rua: form.rua.trim(),
       numero: form.numero.trim(),
-      complemento: form.complemento.trim(),
       bairro: form.bairro.trim(),
-      cnpj: form.cnpj.trim(),
+      cnpj: removeCnpjMask(form.cnpj),
       tenant_city_id: form.tenant_city_id.trim(),
     };
+    // API rejeita "" e exige string não vazia; quando vazio, envia placeholder
+    payload.complemento = complementoTrim || "—";
 
     if (mode === "create") {
       await createAllowedCity(payload);
@@ -444,7 +477,7 @@ const AllowedCities: React.FC = () => {
               variant="outlined"
               value={form.complemento}
               onChange={(e) => setForm({ ...form, complemento: e.target.value })}
-              required
+              placeholder="Opcional"
             />
             <TextField
               margin="dense"
@@ -461,19 +494,30 @@ const AllowedCities: React.FC = () => {
               fullWidth
               variant="outlined"
               value={form.cnpj}
-              onChange={(e) => setForm({ ...form, cnpj: e.target.value })}
+              onChange={(e) => setForm({ ...form, cnpj: applyCnpjMask(e.target.value) })}
+              placeholder="00.000.000/0001-00"
               required
             />
-            <TextField
-              margin="dense"
-              label="Tenant City ID"
-              fullWidth
-              variant="outlined"
-              value={form.tenant_city_id}
-              onChange={(e) => setForm({ ...form, tenant_city_id: e.target.value })}
-              placeholder="UUID da Tenant City"
-              required
-            />
+            <FormControl margin="dense" fullWidth required>
+              <InputLabel>Tenant City</InputLabel>
+              <Select
+                value={form.tenant_city_id}
+                onChange={(e) => setForm({ ...form, tenant_city_id: e.target.value })}
+                label="Tenant City"
+                error={!userTenantId}
+              >
+                {selectableTenants.map((tc) => (
+                  <MenuItem key={tc.id} value={tc.id}>
+                    {tc.name ?? tc.domain ?? tc.id}
+                  </MenuItem>
+                ))}
+              </Select>
+              {!userTenantId && (
+                <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
+                  Seu usuário não está associado a uma tenant. Entre em contato com o administrador.
+                </Typography>
+              )}
+            </FormControl>
           </Box>
         </DialogContent>
         <DialogActions>
