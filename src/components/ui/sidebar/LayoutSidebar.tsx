@@ -8,8 +8,16 @@ import {
   ListItemText,
   Box,
   Divider,
+  IconButton,
+  useTheme,
 } from "@mui/material";
-import { Link } from "react-router";
+import CloseIcon from "@mui/icons-material/Close";
+import { Link, useNavigate } from "react-router";
+import logoAberta from "../../../assets/images/logo/logo aberta.png";
+import logoAbertaBranca from "../../../assets/images/logo/logo aberta branca.png";
+import logoFechada from "../../../assets/images/logo/logo fechada.png";
+import logoFechadaBranca from "../../../assets/images/logo/logo fechada branca.png";
+import { APP_ROUTES } from "../../../util/constants";
 import { designSystem } from "../../../styles/designSystem";
 
 const drawerWidth = 240;
@@ -38,7 +46,10 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
   collapsed,
   menuGroups,
 }) => {
+  const navigate = useNavigate();
+  const theme = useTheme();
   const [isHovered, setIsHovered] = useState(false);
+  const isDark = theme.palette.mode === "dark";
 
   // Se está colapsado, pode expandir por hover
   // Se não está colapsado (aberto por clique), não fecha no mouseLeave
@@ -88,6 +99,88 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
         },
       }}
     >
+      <Toolbar
+        sx={{
+          minHeight: 72,
+          height: 72,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          px: 0,
+          width: "100%",
+          backgroundColor: (theme) => theme.palette.mode === "dark" ? "#1E1E1E" : "#FFFFFF",
+          borderBottom: (theme) => theme.palette.mode === "dark" 
+            ? "1px solid rgba(255, 255, 255, 0.1)" 
+            : "1px solid rgba(0, 0, 0, 0.04)",
+          position: "relative",
+          overflow: "visible",
+        }}
+      >
+        {/* Logo */}
+        <Box
+          onClick={handleLogoClick}
+          sx={{
+            cursor: "pointer",
+            width: collapsedWidth,
+            height: 72,
+            flexShrink: 0,
+            position: "relative",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "opacity 0.2s ease",
+            "&:hover": {
+              opacity: 0.85,
+            },
+          }}
+        >
+          <Box
+            component="img"
+            src={
+              isExpanded
+                ? isDark
+                  ? logoAbertaBranca
+                  : logoAberta
+                : isDark
+                  ? logoFechadaBranca
+                  : logoFechada
+            }
+            alt="Desenvolve"
+            sx={{
+              width: 35,
+              height: 35,
+              objectFit: "contain",
+              display: "block",
+              position: "absolute",
+              left: -10,
+              top: "50%",
+              transform: "translateY(-50%)",
+              transition: "opacity 0.2s ease",
+            }}
+          />
+        </Box>
+
+        {!collapsed && onClose && (
+          <IconButton
+            onClick={onClose}
+            size="small"
+            sx={{
+              color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#9CA3AF",
+              transition: "all 0.2s ease",
+              "&:hover": {
+                color: designSystem.colors.primary.main,
+                backgroundColor: (theme) => theme.palette.mode === "dark" 
+                  ? "rgba(166, 80, 240, 0.15)" 
+                  : "rgba(166, 80, 240, 0.08)",
+                transform: "rotate(90deg)",
+              },
+            }}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        )}
+      </Toolbar>
+
     <Box
       sx={{
         width: "100%",

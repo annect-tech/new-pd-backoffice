@@ -62,6 +62,7 @@ const AllowedCities: React.FC = () => {
     snackbar,
     closeSnackbar,
     fetchAllowedCities,
+    fetchError,
   } = useAllowedCities();
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -216,6 +217,12 @@ const AllowedCities: React.FC = () => {
             ]}
           />
 
+          {fetchError && (
+            <Alert severity="warning" sx={{ mb: 2, borderRadius: 2 }}>
+              {fetchError}
+            </Alert>
+          )}
+
           <Fade in timeout={1000}>
             <Paper {...paperStyles}>
               <Toolbar {...toolbarStyles}>
@@ -273,7 +280,7 @@ const AllowedCities: React.FC = () => {
                           <TableCell>ID</TableCell>
                           <TableCell>Cidade / UF</TableCell>
                           <TableCell>Status</TableCell>
-                          <TableCell>Tenant City ID</TableCell>
+                          <TableCell sx={{ minWidth: 280 }}>Tenant City ID</TableCell>
                           <TableCell align="right">Ações</TableCell>
                         </TableRow>
                       </TableHead>
@@ -313,27 +320,27 @@ const AllowedCities: React.FC = () => {
                                 </Typography>
                               </TableCell>
                               <TableCell>
+                                {allowedCity.active ? (
+                                  <Chip label="Ativa" color="success" size="small" />
+                                ) : (
+                                  <Chip label="Inativa" color="default" size="small" />
+                                )}
+                              </TableCell>
+                              <TableCell sx={{ minWidth: 280 }}>
                                 <Typography 
                                   sx={{ 
                                     fontSize: "0.75rem",
                                     fontFamily: "monospace",
-                                    color: allowedCity.tenant_city_id 
-                                      ? designSystem.colors.text.secondary 
-                                      : designSystem.colors.text.disabled,
-                                    maxWidth: 150,
+                                    color: (theme) => allowedCity.tenant_city_id 
+                                      ? (theme.palette.mode === "dark" ? designSystem.colors.text.secondaryDark : designSystem.colors.text.secondary)
+                                      : (theme.palette.mode === "dark" ? designSystem.colors.text.disabledDark : designSystem.colors.text.disabled),
+                                    maxWidth: 260,
                                     overflow: "hidden",
                                     textOverflow: "ellipsis",
                                   }}
                                 >
                                   {allowedCity.tenant_city_id ?? "Não vinculado"}
                                 </Typography>
-                              </TableCell>
-                              <TableCell>
-                                {allowedCity.active ? (
-                                  <Chip label="Ativa" color="success" size="small" />
-                                ) : (
-                                  <Chip label="Inativa" color="default" size="small" />
-                                )}
                               </TableCell>
                               <TableCell align="right">
                                 <IconButton

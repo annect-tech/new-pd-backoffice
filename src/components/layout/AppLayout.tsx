@@ -238,7 +238,7 @@ export default function AppLayout() {
         },
         {
           icon: <LocationCityIcon />,
-          label: "Allowed Cities",
+          label: "Cidades permitidas",
           to: APP_ROUTES.ALLOWED_CITIES,
         },
         {

@@ -128,10 +128,12 @@ const ListaPresenca: React.FC = () => {
         name: completeName || "—",
         celphone: userData?.celphone || "Não informado",
         status:
-          normalizedStatus === "absent"
+          normalizedStatus === "absent" || normalizedStatus === "ausente"
             ? "ausente"
-            : normalizedStatus === "scheduled"
+            : normalizedStatus === "scheduled" || normalizedStatus === "pendente"
             ? "agendado"
+            : normalizedStatus === "desqualificado"
+            ? "desqualificado"
             : "presente",
         local: exam.exam_scheduled_hour?.exam_date?.local?.name || "—",
         date: formatDate(exam.exam_scheduled_hour?.exam_date?.date || "—"),

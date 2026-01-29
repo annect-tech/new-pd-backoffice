@@ -35,25 +35,6 @@ const DocumentosCotas: React.FC = () => {
 
   const [documentError, setDocumentError] = useState(false);
   const [documentLoading, setDocumentLoading] = useState(true);
-  const [useTestDocument, setUseTestDocument] = useState(false);
-
-  // Documento de teste para visualização
-  const testDocument = {
-    id: "test-doc-001",
-    quota_doc: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-    quota_doc_status: "PENDING",
-    quota_doc_refuse_reason: undefined,
-    user_data_id: "test-user-001",
-    user_id: 999,
-    user_data_display: {
-      user: {
-        first_name: "João",
-        last_name: "Silva",
-      },
-    },
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
 
   useEffect(() => {
     fetchDocuments(1, 10, "pending");
@@ -78,8 +59,7 @@ const DocumentosCotas: React.FC = () => {
 
   // Verificar se o documento existe quando mudar de documento
   useEffect(() => {
-    const docToCheck = currentDocument || (useTestDocument && count === 0 ? testDocument : null);
-    const documentUrl = docToCheck?.quota_doc ? buildPdfUrl(docToCheck.quota_doc) : null;
+    const documentUrl = currentDocument?.quota_doc ? buildPdfUrl(currentDocument.quota_doc) : null;
     
     if (documentUrl) {
       setDocumentError(false);
@@ -122,7 +102,7 @@ const DocumentosCotas: React.FC = () => {
       setDocumentError(true);
       setDocumentLoading(false);
     }
-  }, [currentDocument?.id, currentDocument?.quota_doc, useTestDocument, count]);
+  }, [currentDocument?.id, currentDocument?.quota_doc]);
 
   if (loading) {
     return (
@@ -217,11 +197,7 @@ const DocumentosCotas: React.FC = () => {
     );
   }
 
-  // Determinar qual documento usar (real ou de teste)
-  const isTestMode = useTestDocument && count === 0 && !currentDocument;
-  const displayDocument = currentDocument || (isTestMode ? testDocument : null);
-
-  if (count === 0 && !currentDocument && !useTestDocument) {
+  if (count === 0 || !currentDocument) {
     return (
       <Box
         sx={{
@@ -268,7 +244,6 @@ const DocumentosCotas: React.FC = () => {
                 <Typography 
                   variant="h6" 
                   sx={{
-                    mb: 2,
                     color: (theme) => theme.palette.mode === "dark" 
                       ? designSystem.colors.text.primaryDark 
                       : designSystem.colors.text.primary
@@ -276,29 +251,12 @@ const DocumentosCotas: React.FC = () => {
                 >
                   Não há documentos pendentes para avaliação.
                 </Typography>
-                <Button
-                  variant="contained"
-                  onClick={() => setUseTestDocument(true)}
-                  sx={{
-                    mt: 2,
-                    bgcolor: designSystem.colors.primary.main,
-                    "&:hover": {
-                      bgcolor: designSystem.colors.primary.darker,
-                    },
-                  }}
-                >
-                  Visualizar com documento de teste
-                </Button>
               </Paper>
             </Fade>
           </Box>
         </Box>
       </Box>
     );
-  }
-
-  if (!displayDocument) {
-    return null;
   }
 
   return (
@@ -373,12 +331,12 @@ const DocumentosCotas: React.FC = () => {
                     }}
                   >
                     <Typography variant="body2" fontWeight={600} color="#FFFFFF">
-                      {isTestMode ? "1 / 1" : `${currentIndex + 1} / ${count}`}
+                      {currentIndex + 1} / {count}
                     </Typography>
                   </Box>
                 </Box>
                 <Box sx={{ flex: 1, position: "relative", bgcolor: "#FAFAFA" }}>
-                  {documentError || !displayDocument.quota_doc ? (
+                  {documentError || !currentDocument.quota_doc ? (
                     <Box
                       sx={{
                         height: "100%",
@@ -397,9 +355,9 @@ const DocumentosCotas: React.FC = () => {
                         <Typography variant="body2">
                           O arquivo do documento não está disponível ou foi removido.
                         </Typography>
-                        {displayDocument.quota_doc && (
+                        {currentDocument.quota_doc && (
                           <Typography variant="body2" sx={{ mt: 1, fontSize: "0.75rem", color: "text.secondary" }}>
-                            URL: {displayDocument.quota_doc.substring(0, 80)}...
+                            URL: {currentDocument.quota_doc.substring(0, 80)}...
                           </Typography>
                         )}
                       </Alert>
@@ -435,8 +393,8 @@ const DocumentosCotas: React.FC = () => {
                         </Box>
                       )}
                       <iframe
-                        key={displayDocument.id}
-                        src={documentError ? undefined : buildPdfUrl(displayDocument.quota_doc) || undefined}
+                        key={currentDocument.id}
+                        src={documentError ? undefined : buildPdfUrl(currentDocument.quota_doc) || undefined}
                         title="Documento de Cotas"
                         width="100%"
                         height="100%"
@@ -450,7 +408,7 @@ const DocumentosCotas: React.FC = () => {
                         }}
                       />
                       {/* Botão para abrir em nova aba caso o iframe não carregue */}
-                      {displayDocument.quota_doc && (
+                      {currentDocument.quota_doc && (
                         <Box
                           sx={{
                             position: "absolute",
@@ -463,7 +421,7 @@ const DocumentosCotas: React.FC = () => {
                             variant="contained"
                             size="small"
                             onClick={() => {
-                              const url = buildPdfUrl(displayDocument.quota_doc);
+                              const url = buildPdfUrl(currentDocument.quota_doc);
                               if (url) window.open(url, "_blank");
                             }}
                             sx={{
@@ -542,7 +500,7 @@ const DocumentosCotas: React.FC = () => {
                           mt: 0.5,
                         }}
                       >
-                        {displayDocument.id}
+                        {currentDocument.id}
                       </Typography>
                     </Box>
 
@@ -567,8 +525,8 @@ const DocumentosCotas: React.FC = () => {
                           mt: 0.5,
                         }}
                       >
-                        {displayDocument?.user_data_display?.user?.first_name || displayDocument?.user_data_display?.user?.last_name
-                          ? `${displayDocument.user_data_display.user.first_name || ""} ${displayDocument.user_data_display.user.last_name || ""}`.trim()
+                        {currentDocument?.user_data_display?.user?.first_name || currentDocument?.user_data_display?.user?.last_name
+                          ? `${currentDocument.user_data_display.user.first_name || ""} ${currentDocument.user_data_display.user.last_name || ""}`.trim()
                           : "Nome não disponível"}
                       </Typography>
                     </Box>
@@ -594,10 +552,10 @@ const DocumentosCotas: React.FC = () => {
                           mt: 0.5,
                         }}
                       >
-                        {displayDocument.quota_doc_status || "Pendente"}
+                        {currentDocument.quota_doc_status || "Pendente"}
                       </Typography>
                     </Box>
-                    {displayDocument.created_at && (
+                    {currentDocument.created_at && (
                       <Box>
                         <Typography
                           variant="caption"
@@ -619,7 +577,7 @@ const DocumentosCotas: React.FC = () => {
                             mt: 0.5,
                           }}
                         >
-                          {new Date(displayDocument.created_at).toLocaleString("pt-BR")}
+                          {new Date(currentDocument.created_at).toLocaleString("pt-BR")}
                         </Typography>
                       </Box>
                     )}
@@ -629,7 +587,7 @@ const DocumentosCotas: React.FC = () => {
                   <Box sx={{ display: "flex", gap: 1.5, mb: 3 }}>
                     <Button
                       variant="outlined"
-                      disabled={isTestMode || currentIndex === 0}
+                      disabled={currentIndex === 0}
                       onClick={prev}
                       fullWidth
                       sx={{
@@ -652,7 +610,7 @@ const DocumentosCotas: React.FC = () => {
                     </Button>
                     <Button
                       variant="outlined"
-                      disabled={isTestMode || currentIndex === count - 1}
+                      disabled={currentIndex === count - 1}
                       onClick={next}
                       fullWidth
                       sx={{
@@ -676,18 +634,11 @@ const DocumentosCotas: React.FC = () => {
                   </Box>
 
                   {/* Ações */}
-                  {isTestMode && (
-                    <Alert severity="info" sx={{ mb: 2 }}>
-                      <Typography variant="body2">
-                        Modo de visualização: Este é um documento de teste. As ações de aprovar/reprovar estão desabilitadas.
-                      </Typography>
-                    </Alert>
-                  )}
                   <Box sx={{ mt: "auto" }}>
                     <Button
                       variant="outlined"
                       fullWidth
-                      disabled={isTestMode || actionLoading}
+                      disabled={actionLoading}
                       onClick={approveCurrent}
                       sx={{
                         mb: 1,
@@ -715,7 +666,7 @@ const DocumentosCotas: React.FC = () => {
                     <Button
                       variant="outlined"
                       fullWidth
-                      disabled={isTestMode || actionLoading}
+                      disabled={actionLoading}
                       onClick={recuseCurrent}
                       sx={{
                         py: 1.1,

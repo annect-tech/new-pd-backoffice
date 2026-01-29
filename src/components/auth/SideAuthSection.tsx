@@ -1,8 +1,7 @@
-import { Box, useTheme } from '@mui/material';
+import { Box } from '@mui/material';
+import sideImage from '../../assets/images/side-image.png';
 
 export default function AuthPromotionalSection() {
-  const theme = useTheme();
-
   return (
     <Box
       sx={{
@@ -11,12 +10,23 @@ export default function AuthPromotionalSection() {
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
-        bgcolor: theme.palette.primary.main,
-        color: 'white',
         p: 4,
-        textAlign: 'center',
+        overflow: 'hidden',
+        bgcolor: '#f8f9fa',
       }}
     >
+      <Box
+        component="img"
+        src={sideImage}
+        alt=""
+        sx={{
+          width: '100%',
+          maxWidth: 520,
+          height: 'auto',
+          objectFit: 'contain',
+          borderRadius: 2,
+        }}
+      />
     </Box>
   );
 }

@@ -70,6 +70,13 @@ export const httpClient = {
     }
     // Não definir Content-Type para FormData - o navegador define automaticamente com boundary
 
+    // Adicionar headers para evitar cache (especialmente para PATCH/PUT/DELETE)
+    if (method === "PATCH" || method === "PUT" || method === "DELETE") {
+      headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+      headers["Pragma"] = "no-cache";
+      headers["Expires"] = "0";
+    }
+
     if (!options?.skipAuth && _authToken) {
       headers["Authorization"] = `Bearer ${_authToken}`;
     }
@@ -84,6 +91,10 @@ export const httpClient = {
       method,
       headers,
       body,
+      // Evitar cache para métodos que modificam dados
+      cache: (method === "PATCH" || method === "PUT" || method === "DELETE" || method === "POST") 
+        ? "no-store" 
+        : "default",
     };
 
     try {

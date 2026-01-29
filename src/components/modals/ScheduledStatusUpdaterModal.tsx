@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -15,6 +15,7 @@ import {
   CircularProgress,
 } from "@mui/material";
 import type { ExamScheduled } from "../../interfaces/examScheduled";
+import { examsScheduledService } from "../../core/http/services/examsScheduledService";
 
 interface ScheduledStatusUpdaterModalProps {
   open: boolean;
@@ -31,26 +32,44 @@ const ScheduledStatusUpdaterModal: React.FC<ScheduledStatusUpdaterModalProps> = 
   const [newStatus, setNewStatus] = useState<"scheduled" | "absent" | "present">("scheduled");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Resetar estado quando o modal fechar
+  useEffect(() => {
+    if (!open) {
+      setSelectedExam("");
+      setNewStatus("scheduled");
+      setSuccess(false);
+      setError(null);
+      setLoading(false);
+    }
+  }, [open]);
 
   const handleUpdate = async () => {
     if (!selectedExam) return;
 
     setLoading(true);
+    setError(null);
     try {
-      // TODO: Implementar chamada à API para atualizar status
-      // await httpClient.patch(API_URL, `/exams-scheduled/${selectedExam}/`, { status: newStatus });
-      
-      // Simular delay da API
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      setSuccess(true);
-      
-      setTimeout(() => {
-        onClose();
-        setSelectedExam("");
-        setNewStatus("scheduled");
-        setSuccess(false);
-      }, 1500);
-    } catch {
+      const response = await examsScheduledService.updateStatus(selectedExam, newStatus);
+
+      if (response.status >= 200 && response.status < 300) {
+        setSuccess(true);
+        
+        setTimeout(() => {
+          onClose();
+          setSelectedExam("");
+          setNewStatus("scheduled");
+          setSuccess(false);
+          setError(null);
+        }, 1500);
+      } else {
+        const errorMessage = response.message || "Erro ao atualizar status do exame";
+        setError(errorMessage);
+      }
+    } catch (err: any) {
+      const errorMessage = err?.message || "Erro ao atualizar status do exame";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -66,15 +85,21 @@ const ScheduledStatusUpdaterModal: React.FC<ScheduledStatusUpdaterModalProps> = 
   };
 
   const getStatusLabel = (status: string) => {
-    switch (status) {
+    const s = status?.toLowerCase();
+    switch (s) {
       case "absent":
+      case "ausente":
         return "Ausente";
       case "scheduled":
+      case "pendente":
         return "Agendado";
       case "present":
+      case "aprovado":
         return "Presente";
+      case "desqualificado":
+        return "Desqualificado";
       default:
-        return status;
+        return status || "—";
     }
   };
 
@@ -88,12 +113,18 @@ const ScheduledStatusUpdaterModal: React.FC<ScheduledStatusUpdaterModalProps> = 
           </Alert>
         ) : (
           <>
+            {error && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
+            )}
             <FormControl fullWidth sx={{ mb: 2 }}>
               <InputLabel>Selecione o Exame</InputLabel>
               <Select
                 value={selectedExam}
                 onChange={(e) => setSelectedExam(e.target.value as string)}
                 label="Selecione o Exame"
+                disabled={loading}
               >
                 {exams
                   .filter((exam) => exam.user_data?.user) // Filtrar apenas exames com user_data válido
@@ -121,6 +152,7 @@ const ScheduledStatusUpdaterModal: React.FC<ScheduledStatusUpdaterModalProps> = 
                   setNewStatus(e.target.value as "scheduled" | "absent" | "present")
                 }
                 label="Novo Status"
+                disabled={loading}
               >
                 <MenuItem value="scheduled">Agendado</MenuItem>
                 <MenuItem value="present">Presente</MenuItem>

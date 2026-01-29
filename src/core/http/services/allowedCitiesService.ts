@@ -61,16 +61,20 @@ export const allowedCitiesService = {
    */
   list: (page: number = 1, size: number = 10, search?: string) => {
     const prefix = getEndpointPrefix();
+    // Swagger: page e size devem ser >= 1; search só enviado se tiver valor
+    const safePage = Math.max(1, page);
+    const safeSize = Math.max(1, size);
+    const queryParams: Record<string, string | number> = {
+      page: safePage,
+      size: safeSize,
+    };
+    if (search != null && search.trim() !== "") {
+      queryParams.search = search.trim();
+    }
     return httpClient.get<PaginatedResponse<AllowedCity>>(
       API_URL,
       `/${prefix}/allowed-cities`,
-      {
-        queryParams: {
-          page,
-          size,
-          ...(search ? { search } : {}),
-        },
-      }
+      { queryParams }
     );
   },
 

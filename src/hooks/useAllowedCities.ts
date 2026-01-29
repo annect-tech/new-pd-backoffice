@@ -21,6 +21,7 @@ interface PaginationState {
 export const useAllowedCities = () => {
   const [allowedCities, setAllowedCities] = useState<AllowedCity[]>([]);
   const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [pagination, setPagination] = useState<PaginationState>({
     currentPage: 1,
     itemsPerPage: 10,
@@ -51,6 +52,7 @@ export const useAllowedCities = () => {
         const response = await allowedCitiesService.list(page, size, search);
 
         if (response.status >= 200 && response.status < 300 && response.data) {
+          setFetchError(null);
           const raw = response.data as any;
           const list = Array.isArray(raw?.data) ? raw.data : Array.isArray(raw) ? raw : [];
 
@@ -65,18 +67,25 @@ export const useAllowedCities = () => {
         } else {
           setAllowedCities([]);
           setPagination((prev) => ({ ...prev, totalItems: 0, totalPages: 0 }));
-          showSnackbar(
-            response.message || "Erro ao buscar cidades permitidas",
-            "error"
-          );
+          // Mensagem amigável para erro "Cidade inválida" (400) - usuário sem tenant_city válido
+          const msg = response.message || "";
+          const friendlyMsg =
+            msg.toLowerCase().includes("cidade inválida") || response.status === 400
+              ? "Para acessar as cidades permitidas, seu usuário precisa estar vinculado a uma cidade (tenant) válida. Entre em contato com o administrador do sistema."
+              : msg || "Erro ao buscar cidades permitidas";
+          setFetchError(friendlyMsg);
+          showSnackbar(friendlyMsg, "error");
         }
       } catch (error: any) {
         setAllowedCities([]);
         setPagination((prev) => ({ ...prev, totalItems: 0, totalPages: 0 }));
-        showSnackbar(
-          error?.message || "Erro ao buscar cidades permitidas",
-          "error"
-        );
+        const msg = error?.message || "";
+        const friendlyMsg =
+          msg.toLowerCase().includes("cidade inválida")
+            ? "Para acessar as cidades permitidas, seu usuário precisa estar vinculado a uma cidade (tenant) válida. Entre em contato com o administrador do sistema."
+            : msg || "Erro ao buscar cidades permitidas";
+        setFetchError(friendlyMsg);
+        showSnackbar(friendlyMsg, "error");
       } finally {
         setLoading(false);
       }
@@ -178,5 +187,6 @@ export const useAllowedCities = () => {
     createAllowedCity,
     updateAllowedCity,
     deleteAllowedCity,
+    fetchError,
   };
 };
