@@ -470,7 +470,7 @@ const CriacaoUsuarios: React.FC = () => {
         
         // Remover os erros que foram resolvidos com sucesso e atualizar os que falharam
         const remainingErrors: typeof studentDataExistsErrors = [];
-        retryResults.forEach((retryResult, index) => {
+        retryResults.forEach((retryResult) => {
           if (!retryResult.success) {
             // Atualizar o resultado original com o novo erro
             const originalIndex = results.findIndex(r => r.id === retryResult.originalError.id);
