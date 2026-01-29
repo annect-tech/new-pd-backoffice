@@ -16,6 +16,7 @@ import PersonIcon from "@mui/icons-material/Person";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import HomeIcon from "@mui/icons-material/Home";
 import DescriptionIcon from "@mui/icons-material/Description";
+import HowToRegIcon from "@mui/icons-material/HowToReg";
 import DashboardCard from "../../components/ui/card/DashboardCard";
 import { APP_ROUTES } from "../../util/constants";
 import { useAuthContext } from "../../app/providers/AuthProvider";
@@ -122,6 +123,12 @@ const Dashboard: React.FC = () => {
       title: "Usuários",
       icon: <PersonIcon sx={{ fontSize: 48 }} />,
       link: APP_ROUTES.USERS_LIST,
+      isAdmin: true,
+    },
+    {
+      title: "Criação de Usuários",
+      icon: <HowToRegIcon sx={{ fontSize: 48 }} />,
+      link: APP_ROUTES.USER_CREATION,
       isAdmin: true,
     },
   ];

@@ -107,7 +107,7 @@ export const useContractDocuments = () => {
     try {
       const response = await candidateDocumentsService.update(
         currentDocument.user_data_id,
-        { contract_doc_status: "approved" }
+        { contract_doc_status: "APPROVED" }
       );
 
       if (response.status >= 200 && response.status < 300) {
@@ -137,17 +137,21 @@ export const useContractDocuments = () => {
     setActionLoading(true);
     try {
       const payload: { contract_doc_status: string; contract_doc_refuse_reason?: string } = {
-        contract_doc_status: "rejected",
+        contract_doc_status: "REJECTED",
       };
 
       if (reason) {
         payload.contract_doc_refuse_reason = reason;
       }
 
+      console.log("Reject payload:", payload, "userDataId:", currentDocument.user_data_id);
+
       const response = await candidateDocumentsService.update(
         currentDocument.user_data_id,
         payload
       );
+
+      console.log("Reject response:", response);
 
       if (response.status >= 200 && response.status < 300) {
         showSnackbar("Contrato rejeitado com sucesso", "success");

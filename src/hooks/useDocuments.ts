@@ -275,11 +275,22 @@ export const useDocuments = () => {
           await fetchDocuments(pagination.currentPage, pagination.itemsPerPage);
           return true;
         } else {
-          showSnackbar(
-            response.message || "Erro ao atualizar documento",
-            "error"
-          );
-          return false;
+          const errorMessage = response.message || "Erro ao atualizar documento";
+
+          // Verificar se é erro de tenant city - nesse caso a operação principal pode ter sido bem-sucedida
+          const isTenantCityError = errorMessage.toLowerCase().includes("tenant city") ||
+                                     errorMessage.toLowerCase().includes("no tag") ||
+                                     errorMessage.toLowerCase().includes("no domain");
+
+          if (isTenantCityError) {
+            // Recarregar a lista para verificar se o status foi atualizado
+            await fetchDocuments(pagination.currentPage, pagination.itemsPerPage);
+            showSnackbar("Documento atualizado, mas há um problema de configuração de Tenant City (verifique domain/tag)", "warning");
+            return true; // Retorna true pois a operação principal foi bem-sucedida
+          } else {
+            showSnackbar(errorMessage, "error");
+            return false;
+          }
         }
       } catch (error: any) {
         showSnackbar(error?.message || "Erro ao atualizar documento", "error");

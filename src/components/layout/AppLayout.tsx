@@ -26,6 +26,7 @@ import PersonIcon from "@mui/icons-material/Person";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import DescriptionIcon from "@mui/icons-material/Description";
+import HowToRegIcon from "@mui/icons-material/HowToReg";
 
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(true);
@@ -264,6 +265,11 @@ export default function AppLayout() {
           icon: <PersonIcon />,
           label: "Usuários",
           to: APP_ROUTES.USERS_LIST,
+        },
+        {
+          icon: <HowToRegIcon />,
+          label: "Criação de Usuários",
+          to: APP_ROUTES.USER_CREATION,
         },
       ],
     },

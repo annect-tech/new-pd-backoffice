@@ -23,6 +23,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  FormControlLabel,
 } from "@mui/material";
 import {
   Refresh as RefreshIcon,
@@ -47,20 +48,28 @@ import {
 } from "../../styles/designSystem";
 import { candidateDocumentsService } from "../../core/http/services/candidateDocumentsService";
 import type { CandidateDocument } from "../../core/http/services/candidateDocumentsService";
+import { studentDataService } from "../../core/http/services/studentDataService";
 
 // Interface para os dados da tela (mapeados da API)
+type CandidateStatus = "AWAITING_USER_CREATION" | "EMAIL_SENT" | "CONFIRMED";
+
 interface CandidateAwaitingCreation {
   id: string;
   userDataId: string;
   studentName: string;
   studentEmail: string;
   personalEmail: string;
-  cpf: string;
   phone: string;
   city: string;
   contractSignedDate: string;
-  status: "AWAITING_USER_CREATION" | "USER_CREATED";
+  status: CandidateStatus;
 }
+
+const STATUS_CONFIG: Record<CandidateStatus, { label: string; color: string }> = {
+  AWAITING_USER_CREATION: { label: "Aguardando", color: "#F59E0B" },
+  EMAIL_SENT: { label: "E-mail enviado", color: "#3B82F6" },
+  CONFIRMED: { label: "Confirmado", color: "#10B981" },
+};
 
 const CriacaoUsuarios: React.FC = () => {
   const [candidates, setCandidates] = useState<CandidateAwaitingCreation[]>([]);
@@ -72,6 +81,7 @@ const CriacaoUsuarios: React.FC = () => {
   const [totalItems, setTotalItems] = useState(0);
   const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [autoDeleteOnError, setAutoDeleteOnError] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -79,20 +89,28 @@ const CriacaoUsuarios: React.FC = () => {
   });
 
   // Função para mapear dados da API para o formato da tela
-  const mapApiDataToCandidate = (doc: CandidateDocument): CandidateAwaitingCreation => ({
-    id: doc.id,
-    userDataId: doc.user_data_id,
-    studentName: doc.student_name || "Nome não informado",
-    studentEmail: doc.student_email || "",
-    personalEmail: (doc as any).personal_email || doc.student_email || "",
-    cpf: (doc as any).cpf || "",
-    phone: (doc as any).phone || (doc as any).cellphone || "",
-    city: (doc as any).city || "",
-    contractSignedDate: doc.created_at
-      ? new Date(doc.created_at).toLocaleDateString("pt-BR")
-      : "",
-    status: (doc as any).user_created ? "USER_CREATED" : "AWAITING_USER_CREATION",
-  });
+  const mapApiDataToCandidate = (doc: CandidateDocument): CandidateAwaitingCreation => {
+    let status: CandidateStatus = "AWAITING_USER_CREATION";
+    if (doc.contract_doc_status === "created") {
+      status = "EMAIL_SENT";
+    } else if (doc.contract_doc_status === "confirmed") {
+      status = "CONFIRMED";
+    }
+
+    return {
+      id: doc.id,
+      userDataId: doc.user_data_id ? String(doc.user_data_id).trim() : "",
+      studentName: doc.student_name || "Nome não informado",
+      studentEmail: doc.student_email || "",
+      personalEmail: (doc as any).personal_email || doc.student_email || "",
+      phone: (doc as any).phone || (doc as any).cellphone || "",
+      city: (doc as any).city || "",
+      contractSignedDate: doc.created_at
+        ? new Date(doc.created_at).toLocaleDateString("pt-BR")
+        : "",
+      status,
+    };
+  };
 
   // Carregar dados da API
   const fetchCandidates = useCallback(async () => {
@@ -103,13 +121,17 @@ const CriacaoUsuarios: React.FC = () => {
 
       if (response.status === 200 && response.data) {
         const data = response.data;
-        // Filtrar apenas os que têm contrato pendente ou aprovado e ainda não tiveram usuário criado
+        // Filtrar candidatos relevantes (aguardando, e-mail enviado, ou confirmado)
         const awaitingCreation = (data.data || [])
           .filter((doc: CandidateDocument) =>
-            (doc.contract_doc_status === "pending" || doc.contract_doc_status === "approved") &&
-            !(doc as any).user_created
+            (doc.contract_doc_status === "pending" ||
+              doc.contract_doc_status === "approved" ||
+              doc.contract_doc_status === "created" ||
+              doc.contract_doc_status === "confirmed") &&
+            doc.user_data_id && String(doc.user_data_id).trim() !== ""
           )
-          .map(mapApiDataToCandidate);
+          .map(mapApiDataToCandidate)
+          .filter((candidate) => candidate.userDataId && candidate.userDataId.trim() !== "");
 
         setCandidates(awaitingCreation);
         setTotalItems(data.totalItems || awaitingCreation.length);
@@ -146,7 +168,6 @@ const CriacaoUsuarios: React.FC = () => {
         candidate.studentName.toLowerCase().includes(term) ||
         candidate.studentEmail.toLowerCase().includes(term) ||
         candidate.personalEmail.toLowerCase().includes(term) ||
-        candidate.cpf.includes(searchTerm) ||
         candidate.userDataId.includes(searchTerm)
     );
   }, [candidates, searchTerm]);
@@ -156,10 +177,16 @@ const CriacaoUsuarios: React.FC = () => {
     return filteredCandidates;
   }, [filteredCandidates]);
 
+  // Candidatos selecionáveis (apenas os que estão aguardando)
+  const selectableCandidates = useMemo(
+    () => paginatedCandidates.filter((c) => c.status === "AWAITING_USER_CREATION"),
+    [paginatedCandidates]
+  );
+
   // Seleção de candidatos
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.checked) {
-      setSelectedCandidates(paginatedCandidates.map((c) => c.id));
+      setSelectedCandidates(selectableCandidates.map((c) => c.id));
     } else {
       setSelectedCandidates([]);
     }
@@ -174,8 +201,8 @@ const CriacaoUsuarios: React.FC = () => {
   };
 
   const isSelected = (id: string) => selectedCandidates.includes(id);
-  const isAllSelected = paginatedCandidates.length > 0 && selectedCandidates.length === paginatedCandidates.length;
-  const isIndeterminate = selectedCandidates.length > 0 && selectedCandidates.length < paginatedCandidates.length;
+  const isAllSelected = selectableCandidates.length > 0 && selectedCandidates.length === selectableCandidates.length;
+  const isIndeterminate = selectedCandidates.length > 0 && selectedCandidates.length < selectableCandidates.length;
 
   // Refresh dos dados
   const handleRefresh = () => {
@@ -199,7 +226,6 @@ const CriacaoUsuarios: React.FC = () => {
       "Nome Completo",
       "Email Institucional",
       "Email Pessoal",
-      "CPF",
       "Telefone",
       "Cidade",
       "Data Assinatura",
@@ -210,7 +236,6 @@ const CriacaoUsuarios: React.FC = () => {
       candidate.studentName,
       candidate.studentEmail,
       candidate.personalEmail,
-      candidate.cpf,
       candidate.phone,
       candidate.city,
       candidate.contractSignedDate,
@@ -248,6 +273,7 @@ const CriacaoUsuarios: React.FC = () => {
 
   const handleConfirmModalClose = () => {
     setConfirmModalOpen(false);
+    setAutoDeleteOnError(false);
   };
 
   const handleConfirmModalConfirm = async () => {
@@ -258,9 +284,32 @@ const CriacaoUsuarios: React.FC = () => {
     try {
       // Chamar PATCH para cada candidato selecionado
       const updatePromises = selectedCandidates.map(async (id) => {
+        // Encontrar o candidato para obter o userDataId (fora do try para acessar no catch)
+        const candidate = candidates.find((c) => c.id === id);
         try {
-          const response = await candidateDocumentsService.update(id, {
-            contract_doc_status: "user_created",
+          if (!candidate) {
+            errorCount++;
+            console.error(`Candidato não encontrado: ${id}`);
+            return { success: false, id, error: "Candidato não encontrado" };
+          }
+
+          // Validar userDataId
+          if (!candidate.userDataId || candidate.userDataId.trim() === "") {
+            errorCount++;
+            console.error(`userDataId inválido para candidato ${id}:`, candidate.userDataId);
+            return { success: false, id, error: "user_data_id inválido" };
+          }
+
+          // Garantir que userDataId seja uma string válida
+          const userDataId = String(candidate.userDataId).trim();
+          if (!/^\d+$/.test(userDataId)) {
+            errorCount++;
+            console.error(`userDataId não é um número válido para candidato ${id}:`, candidate.userDataId);
+            return { success: false, id, error: "user_data_id deve ser um número válido" };
+          }
+
+          const response = await candidateDocumentsService.update(userDataId, {
+            contract_doc_status: "approved",
           });
 
           if (response.status === 200 || response.status === 204) {
@@ -268,17 +317,182 @@ const CriacaoUsuarios: React.FC = () => {
             return { success: true, id };
           } else {
             errorCount++;
-            console.error(`Erro ao atualizar ${id}:`, response.message);
-            return { success: false, id, error: response.message };
+            const errorMessage = response.message || "Erro desconhecido";
+            
+            // Tratar erro específico de tenant city/domain
+            // Obs: no schema atual existe apenas "domain" em tenant_city (não existe "tag")
+            if (
+              errorMessage.toLowerCase().includes("tenant city") ||
+              errorMessage.toLowerCase().includes("tenant_city") ||
+              errorMessage.toLowerCase().includes("domain") ||
+              errorMessage.toLowerCase().includes("domínio")
+            ) {
+              console.error(`Erro de tenant city ao atualizar ${userDataId}:`, errorMessage);
+              return { 
+                success: false, 
+                id, 
+                error: "Tenant city não encontrada ou sem domínio configurado. Verifique o domínio da tenant city e tente novamente."
+              };
+            }
+            
+            // Tratar erro de student_data já existente
+            if (
+              errorMessage.toLowerCase().includes("dados do estudante já existem") ||
+              errorMessage.toLowerCase().includes("student data") ||
+              errorMessage.toLowerCase().includes("user_data_id") ||
+              errorMessage.toLowerCase().includes("violação de constraint única") ||
+              response.status === 409
+            ) {
+              console.error(`Erro: Dados do estudante já existem para ${candidate.studentName}:`, errorMessage);
+              return { 
+                success: false, 
+                id, 
+                candidate,
+                error: "Dados do estudante já existem no sistema",
+                errorType: "STUDENT_DATA_EXISTS"
+              };
+            }
+            
+            console.error(`Erro ao atualizar ${userDataId}:`, errorMessage);
+            return { success: false, id, candidate, error: errorMessage };
           }
-        } catch (error) {
+        } catch (error: any) {
           errorCount++;
+          const errorMessage = error?.message || error?.response?.data?.message || String(error);
+
+          // Tratar erro específico de tenant city/domain
+          if (
+            errorMessage.toLowerCase().includes("tenant city") ||
+            errorMessage.toLowerCase().includes("tenant_city") ||
+            errorMessage.toLowerCase().includes("domain") ||
+            errorMessage.toLowerCase().includes("domínio")
+          ) {
+            console.error(`Erro de tenant city ao atualizar ${id}:`, errorMessage);
+            return {
+              success: false,
+              id,
+              candidate,
+              error: "Tenant city não encontrada ou sem domínio configurado. Verifique o domínio da tenant city e tente novamente."
+            };
+          }
+
+          // Tratar erro de student_data já existente
+          if (
+            errorMessage.toLowerCase().includes("dados do estudante já existem") ||
+            errorMessage.toLowerCase().includes("student data") ||
+            errorMessage.toLowerCase().includes("user_data_id") ||
+            errorMessage.toLowerCase().includes("violação de constraint única") ||
+            error?.response?.status === 409 ||
+            (error?.response?.data?.statusCode === 409 && errorMessage.toLowerCase().includes("constraint"))
+          ) {
+            console.error(`Erro: Dados do estudante já existem para ${candidate?.studentName}:`, errorMessage);
+            return {
+              success: false,
+              id,
+              candidate,
+              error: "Dados do estudante já existem no sistema",
+              errorType: "STUDENT_DATA_EXISTS"
+            };
+          }
+
           console.error(`Erro ao atualizar ${id}:`, error);
-          return { success: false, id, error };
+          return { success: false, id, candidate, error: errorMessage };
         }
       });
 
-      await Promise.all(updatePromises);
+      const results = await Promise.all(updatePromises);
+
+      // Coletar erros específicos para mensagens mais detalhadas
+      const tenantCityErrors = results.filter(
+        (result) =>
+          result &&
+          !result.success &&
+          result.error &&
+          (result.error.toLowerCase().includes("tenant city") ||
+            result.error.toLowerCase().includes("tenant_city") ||
+            result.error.toLowerCase().includes("domain") ||
+            result.error.toLowerCase().includes("domínio"))
+      );
+
+      // Coletar erros de student_data já existente
+      const studentDataExistsErrors = results.filter(
+        (result) =>
+          result &&
+          !result.success &&
+          (result.errorType === "STUDENT_DATA_EXISTS" ||
+            (result.error && result.error.toLowerCase().includes("dados do estudante já existem")))
+      );
+
+      // Se houver erros de student_data e autoDeleteOnError estiver ativado, tentar apagar e recriar
+      if (studentDataExistsErrors.length > 0 && autoDeleteOnError) {
+        console.log("Auto-delete ativado para os seguintes usuários:", studentDataExistsErrors.map(r => r.candidate?.studentName));
+        
+        // Tentar apagar os student_data duplicados e recriar
+        const deletePromises = studentDataExistsErrors.map(async (errorResult) => {
+          if (!errorResult.candidate?.userDataId) return { success: false, candidate: errorResult.candidate, originalError: errorResult };
+          
+          try {
+            // Apagar student_data existente
+            const deleteResponse = await studentDataService.deleteByUserDataId(errorResult.candidate.userDataId);
+
+            if (deleteResponse.status !== 200 && deleteResponse.status !== 204) {
+              console.error(`Erro ao apagar student data para ${errorResult.candidate.studentName}:`, deleteResponse.message);
+              return { success: false, candidate: errorResult.candidate, error: deleteResponse.message || "Erro ao apagar dados do estudante", originalError: errorResult };
+            }
+
+            console.log(`Student data apagado para ${errorResult.candidate.studentName}`);
+
+            // Tentar novamente criar o usuário
+            const retryResponse = await candidateDocumentsService.update(errorResult.candidate.userDataId, {
+              contract_doc_status: "created",
+            });
+
+            if (retryResponse.status === 200 || retryResponse.status === 204) {
+              return { success: true, candidate: errorResult.candidate, originalError: errorResult };
+            } else {
+              return { success: false, candidate: errorResult.candidate, error: retryResponse.message || "Erro ao recriar", originalError: errorResult };
+            }
+          } catch (deleteError: any) {
+            console.error(`Erro ao apagar/recriar para ${errorResult.candidate.studentName}:`, deleteError);
+            return { success: false, candidate: errorResult.candidate, error: deleteError?.message || "Erro ao apagar/recriar", originalError: errorResult };
+          }
+        });
+        
+        const retryResults = await Promise.all(deletePromises);
+        
+        // Atualizar contadores baseado nos resultados do retry
+        const retrySuccessCount = retryResults.filter(r => r.success).length;
+        const retryErrorCount = retryResults.filter(r => !r.success).length;
+        
+        // Atualizar contadores globais
+        successCount += retrySuccessCount;
+        errorCount = errorCount - retrySuccessCount + retryErrorCount;
+        
+        // Remover os erros que foram resolvidos com sucesso e atualizar os que falharam
+        const remainingErrors: typeof studentDataExistsErrors = [];
+        retryResults.forEach((retryResult, index) => {
+          if (!retryResult.success) {
+            // Atualizar o resultado original com o novo erro
+            const originalIndex = results.findIndex(r => r.id === retryResult.originalError.id);
+            if (originalIndex >= 0) {
+              results[originalIndex] = {
+                ...retryResult.originalError,
+                error: retryResult.error || retryResult.originalError.error,
+              };
+            }
+            remainingErrors.push(retryResult.originalError);
+          } else {
+            // Remover o erro da lista de resultados
+            const originalIndex = results.findIndex(r => r.id === retryResult.originalError.id);
+            if (originalIndex >= 0) {
+              results[originalIndex] = { ...retryResult.originalError, success: true };
+            }
+          }
+        });
+        
+        // Atualizar a lista de erros de student_data
+        studentDataExistsErrors.splice(0, studentDataExistsErrors.length, ...remainingErrors);
+      }
 
       if (successCount > 0 && errorCount === 0) {
         setSnackbar({
@@ -287,26 +501,63 @@ const CriacaoUsuarios: React.FC = () => {
           severity: "success",
         });
       } else if (successCount > 0 && errorCount > 0) {
+        let errorMessage = `${successCount} confirmado(s), ${errorCount} com erro.`;
+        
+        if (studentDataExistsErrors.length > 0) {
+          const studentNames = studentDataExistsErrors
+            .map(r => r.candidate?.studentName || "Nome não disponível")
+            .join(", ");
+          errorMessage += `\n\nUsuários com dados já existentes: ${studentNames}`;
+        }
+        
+        if (tenantCityErrors.length > 0) {
+          errorMessage += "\nAlguns erros podem estar relacionados à configuração do tenant city (tag/domain).";
+        }
+        
         setSnackbar({
           open: true,
-          message: `${successCount} confirmado(s), ${errorCount} com erro. Verifique e tente novamente.`,
+          message: errorMessage,
           severity: "warning",
         });
       } else {
+        let errorMessage = "Erro ao confirmar criação.";
+        
+        if (studentDataExistsErrors.length > 0) {
+          const studentNames = studentDataExistsErrors
+            .map(r => r.candidate?.studentName || "Nome não disponível")
+            .join(", ");
+          errorMessage = `Dados do estudante já existem no sistema para os seguintes usuários:\n${studentNames}`;
+          
+          if (studentDataExistsErrors.length === selectedCandidates.length) {
+            errorMessage += "\n\nTodos os usuários selecionados já possuem dados cadastrados.";
+          }
+        } else if (tenantCityErrors.length > 0) {
+          errorMessage =
+            "Erro: Tenant city não encontrada ou sem domínio configurado. Verifique o domínio da tenant city antes de tentar novamente.";
+        }
+        
         setSnackbar({
           open: true,
-          message: "Erro ao confirmar criação. Tente novamente.",
+          message: errorMessage,
           severity: "error",
         });
       }
 
+      // Atualizar status local dos candidatos confirmados com sucesso
+      const successIds = results
+        .filter((r) => r.success)
+        .map((r) => r.id);
+
+      if (successIds.length > 0) {
+        setCandidates((prev) =>
+          prev.map((c) =>
+            successIds.includes(c.id) ? { ...c, status: "EMAIL_SENT" as CandidateStatus } : c
+          )
+        );
+      }
+
       setSelectedCandidates([]);
       setConfirmModalOpen(false);
-
-      // Recarregar lista para refletir mudanças
-      if (successCount > 0) {
-        fetchCandidates();
-      }
     } catch (error) {
       console.error("Erro ao confirmar criação:", error);
       setSnackbar({
@@ -386,7 +637,7 @@ const CriacaoUsuarios: React.FC = () => {
                     }}
                   />
                   <TextField
-                    placeholder="Pesquisar por nome, email, CPF..."
+                    placeholder="Pesquisar por nome, email, ID..."
                     variant="standard"
                     fullWidth
                     value={searchTerm}
@@ -490,9 +741,6 @@ const CriacaoUsuarios: React.FC = () => {
                           <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 220 }}>
                             Email Pessoal
                           </TableCell>
-                          <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 140 }}>
-                            CPF
-                          </TableCell>
                           <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 120 }}>
                             Data Assinatura
                           </TableCell>
@@ -504,7 +752,7 @@ const CriacaoUsuarios: React.FC = () => {
                       <TableBody>
                         {paginatedCandidates.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                            <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
                               <Typography
                                 sx={{
                                   color: (theme) =>
@@ -539,6 +787,7 @@ const CriacaoUsuarios: React.FC = () => {
                                 <TableCell padding="checkbox" sx={{ padding: "8px" }}>
                                   <Checkbox
                                     checked={selected}
+                                    disabled={candidate.status !== "AWAITING_USER_CREATION"}
                                     onChange={() => handleSelectOne(candidate.id)}
                                     sx={{
                                       color: designSystem.colors.primary.main,
@@ -591,28 +840,18 @@ const CriacaoUsuarios: React.FC = () => {
                                     py: 1.5,
                                   }}
                                 >
-                                  {candidate.cpf}
-                                </TableCell>
-                                <TableCell
-                                  sx={{
-                                    color: (theme) =>
-                                      theme.palette.mode === "dark" ? "#B0B0B0" : "#374151",
-                                    fontSize: "0.875rem",
-                                    py: 1.5,
-                                  }}
-                                >
                                   {candidate.contractSignedDate}
                                 </TableCell>
                                 <TableCell
                                   align="center"
                                   sx={{
                                     py: 1.5,
-                                    color: designSystem.colors.warning.main,
+                                    color: STATUS_CONFIG[candidate.status].color,
                                     fontWeight: 600,
                                     fontSize: "0.875rem",
                                   }}
                                 >
-                                  Aguardando
+                                  {STATUS_CONFIG[candidate.status].label}
                                 </TableCell>
                               </TableRow>
                             );
@@ -738,6 +977,44 @@ const CriacaoUsuarios: React.FC = () => {
               </Typography>
             ))}
           </Box>
+          <Box sx={{ mt: 3 }}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={autoDeleteOnError}
+                  onChange={(e) => setAutoDeleteOnError(e.target.checked)}
+                  sx={{
+                    color: designSystem.colors.primary.main,
+                    "&.Mui-checked": {
+                      color: designSystem.colors.primary.main,
+                    },
+                  }}
+                />
+              }
+              label={
+                <Typography
+                  sx={{
+                    color: (theme) =>
+                      theme.palette.mode === "dark" ? "#B0B0B0" : "#4B5563",
+                    fontSize: "0.875rem",
+                  }}
+                >
+                  Apagar e recriar automaticamente se dados do estudante já existirem
+                </Typography>
+              }
+            />
+            <Typography
+              sx={{
+                color: (theme) =>
+                  theme.palette.mode === "dark" ? "#9CA3AF" : "#6B7280",
+                fontSize: "0.75rem",
+                mt: 0.5,
+                ml: 4.5,
+              }}
+            >
+              Se marcado, os dados duplicados serão apagados automaticamente antes de criar o usuário
+            </Typography>
+          </Box>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
           <Button
@@ -767,14 +1044,18 @@ const CriacaoUsuarios: React.FC = () => {
       {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={4000}
+        autoHideDuration={snackbar.severity === "error" ? 8000 : 4000}
         onClose={closeSnackbar}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
         <Alert
           onClose={closeSnackbar}
           severity={snackbar.severity}
-          sx={{ width: "100%" }}
+          sx={{ 
+            width: "100%",
+            whiteSpace: "pre-line",
+            maxWidth: "600px",
+          }}
         >
           {snackbar.message}
         </Alert>

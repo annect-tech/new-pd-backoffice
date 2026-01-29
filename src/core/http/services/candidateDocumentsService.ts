@@ -1,7 +1,8 @@
 import { httpClient } from "../httpClient";
 import { getEndpointPrefix } from "../utils/endpointPrefix";
+import { getApiUrl } from "../apiUrl";
 
-const API_URL = import.meta.env.VITE_API_URL as string || "http://186.248.135.172:31535";
+const API_URL = getApiUrl();
 
 export interface CandidateDocument {
   id: string;
@@ -71,7 +72,7 @@ export const candidateDocumentsService = {
 
   /**
    * Atualiza um documento de candidato (admin)
-   * @param userDataId - ID dos dados do usuário
+   * @param userDataId - ID do user_data (usado na URL)
    * @param payload - Dados atualizados (status, URLs, etc.)
    */
   update: (userDataId: string | number, payload: {

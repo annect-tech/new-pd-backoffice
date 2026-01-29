@@ -235,20 +235,50 @@ const ResultadoProvas: React.FC = () => {
                       paper: {
                         sx: {
                           borderRadius: 2,
-                          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                          boxShadow: (theme) => theme.palette.mode === "dark" 
+                            ? designSystem.shadows.mediumDark 
+                            : designSystem.shadows.medium,
                           minWidth: 200,
+                          backgroundColor: (theme) => theme.palette.mode === "dark" 
+                            ? designSystem.colors.background.secondaryDark 
+                            : designSystem.colors.background.primary,
+                          border: (theme) => `1px solid ${theme.palette.mode === "dark" 
+                            ? designSystem.colors.border.mainDark 
+                            : designSystem.colors.border.main}`,
                         },
                       },
                     }}
                   >
-                    <Typography sx={{ px: 2, py: 1, fontWeight: 600, fontSize: "0.875rem", color: "#6B7280" }}>
+                    <Typography 
+                      sx={{ 
+                        px: 2, 
+                        py: 1, 
+                        fontWeight: 600, 
+                        fontSize: "0.875rem", 
+                        color: (theme) => theme.palette.mode === "dark" 
+                          ? designSystem.colors.text.disabledDark 
+                          : designSystem.colors.text.disabled 
+                      }}
+                    >
                       Filtrar por Status
                     </Typography>
                     <MenuItem 
                       onClick={() => applyFilter("all")}
                       sx={{ 
-                        backgroundColor: filterStatus === "all" ? "#F3F4F6" : "transparent",
-                        fontWeight: filterStatus === "all" ? 600 : 400 
+                        backgroundColor: (theme) => filterStatus === "all" 
+                          ? (theme.palette.mode === "dark" 
+                            ? "rgba(166, 80, 240, 0.15)" 
+                            : designSystem.colors.background.tertiary)
+                          : "transparent",
+                        color: (theme) => theme.palette.mode === "dark" 
+                          ? designSystem.colors.text.primaryDark 
+                          : designSystem.colors.text.primary,
+                        fontWeight: filterStatus === "all" ? 600 : 400,
+                        "&:hover": {
+                          backgroundColor: (theme) => theme.palette.mode === "dark" 
+                            ? "rgba(166, 80, 240, 0.2)" 
+                            : designSystem.colors.primary.lightest,
+                        },
                       }}
                     >
                       Todos ({rows.length})
@@ -256,8 +286,20 @@ const ResultadoProvas: React.FC = () => {
                     <MenuItem 
                       onClick={() => applyFilter("aprovado")}
                       sx={{ 
-                        backgroundColor: filterStatus === "aprovado" ? "#F3F4F6" : "transparent",
-                        fontWeight: filterStatus === "aprovado" ? 600 : 400 
+                        backgroundColor: (theme) => filterStatus === "aprovado" 
+                          ? (theme.palette.mode === "dark" 
+                            ? "rgba(166, 80, 240, 0.15)" 
+                            : designSystem.colors.background.tertiary)
+                          : "transparent",
+                        color: (theme) => theme.palette.mode === "dark" 
+                          ? designSystem.colors.text.primaryDark 
+                          : designSystem.colors.text.primary,
+                        fontWeight: filterStatus === "aprovado" ? 600 : 400,
+                        "&:hover": {
+                          backgroundColor: (theme) => theme.palette.mode === "dark" 
+                            ? "rgba(166, 80, 240, 0.2)" 
+                            : designSystem.colors.primary.lightest,
+                        },
                       }}
                     >
                       Aprovados ({rows.filter((r) => r.status === "aprovado").length})
@@ -265,8 +307,20 @@ const ResultadoProvas: React.FC = () => {
                     <MenuItem 
                       onClick={() => applyFilter("reprovado")}
                       sx={{ 
-                        backgroundColor: filterStatus === "reprovado" ? "#F3F4F6" : "transparent",
-                        fontWeight: filterStatus === "reprovado" ? 600 : 400 
+                        backgroundColor: (theme) => filterStatus === "reprovado" 
+                          ? (theme.palette.mode === "dark" 
+                            ? "rgba(166, 80, 240, 0.15)" 
+                            : designSystem.colors.background.tertiary)
+                          : "transparent",
+                        color: (theme) => theme.palette.mode === "dark" 
+                          ? designSystem.colors.text.primaryDark 
+                          : designSystem.colors.text.primary,
+                        fontWeight: filterStatus === "reprovado" ? 600 : 400,
+                        "&:hover": {
+                          backgroundColor: (theme) => theme.palette.mode === "dark" 
+                            ? "rgba(166, 80, 240, 0.2)" 
+                            : designSystem.colors.primary.lightest,
+                        },
                       }}
                     >
                       Reprovados ({rows.filter((r) => r.status === "reprovado").length})
@@ -274,8 +328,20 @@ const ResultadoProvas: React.FC = () => {
                     <MenuItem 
                       onClick={() => applyFilter("pendente")}
                       sx={{ 
-                        backgroundColor: filterStatus === "pendente" ? "#F3F4F6" : "transparent",
-                        fontWeight: filterStatus === "pendente" ? 600 : 400 
+                        backgroundColor: (theme) => filterStatus === "pendente" 
+                          ? (theme.palette.mode === "dark" 
+                            ? "rgba(166, 80, 240, 0.15)" 
+                            : designSystem.colors.background.tertiary)
+                          : "transparent",
+                        color: (theme) => theme.palette.mode === "dark" 
+                          ? designSystem.colors.text.primaryDark 
+                          : designSystem.colors.text.primary,
+                        fontWeight: filterStatus === "pendente" ? 600 : 400,
+                        "&:hover": {
+                          backgroundColor: (theme) => theme.palette.mode === "dark" 
+                            ? "rgba(166, 80, 240, 0.2)" 
+                            : designSystem.colors.primary.lightest,
+                        },
                       }}
                     >
                       Pendentes ({rows.filter((r) => r.status === "pendente").length})
@@ -288,11 +354,37 @@ const ResultadoProvas: React.FC = () => {
                     anchorEl={downloadAnchor}
                     open={Boolean(downloadAnchor)}
                     onClose={() => setDownloadAnchor(null)}
+                    slotProps={{
+                      paper: {
+                        sx: {
+                          borderRadius: 2,
+                          boxShadow: (theme) => theme.palette.mode === "dark" 
+                            ? designSystem.shadows.mediumDark 
+                            : designSystem.shadows.medium,
+                          backgroundColor: (theme) => theme.palette.mode === "dark" 
+                            ? designSystem.colors.background.secondaryDark 
+                            : designSystem.colors.background.primary,
+                          border: (theme) => `1px solid ${theme.palette.mode === "dark" 
+                            ? designSystem.colors.border.mainDark 
+                            : designSystem.colors.border.main}`,
+                        },
+                      },
+                    }}
                   >
                     <MenuItem
                       onClick={() => {
                         handleExportCSV();
                         setDownloadAnchor(null);
+                      }}
+                      sx={{
+                        color: (theme) => theme.palette.mode === "dark" 
+                          ? designSystem.colors.text.primaryDark 
+                          : designSystem.colors.text.primary,
+                        "&:hover": {
+                          backgroundColor: (theme) => theme.palette.mode === "dark" 
+                            ? "rgba(166, 80, 240, 0.2)" 
+                            : designSystem.colors.primary.lightest,
+                        },
                       }}
                     >
                       CSV
@@ -308,11 +400,37 @@ const ResultadoProvas: React.FC = () => {
                     anchorEl={generalAnchor}
                     open={Boolean(generalAnchor)}
                     onClose={handleCloseGeneralMenu}
+                    slotProps={{
+                      paper: {
+                        sx: {
+                          borderRadius: 2,
+                          boxShadow: (theme) => theme.palette.mode === "dark" 
+                            ? designSystem.shadows.mediumDark 
+                            : designSystem.shadows.medium,
+                          backgroundColor: (theme) => theme.palette.mode === "dark" 
+                            ? designSystem.colors.background.secondaryDark 
+                            : designSystem.colors.background.primary,
+                          border: (theme) => `1px solid ${theme.palette.mode === "dark" 
+                            ? designSystem.colors.border.mainDark 
+                            : designSystem.colors.border.main}`,
+                        },
+                      },
+                    }}
                   >
                     <MenuItem
                       onClick={() => {
                         setModalOpen(true);
                         handleCloseGeneralMenu();
+                      }}
+                      sx={{
+                        color: (theme) => theme.palette.mode === "dark" 
+                          ? designSystem.colors.text.primaryDark 
+                          : designSystem.colors.text.primary,
+                        "&:hover": {
+                          backgroundColor: (theme) => theme.palette.mode === "dark" 
+                            ? "rgba(166, 80, 240, 0.2)" 
+                            : designSystem.colors.primary.lightest,
+                        },
                       }}
                     >
                       Atualizar Notas
@@ -406,9 +524,53 @@ const ResultadoProvas: React.FC = () => {
         anchorEl={rowAnchor}
         open={Boolean(rowAnchor)}
         onClose={handleCloseRowMenu}
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: 2,
+              boxShadow: (theme) => theme.palette.mode === "dark" 
+                ? designSystem.shadows.mediumDark 
+                : designSystem.shadows.medium,
+              backgroundColor: (theme) => theme.palette.mode === "dark" 
+                ? designSystem.colors.background.secondaryDark 
+                : designSystem.colors.background.primary,
+              border: (theme) => `1px solid ${theme.palette.mode === "dark" 
+                ? designSystem.colors.border.mainDark 
+                : designSystem.colors.border.main}`,
+            },
+          },
+        }}
       >
-        <MenuItem onClick={goToDetail}>Ver detalhes</MenuItem>
-        <MenuItem onClick={handleCloseRowMenu}>Cancelar</MenuItem>
+        <MenuItem 
+          onClick={goToDetail}
+          sx={{
+            color: (theme) => theme.palette.mode === "dark" 
+              ? designSystem.colors.text.primaryDark 
+              : designSystem.colors.text.primary,
+            "&:hover": {
+              backgroundColor: (theme) => theme.palette.mode === "dark" 
+                ? "rgba(166, 80, 240, 0.2)" 
+                : designSystem.colors.primary.lightest,
+            },
+          }}
+        >
+          Ver detalhes
+        </MenuItem>
+        <MenuItem 
+          onClick={handleCloseRowMenu}
+          sx={{
+            color: (theme) => theme.palette.mode === "dark" 
+              ? designSystem.colors.text.primaryDark 
+              : designSystem.colors.text.primary,
+            "&:hover": {
+              backgroundColor: (theme) => theme.palette.mode === "dark" 
+                ? "rgba(166, 80, 240, 0.2)" 
+                : designSystem.colors.primary.lightest,
+            },
+          }}
+        >
+          Cancelar
+        </MenuItem>
       </Menu>
 
       <NoteUpdaterModal

@@ -8,6 +8,11 @@ import {
   Alert,
   Fade,
   Snackbar,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
 } from "@mui/material";
 import { useContractDocuments } from "../../hooks/useContractDocuments";
 import { selectiveService } from "../../core/http/services/selectiveService";
@@ -35,6 +40,8 @@ const AprovacaoContratos: React.FC = () => {
   const [documentError, setDocumentError] = useState(false);
   const [documentLoading, setDocumentLoading] = useState(true);
   const [userName, setUserName] = useState<string | null>(null);
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
 
   useEffect(() => {
     fetchPendingContracts(1, 100);
@@ -317,9 +324,20 @@ const AprovacaoContratos: React.FC = () => {
                   display: "flex",
                   flexDirection: "column",
                   borderRadius: 3,
-                  border: `1px solid ${designSystem.colors.border.main}`,
-                  bgcolor: "#FFFFFF",
-                  boxShadow: "0 1px 3px rgba(0, 0, 0, 0.08)",
+                  border: (theme) =>
+                    `1px solid ${
+                      theme.palette.mode === "dark"
+                        ? designSystem.colors.border.mainDark
+                        : designSystem.colors.border.main
+                    }`,
+                  bgcolor: (theme) =>
+                    theme.palette.mode === "dark"
+                      ? designSystem.colors.background.secondaryDark
+                      : designSystem.colors.background.primary,
+                  boxShadow: (theme) =>
+                    theme.palette.mode === "dark"
+                      ? designSystem.shadows.smallDark
+                      : "0 1px 3px rgba(0, 0, 0, 0.08)",
                 }}
               >
                 <Box
@@ -348,7 +366,16 @@ const AprovacaoContratos: React.FC = () => {
                     </Typography>
                   </Box>
                 </Box>
-                <Box sx={{ flex: 1, position: "relative", bgcolor: "#FAFAFA" }}>
+                <Box
+                  sx={{
+                    flex: 1,
+                    position: "relative",
+                    bgcolor: (theme) =>
+                      theme.palette.mode === "dark"
+                        ? designSystem.colors.background.tertiaryDark
+                        : designSystem.colors.background.secondary,
+                  }}
+                >
                   {!currentDocument.contract_doc ? (
                     <Box
                       sx={{
@@ -420,7 +447,10 @@ const AprovacaoContratos: React.FC = () => {
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            bgcolor: "rgba(255, 255, 255, 0.9)",
+                            bgcolor: (theme) =>
+                              theme.palette.mode === "dark"
+                                ? "rgba(0, 0, 0, 0.55)"
+                                : "rgba(255, 255, 255, 0.9)",
                             zIndex: 1,
                           }}
                         >
@@ -456,10 +486,16 @@ const AprovacaoContratos: React.FC = () => {
                           size="small"
                           onClick={() => window.open(currentDocument.contract_doc!, "_blank")}
                           sx={{
-                            bgcolor: "rgba(0, 0, 0, 0.6)",
+                            bgcolor: (theme) =>
+                              theme.palette.mode === "dark"
+                                ? "rgba(255, 255, 255, 0.12)"
+                                : "rgba(0, 0, 0, 0.6)",
                             color: "white",
                             "&:hover": {
-                              bgcolor: "rgba(0, 0, 0, 0.8)",
+                              bgcolor: (theme) =>
+                                theme.palette.mode === "dark"
+                                  ? "rgba(255, 255, 255, 0.18)"
+                                  : "rgba(0, 0, 0, 0.8)",
                             },
                           }}
                         >
@@ -479,18 +515,37 @@ const AprovacaoContratos: React.FC = () => {
                   display: "flex",
                   flexDirection: "column",
                   borderRadius: 3,
-                  border: `1px solid ${designSystem.colors.border.main}`,
-                  bgcolor: "#FFFFFF",
+                  border: (theme) =>
+                    `1px solid ${
+                      theme.palette.mode === "dark"
+                        ? designSystem.colors.border.mainDark
+                        : designSystem.colors.border.main
+                    }`,
+                  bgcolor: (theme) =>
+                    theme.palette.mode === "dark"
+                      ? designSystem.colors.background.secondaryDark
+                      : designSystem.colors.background.primary,
                   overflow: "auto",
-                  boxShadow: "0 1px 3px rgba(0, 0, 0, 0.08)",
+                  boxShadow: (theme) =>
+                    theme.palette.mode === "dark"
+                      ? designSystem.shadows.smallDark
+                      : "0 1px 3px rgba(0, 0, 0, 0.08)",
                 }}
               >
                 <Box
                   sx={{
                     px: 3,
                     py: 2.5,
-                    borderBottom: `1px solid ${designSystem.colors.border.main}`,
-                    bgcolor: designSystem.colors.background.secondary,
+                    borderBottom: (theme) =>
+                      `1px solid ${
+                        theme.palette.mode === "dark"
+                          ? designSystem.colors.border.mainDark
+                          : designSystem.colors.border.main
+                      }`,
+                    bgcolor: (theme) =>
+                      theme.palette.mode === "dark"
+                        ? designSystem.colors.background.tertiaryDark
+                        : designSystem.colors.background.secondary,
                   }}
                 >
                   <Typography
@@ -509,15 +564,26 @@ const AprovacaoContratos: React.FC = () => {
                       mb: 3,
                       p: 2.5,
                       borderRadius: 2,
-                      bgcolor: designSystem.colors.primary.lightest,
-                      border: `1px solid ${designSystem.colors.primary.lighter}`,
+                      bgcolor: (theme) =>
+                        theme.palette.mode === "dark"
+                          ? "rgba(166, 80, 240, 0.12)"
+                          : designSystem.colors.primary.lightest,
+                      border: (theme) =>
+                        `1px solid ${
+                          theme.palette.mode === "dark"
+                            ? "rgba(166, 80, 240, 0.28)"
+                            : designSystem.colors.primary.lighter
+                        }`,
                     }}
                   >
                     <Box sx={{ mb: 2.5 }}>
                       <Typography
                         variant="caption"
                         sx={{
-                          color: designSystem.colors.primary.dark,
+                          color: (theme) =>
+                            theme.palette.mode === "dark"
+                              ? designSystem.colors.primary.light
+                              : designSystem.colors.primary.dark,
                           fontWeight: 600,
                           textTransform: "uppercase",
                           letterSpacing: 0.5,
@@ -529,7 +595,10 @@ const AprovacaoContratos: React.FC = () => {
                       <Typography
                         variant="body2"
                         sx={{
-                          color: designSystem.colors.text.primary,
+                          color: (theme) =>
+                            theme.palette.mode === "dark"
+                              ? designSystem.colors.text.primaryDark
+                              : designSystem.colors.text.primary,
                           fontWeight: 600,
                           mt: 0.5,
                         }}
@@ -542,7 +611,10 @@ const AprovacaoContratos: React.FC = () => {
                       <Typography
                         variant="caption"
                         sx={{
-                          color: designSystem.colors.primary.dark,
+                          color: (theme) =>
+                            theme.palette.mode === "dark"
+                              ? designSystem.colors.primary.light
+                              : designSystem.colors.primary.dark,
                           fontWeight: 600,
                           textTransform: "uppercase",
                           letterSpacing: 0.5,
@@ -554,7 +626,10 @@ const AprovacaoContratos: React.FC = () => {
                       <Typography
                         variant="body2"
                         sx={{
-                          color: designSystem.colors.text.primary,
+                          color: (theme) =>
+                            theme.palette.mode === "dark"
+                              ? designSystem.colors.text.primaryDark
+                              : designSystem.colors.text.primary,
                           fontWeight: 500,
                           mt: 0.5,
                         }}
@@ -567,7 +642,10 @@ const AprovacaoContratos: React.FC = () => {
                       <Typography
                         variant="caption"
                         sx={{
-                          color: designSystem.colors.primary.dark,
+                          color: (theme) =>
+                            theme.palette.mode === "dark"
+                              ? designSystem.colors.primary.light
+                              : designSystem.colors.primary.dark,
                           fontWeight: 600,
                           textTransform: "uppercase",
                           letterSpacing: 0.5,
@@ -579,7 +657,10 @@ const AprovacaoContratos: React.FC = () => {
                       <Typography
                         variant="body2"
                         sx={{
-                          color: designSystem.colors.text.secondary,
+                          color: (theme) =>
+                            theme.palette.mode === "dark"
+                              ? designSystem.colors.text.secondaryDark
+                              : designSystem.colors.text.secondary,
                           fontWeight: 500,
                           mt: 0.5,
                         }}
@@ -592,7 +673,10 @@ const AprovacaoContratos: React.FC = () => {
                       <Typography
                         variant="caption"
                         sx={{
-                          color: designSystem.colors.primary.dark,
+                          color: (theme) =>
+                            theme.palette.mode === "dark"
+                              ? designSystem.colors.primary.light
+                              : designSystem.colors.primary.dark,
                           fontWeight: 600,
                           textTransform: "uppercase",
                           letterSpacing: 0.5,
@@ -604,7 +688,10 @@ const AprovacaoContratos: React.FC = () => {
                       <Typography
                         variant="body2"
                         sx={{
-                          color: designSystem.colors.text.secondary,
+                          color: (theme) =>
+                            theme.palette.mode === "dark"
+                              ? designSystem.colors.text.secondaryDark
+                              : designSystem.colors.text.secondary,
                           fontWeight: 500,
                           mt: 0.5,
                         }}
@@ -629,11 +716,20 @@ const AprovacaoContratos: React.FC = () => {
                         fontSize: "0.875rem",
                         "&:hover": {
                           borderColor: designSystem.colors.primary.darker,
-                          backgroundColor: designSystem.colors.primary.lightest,
+                          backgroundColor: (theme) =>
+                            theme.palette.mode === "dark"
+                              ? "rgba(166, 80, 240, 0.12)"
+                              : designSystem.colors.primary.lightest,
                         },
                         "&:disabled": {
-                          borderColor: designSystem.colors.border.main,
-                          color: designSystem.colors.text.disabled,
+                          borderColor: (theme) =>
+                            theme.palette.mode === "dark"
+                              ? designSystem.colors.border.mainDark
+                              : designSystem.colors.border.main,
+                          color: (theme) =>
+                            theme.palette.mode === "dark"
+                              ? designSystem.colors.text.disabledDark
+                              : designSystem.colors.text.disabled,
                         },
                       }}
                     >
@@ -652,11 +748,20 @@ const AprovacaoContratos: React.FC = () => {
                         fontSize: "0.875rem",
                         "&:hover": {
                           borderColor: designSystem.colors.primary.darker,
-                          backgroundColor: designSystem.colors.primary.lightest,
+                          backgroundColor: (theme) =>
+                            theme.palette.mode === "dark"
+                              ? "rgba(166, 80, 240, 0.12)"
+                              : designSystem.colors.primary.lightest,
                         },
                         "&:disabled": {
-                          borderColor: designSystem.colors.border.main,
-                          color: designSystem.colors.text.disabled,
+                          borderColor: (theme) =>
+                            theme.palette.mode === "dark"
+                              ? designSystem.colors.border.mainDark
+                              : designSystem.colors.border.main,
+                          color: (theme) =>
+                            theme.palette.mode === "dark"
+                              ? designSystem.colors.text.disabledDark
+                              : designSystem.colors.text.disabled,
                         },
                       }}
                     >
@@ -687,8 +792,14 @@ const AprovacaoContratos: React.FC = () => {
                           borderColor: designSystem.colors.success.main,
                         },
                         "&:disabled": {
-                          color: designSystem.colors.text.disabled,
-                          borderColor: designSystem.colors.border.main,
+                          color: (theme) =>
+                            theme.palette.mode === "dark"
+                              ? designSystem.colors.text.disabledDark
+                              : designSystem.colors.text.disabled,
+                          borderColor: (theme) =>
+                            theme.palette.mode === "dark"
+                              ? designSystem.colors.border.mainDark
+                              : designSystem.colors.border.main,
                         },
                       }}
                     >
@@ -705,7 +816,7 @@ const AprovacaoContratos: React.FC = () => {
                       variant="outlined"
                       fullWidth
                       disabled={actionLoading}
-                      onClick={() => rejectCurrent()}
+                      onClick={() => setRejectDialogOpen(true)}
                       sx={{
                         py: 1.1,
                         fontWeight: 600,
@@ -721,8 +832,14 @@ const AprovacaoContratos: React.FC = () => {
                           borderColor: designSystem.colors.error.main,
                         },
                         "&:disabled": {
-                          color: designSystem.colors.text.disabled,
-                          borderColor: designSystem.colors.border.main,
+                          color: (theme) =>
+                            theme.palette.mode === "dark"
+                              ? designSystem.colors.text.disabledDark
+                              : designSystem.colors.text.disabled,
+                          borderColor: (theme) =>
+                            theme.palette.mode === "dark"
+                              ? designSystem.colors.border.mainDark
+                              : designSystem.colors.border.main,
                         },
                       }}
                     >
@@ -753,6 +870,52 @@ const AprovacaoContratos: React.FC = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      <Dialog
+        open={rejectDialogOpen}
+        onClose={() => {
+          setRejectDialogOpen(false);
+          setRejectReason("");
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Reprovar contrato</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Motivo da reprovação"
+            fullWidth
+            multiline
+            minRows={3}
+            value={rejectReason}
+            onChange={(e) => setRejectReason(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setRejectDialogOpen(false);
+              setRejectReason("");
+            }}
+          >
+            Cancelar
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            disabled={!rejectReason.trim()}
+            onClick={async () => {
+              setRejectDialogOpen(false);
+              await rejectCurrent(rejectReason.trim());
+              setRejectReason("");
+            }}
+          >
+            Reprovar
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

@@ -16,6 +16,7 @@ import { useNavigate } from "react-router";
 import { useAuth } from "../../../hooks/useAuth";
 import { useThemeMode } from "../../../app/providers/ThemeProvider";
 import { APP_ROUTES } from "../../../util/constants";
+import logoDesenvolve from "../../../assets/images/logo/LOGO DESENVOLVE.png";
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -63,8 +64,35 @@ const Header: React.FC<HeaderProps> = () => {
         transition: "margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
       }}
     >
-      <Toolbar sx={{ justifyContent: "flex-end", py: 0, px: 2, minHeight: 72, height: 72 }}>
-        {/* Toggle de tema */}
+      <Toolbar sx={{ justifyContent: "space-between", py: 0, px: 2, minHeight: 72, height: 72 }}>
+        {/* Logo à esquerda */}
+        <Box
+          onClick={() => navigate(APP_ROUTES.DASHBOARD)}
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            height: "100%",
+            pl: 3,
+            cursor: "pointer",
+            transition: "opacity 0.2s ease",
+            "&:hover": {
+              opacity: 0.8,
+            },
+          }}
+        >
+          <img
+            src={logoDesenvolve}
+            alt="Logo Desenvolve"
+            style={{
+              height: "32px",
+              objectFit: "contain",
+            }}
+          />
+        </Box>
+
+        {/* Elementos à direita */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          {/* Toggle de tema */}
         <Tooltip title={mode === "dark" ? "Tema claro" : "Tema escuro"}>
           <IconButton
             onClick={toggleTheme}
@@ -82,8 +110,8 @@ const Header: React.FC<HeaderProps> = () => {
           </IconButton>
         </Tooltip>
 
-        {/* Perfil com dropdown */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          {/* Perfil com dropdown */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
           <IconButton
             onClick={handleMenuOpen}
             sx={{
@@ -197,6 +225,7 @@ const Header: React.FC<HeaderProps> = () => {
               Sair
             </MenuItem>
           </Menu>
+          </Box>
         </Box>
       </Toolbar>
     </AppBar>

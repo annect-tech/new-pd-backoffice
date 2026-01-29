@@ -6,17 +6,10 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Toolbar,
   Box,
-  Typography,
   Divider,
-  IconButton,
 } from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
-import { Link, useNavigate } from "react-router";
-import logoAberta from "../../../assets/images/logo/logo aberta.png";
-import logoFechada from "../../../assets/images/logo/logo fechada.png";
-import { APP_ROUTES } from "../../../util/constants";
+import { Link } from "react-router";
 import { designSystem } from "../../../styles/designSystem";
 
 const drawerWidth = 240;
@@ -44,9 +37,7 @@ interface SidebarProps {
 const LayoutSidebar: React.FC<SidebarProps> = ({
   collapsed,
   menuGroups,
-  onClose,
 }) => {
-  const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
 
   // Se está colapsado, pode expandir por hover
@@ -66,10 +57,6 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
     }
   };
 
-  const handleLogoClick = () => {
-    navigate(APP_ROUTES.DASHBOARD);
-  };
-
   return (
     <Drawer
       variant="permanent"
@@ -84,6 +71,7 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
           width: isExpanded ? drawerWidth : collapsedWidth,
           boxSizing: "border-box",
           overflowX: "hidden",
+          overflowY: "auto",
           transition: "width 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
           bgcolor: (theme) => theme.palette.mode === "dark" ? "#1E1E1E" : "#FFFFFF",
           borderRight: (theme) => theme.palette.mode === "dark" 
@@ -100,80 +88,6 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
         },
       }}
     >
-      <Toolbar
-        sx={{
-          minHeight: 72,
-          height: 72,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          px: 0,
-          width: "100%",
-          backgroundColor: (theme) => theme.palette.mode === "dark" ? "#1E1E1E" : "#FFFFFF",
-          borderBottom: (theme) => theme.palette.mode === "dark" 
-            ? "1px solid rgba(255, 255, 255, 0.1)" 
-            : "1px solid rgba(0, 0, 0, 0.04)",
-          position: "relative",
-          overflow: "visible",
-        }}
-      >
-        {/* Logo */}
-        <Box
-          onClick={handleLogoClick}
-          sx={{
-            cursor: "pointer",
-            width: collapsedWidth,
-            height: 72,
-            flexShrink: 0,
-            position: "relative",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            transition: "opacity 0.2s ease",
-            "&:hover": {
-              opacity: 0.85,
-            },
-          }}
-        >
-          <Box
-            component="img"
-            src={isExpanded ? logoAberta : logoFechada}
-            alt="Desenvolve"
-            sx={{
-              width: 35,
-              height: 35,
-              objectFit: "contain",
-              display: "block",
-              position: "absolute",
-              left: -10,
-              top: "50%",
-              transform: "translateY(-50%)",
-              transition: "opacity 0.2s ease",
-            }}
-          />
-        </Box>
-
-        {!collapsed && onClose && (
-          <IconButton
-            onClick={onClose}
-            size="small"
-            sx={{
-              color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#9CA3AF",
-              transition: "all 0.2s ease",
-              "&:hover": {
-                color: designSystem.colors.primary.main,
-                backgroundColor: (theme) => theme.palette.mode === "dark" 
-                  ? "rgba(166, 80, 240, 0.15)" 
-                  : "rgba(166, 80, 240, 0.08)",
-                transform: "rotate(90deg)",
-              },
-            }}
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        )}
-      </Toolbar>
-
     <Box
       sx={{
         width: "100%",
@@ -184,8 +98,8 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
     >
       {menuGroups.map((group, groupIndex) => (
         <React.Fragment key={groupIndex}>
-          {group.title && isExpanded && (
-            <Box sx={{ px: 2.5, py: 2, pt: groupIndex === 0 ? 3 : 2.5 }}>
+          {/* {group.title && isExpanded && (
+            <Box sx={{ px: 2.5, py: 2 }}>
               <Typography
                 variant="caption"
                 sx={{
@@ -199,15 +113,13 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
                 {group.title}
               </Typography>
             </Box>
-          )}
-          {groupIndex === 0 && !isExpanded && (
-            <Box sx={{ my: 1 }} />
-          )}
+          )} */}
           <List
             sx={{
               width: "100%",
               p: 0,
-              px: isExpanded ? 1 : 0,
+              px: isExpanded ? 1.5 : 0,
+              pt: groupIndex === 0 ? 1 : 0,
               display: "flex",
               flexDirection: "column",
               alignItems: isExpanded ? "flex-start" : "center",
@@ -220,11 +132,11 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
                 to={to}
                 sx={{
                   justifyContent: isExpanded ? "flex-start" : "center",
-                  px: isExpanded ? 1 : 0,
-                  py: 1.5,
+                  px: isExpanded ? 1.5 : 0,
+                  py: 1.25,
                   width: "100%",
-                  borderRadius: 2,
-                  mb: 0.5,
+                  borderRadius: 1.5,
+                  mb: 0.25,
                   color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#6B7280",
                   position: "relative",
                   transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",

@@ -17,6 +17,9 @@ import {
   TableRow,
   TablePagination,
   TextField,
+  Select,
+  MenuItem,
+  FormControl,
 } from "@mui/material";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import VisibilityIcon from "@mui/icons-material/Visibility";
@@ -41,8 +44,10 @@ import { APP_ROUTES } from "../../util/constants";
 const API_URL = import.meta.env.VITE_API_URL as string || "http://186.248.135.172:31535";
 
 export default function DocumentsList() {
-  const { documents, loading, snackbar, closeSnackbar, fetchDocuments, uploadId, uploadAddress, uploadSchoolHistory, pagination } =
+  const { documents, loading, snackbar, closeSnackbar, fetchDocuments, uploadId, uploadAddress, uploadSchoolHistory, pagination, updateDocument } =
     useDocuments();
+
+  const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
 
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -56,7 +61,9 @@ export default function DocumentsList() {
 
   const rows = documents.map((d) => ({
     id: d.id,
+    documentId: d.id, // ID do documento para usar na atualização
     userId: parseInt(d.user_data_id),
+    userDataId: d.user_data_id,
     userName: d.student_name || `Usuário ${d.user_data_id}`,
     idDoc: d.id_doc,
     idDocStatus: d.id_doc_status,
@@ -65,7 +72,7 @@ export default function DocumentsList() {
     schoolDoc: d.school_history_doc,
     schoolDocStatus: d.school_history_doc_status,
     contractDoc: d.contract_doc,
-    contractDocStatus: d.contract_doc_status,
+    contractDocStatus: d.contract_doc_status || '',
     createdAt: new Date(d.created_at).toLocaleString(),
   }));
 
@@ -124,6 +131,38 @@ export default function DocumentsList() {
     }
   };
   const closeViewer = () => setViewerUrl(null);
+
+  // Função para atualizar o status do contrato
+  const handleContractStatusChange = async (userDataId: string, newStatus: string) => {
+    setUpdatingStatus(userDataId);
+    try {
+      const success = await updateDocument(userDataId, { contract_doc_status: newStatus });
+      if (success) {
+        fetchDocuments(page + 1, rowsPerPage);
+      }
+    } finally {
+      setUpdatingStatus(null);
+    }
+  };
+
+  // Função para obter a cor do texto do status
+  const getStatusTextColor = (status: string): string => {
+    const statusLower = status?.toLowerCase() || "";
+    if (statusLower === "approved") return "#4CAF50"; // Verde
+    if (statusLower === "pending") return "#FF9800"; // Laranja
+    if (statusLower === "rejected") return "#F44336"; // Vermelho
+    return "#9E9E9E"; // Cinza padrão
+  };
+
+  // Traduzir status
+  const translateStatus = (status: string): string => {
+    const statusMap: Record<string, string> = {
+      'approved': 'Aprovado',
+      'pending': 'Pendente',
+      'rejected': 'Rejeitado',
+    };
+    return statusMap[status?.toLowerCase()] || status || 'N/A';
+  };
 
   const renderDocCell = (
     row: any,
@@ -239,22 +278,24 @@ export default function DocumentsList() {
                 </Box>
               ) : (
                 <TableContainer sx={{ overflowX: "auto", width: "100%" }}>
-                  <Table size="small" sx={{ minWidth: 900 }}>
+                  <Table size="small" sx={{ minWidth: 1100 }}>
                     <TableHead>
                       <TableRow>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 80 }}>ID</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 200 }}>Nome do Usuário</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 120 }} align="center">Identidade</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 120 }} align="center">Endereço</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 120 }} align="center">Histórico</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 120 }} align="center">Contrato</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 180 }}>Enviado em</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 60 }}>ID Doc</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 80 }}>User ID</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 180 }}>Nome do Usuário</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 100 }} align="center">Identidade</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 100 }} align="center">Endereço</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 100 }} align="center">Histórico</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 100 }} align="center">Contrato</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 150 }} align="center">Status Contrato</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 150 }}>Enviado em</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {paginatedRows.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                          <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
                             <Typography 
                               sx={{ 
                                 color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#6B7280",
@@ -268,13 +309,21 @@ export default function DocumentsList() {
                       ) : (
                         paginatedRows.map((row) => (
                           <TableRow key={row.id} {...tableRowHoverStyles}>
-                            <TableCell sx={{ 
+                            <TableCell sx={{
                               color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#374151",
-                              fontSize: "0.875rem", 
-                              py: 1.5, 
-                              width: 80 
+                              fontSize: "0.875rem",
+                              py: 1.5,
+                              width: 60
                             }}>
-                              {row.userId}
+                              {row.documentId}
+                            </TableCell>
+                            <TableCell sx={{
+                              color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#374151",
+                              fontSize: "0.875rem",
+                              py: 1.5,
+                              width: 80
+                            }}>
+                              {row.userDataId}
                             </TableCell>
                             <TableCell
                               sx={{
@@ -282,8 +331,8 @@ export default function DocumentsList() {
                                 fontWeight: 500,
                                 fontSize: "0.875rem",
                                 py: 1.5,
-                                width: 200,
-                                maxWidth: 200,
+                                width: 180,
+                                maxWidth: 180,
                                 whiteSpace: "nowrap",
                                 overflow: "hidden",
                                 textOverflow: "ellipsis",
@@ -291,53 +340,103 @@ export default function DocumentsList() {
                             >
                               {row.userName}
                             </TableCell>
-                            <TableCell 
+                            <TableCell
                               align="center"
                               sx={{
                                 fontSize: "0.875rem",
                                 py: 1.5,
-                                width: 120
+                                width: 100
                               }}
                             >
                               {renderDocCell(row, "idDoc")}
                             </TableCell>
-                            <TableCell 
+                            <TableCell
                               align="center"
                               sx={{
                                 fontSize: "0.875rem",
                                 py: 1.5,
-                                width: 120
+                                width: 100
                               }}
                             >
                               {renderDocCell(row, "addressDoc")}
                             </TableCell>
-                            <TableCell 
+                            <TableCell
                               align="center"
                               sx={{
                                 fontSize: "0.875rem",
                                 py: 1.5,
-                                width: 120
+                                width: 100
                               }}
                             >
                               {renderDocCell(row, "schoolDoc")}
                             </TableCell>
-                            <TableCell 
+                            <TableCell
                               align="center"
                               sx={{
                                 fontSize: "0.875rem",
                                 py: 1.5,
-                                width: 120
+                                width: 100
                               }}
                             >
                               {renderDocCell(row, "contractDoc")}
+                            </TableCell>
+                            <TableCell
+                              align="center"
+                              sx={{
+                                fontSize: "0.875rem",
+                                py: 1.5,
+                                width: 150
+                              }}
+                            >
+                              <FormControl size="small" sx={{ minWidth: 120 }}>
+                                <Select
+                                  value={row.contractDocStatus || ''}
+                                  onChange={(e) => handleContractStatusChange(row.userDataId, e.target.value)}
+                                  disabled={updatingStatus === row.userDataId}
+                                  displayEmpty
+                                  sx={{
+                                    fontSize: "0.875rem",
+                                    color: getStatusTextColor(row.contractDocStatus || ''),
+                                    fontWeight: 500,
+                                    "& .MuiSelect-select": {
+                                      py: 0.5,
+                                      color: getStatusTextColor(row.contractDocStatus || ''),
+                                    },
+                                    "& .MuiOutlinedInput-notchedOutline": {
+                                      borderColor: "transparent",
+                                    },
+                                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                                      borderColor: "transparent",
+                                    },
+                                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                                      borderColor: "transparent",
+                                    },
+                                  }}
+                                  renderValue={(value) => (
+                                    <Typography
+                                      sx={{
+                                        color: getStatusTextColor(value as string),
+                                        fontSize: "0.875rem",
+                                        fontWeight: 500,
+                                      }}
+                                    >
+                                      {translateStatus(value as string)}
+                                    </Typography>
+                                  )}
+                                >
+                                  <MenuItem value="pending">Pendente</MenuItem>
+                                  <MenuItem value="approved">Aprovado</MenuItem>
+                                  <MenuItem value="rejected">Rejeitado</MenuItem>
+                                </Select>
+                              </FormControl>
                             </TableCell>
                             <TableCell
                               sx={{
                                 color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#374151",
                                 fontSize: "0.875rem",
                                 py: 1.5,
-                                width: 180,
-                                maxWidth: 180,
+                                width: 150,
+                                maxWidth: 150,
                                 whiteSpace: "nowrap",
                                 overflow: "hidden",
                                 textOverflow: "ellipsis",

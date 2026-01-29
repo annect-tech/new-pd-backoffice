@@ -49,6 +49,37 @@ import {
   tablePaginationStyles,
 } from "../../styles/designSystem";
 
+const formatDate = (dateStr: string): string => {
+  if (!dateStr || dateStr === "—") return "—";
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr;
+  return date.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+};
+
+const formatHour = (hourStr: string): string => {
+  if (!hourStr || hourStr === "—") return "—";
+  // Handle ISO datetime strings like "1970-01-01T07:19:00.000Z"
+  if (hourStr.includes("T")) {
+    const date = new Date(hourStr);
+    if (!isNaN(date.getTime())) {
+      return date.toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "UTC",
+      });
+    }
+  }
+  // Handle "HH:mm:ss" or "HH:mm" formats
+  const parts = hourStr.split(":");
+  if (parts.length >= 2) return `${parts[0]}:${parts[1]}`;
+  return hourStr;
+};
+
 const ListaPresenca: React.FC = () => {
   const {
     exams,
@@ -74,6 +105,8 @@ const ListaPresenca: React.FC = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
+  const isFilterActive = filterStatus !== "all" || searchTerm.trim() !== "";
+
   // Transform exams to rows - dados já vêm completos da API
   const rows = useMemo(() => {
     if (!Array.isArray(exams) || exams.length === 0) {
@@ -87,21 +120,23 @@ const ListaPresenca: React.FC = () => {
         ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
         : "—";
 
+      const normalizedStatus = (exam.status || "").toLowerCase();
+
       return {
         id: exam.id,
         cpf: userData?.cpf || "—",
         name: completeName || "—",
         celphone: userData?.celphone || "Não informado",
         status:
-          exam.status === "absent"
+          normalizedStatus === "absent"
             ? "ausente"
-            : exam.status === "scheduled"
+            : normalizedStatus === "scheduled"
             ? "agendado"
             : "presente",
         local: exam.exam_scheduled_hour?.exam_date?.local?.name || "—",
-        date: exam.exam_scheduled_hour?.exam_date?.date || "—",
-        hour: exam.exam_scheduled_hour?.hour || "—",
-        originalStatus: exam.status,
+        date: formatDate(exam.exam_scheduled_hour?.exam_date?.date || "—"),
+        hour: formatHour(exam.exam_scheduled_hour?.hour || "—"),
+        originalStatus: normalizedStatus,
       };
     });
   }, [exams]);
@@ -137,10 +172,19 @@ const ListaPresenca: React.FC = () => {
   }, [rows, filterStatus, searchTerm]);
 
   useEffect(() => {
-    // Buscar sem termo de pesquisa - faremos filtro local
-    fetchExams(page + 1, rowsPerPage);
+    if (isFilterActive) {
+      // Quando filtro está ativo, buscar todos os dados para filtrar localmente
+      fetchExams(1, 9999);
+    } else {
+      fetchExams(page + 1, rowsPerPage);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, rowsPerPage]);
+  }, [page, rowsPerPage, isFilterActive]);
+
+  // Reset page when filter/search changes
+  useEffect(() => {
+    setPage(0);
+  }, [filterStatus, searchTerm]);
 
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
@@ -400,7 +444,10 @@ const ListaPresenca: React.FC = () => {
                           </TableCell>
                         </TableRow>
                       ) : (
-                        filtered.map((row) => (
+                        (isFilterActive
+                          ? filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                          : filtered
+                        ).map((row) => (
                           <TableRow
                             key={row.id}
                             {...tableRowHoverStyles}
@@ -479,7 +526,7 @@ const ListaPresenca: React.FC = () => {
                   </Table>
                   <TablePagination
                     component="div"
-                    count={pagination.totalItems}
+                    count={isFilterActive ? filtered.length : pagination.totalItems}
                     page={page}
                     onPageChange={handleChangePage}
                     rowsPerPage={rowsPerPage}
