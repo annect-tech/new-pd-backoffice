@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
-import { 
-  usersService, 
-  type UserResponse, 
-  type UserProfileResponse,
+import { useCallback, useEffect, useState } from "react";
+import {
+  usersService,
   type CreateUserPayload,
   type CreateUserResponse,
+  type UserProfileResponse,
+  type UserResponse,
 } from "../core/http/services/usersService";
 
 export interface UserWithProfile extends UserResponse {

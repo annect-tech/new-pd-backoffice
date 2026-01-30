@@ -25,6 +25,7 @@ export interface CreateUserPayload {
   tenant_city_id: string;
   cellphone: string;
   birth_date: string;
+  createByAdmin?: boolean;
 }
 
 export interface CreateUserResponse {
@@ -134,7 +135,7 @@ export const usersService = {
    * Requer role ADMIN ou ADMIN_MASTER
    */
   toggleUserActive: (email: string, isActive: boolean) =>
-    httpClient.put<ToggleActiveResponse>(
+    httpClient.patch<ToggleActiveResponse>(
       API_URL,
       "/admin/users/active",
       email,
