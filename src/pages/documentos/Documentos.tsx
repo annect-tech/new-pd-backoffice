@@ -65,6 +65,7 @@ export default function DocumentsList() {
     userId: parseInt(d.user_data_id),
     userDataId: d.user_data_id,
     userName: d.student_name || `Usuário ${d.user_data_id}`,
+    userEmail: d.student_email,
     idDoc: d.id_doc,
     idDocStatus: d.id_doc_status,
     addressDoc: d.address_doc,
@@ -150,7 +151,7 @@ export default function DocumentsList() {
     const statusLower = status?.toLowerCase() || "";
     if (statusLower === "approved") return "#4CAF50"; // Verde
     if (statusLower === "pending") return "#FF9800"; // Laranja
-    if (statusLower === "rejected") return "#F44336"; // Vermelho
+    if (statusLower === "refused") return "#F44336"; // Vermelho
     return "#9E9E9E"; // Cinza padrão
   };
 
@@ -159,7 +160,7 @@ export default function DocumentsList() {
     const statusMap: Record<string, string> = {
       'approved': 'Aprovado',
       'pending': 'Pendente',
-      'rejected': 'Rejeitado',
+      'refused': 'Rejeitado',
     };
     return statusMap[status?.toLowerCase()] || status || 'N/A';
   };
@@ -283,6 +284,7 @@ export default function DocumentsList() {
                       <TableRow>
                         <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 60 }}>ID Doc</TableCell>
                         <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 80 }}>User ID</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 300 }}>Email</TableCell>
                         <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 180 }}>Nome do Usuário</TableCell>
                         <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 100 }} align="center">Identidade</TableCell>
                         <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 100 }} align="center">Endereço</TableCell>
@@ -295,7 +297,7 @@ export default function DocumentsList() {
                     <TableBody>
                       {paginatedRows.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
+                          <TableCell colSpan={10} align="center" sx={{ py: 4 }}>
                             <Typography 
                               sx={{ 
                                 color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#6B7280",
@@ -339,6 +341,20 @@ export default function DocumentsList() {
                               }}
                             >
                               {row.userName}
+                            </TableCell>
+                            <TableCell
+                              sx={{
+                                color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#374151",
+                                fontSize: "0.875rem",
+                                py: 1.5,
+                                width: 300,
+                                maxWidth: 300,
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                              }}
+                            >
+                              {row.userEmail}
                             </TableCell>
                             <TableCell
                               align="center"
@@ -426,7 +442,7 @@ export default function DocumentsList() {
                                 >
                                   <MenuItem value="pending">Pendente</MenuItem>
                                   <MenuItem value="approved">Aprovado</MenuItem>
-                                  <MenuItem value="rejected">Rejeitado</MenuItem>
+                                  <MenuItem value="refused">Rejeitado</MenuItem>
                                 </Select>
                               </FormControl>
                             </TableCell>
