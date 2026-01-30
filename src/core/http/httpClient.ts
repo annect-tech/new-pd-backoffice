@@ -70,6 +70,13 @@ export const httpClient = {
     }
     // Não definir Content-Type para FormData - o navegador define automaticamente com boundary
 
+    // Adicionar headers para evitar cache (especialmente para PATCH/PUT/DELETE)
+    if (method === "PATCH" || method === "PUT" || method === "DELETE") {
+      headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+      headers["Pragma"] = "no-cache";
+      headers["Expires"] = "0";
+    }
+
     if (!options?.skipAuth && _authToken) {
       headers["Authorization"] = `Bearer ${_authToken}`;
     }
@@ -84,6 +91,10 @@ export const httpClient = {
       method,
       headers,
       body,
+      // Evitar cache para métodos que modificam dados
+      cache: (method === "PATCH" || method === "PUT" || method === "DELETE" || method === "POST") 
+        ? "no-store" 
+        : "default",
     };
 
     try {
@@ -151,7 +162,9 @@ export const httpClient = {
       }
 
       let message = json.message ?? res.statusText;
-      if (res.status === 500) {
+      
+      // Tratar erros 4xx e 5xx
+      if (res.status >= 400) {
         if (json.error) {
           message = typeof json.error === 'string' ? json.error : JSON.stringify(json.error);
         } else if (json.message) {
@@ -160,8 +173,8 @@ export const httpClient = {
           message = json;
         } else if (json.statusCode && json.message) {
           message = json.message;
-        } else {
-          // Tentar extrair stack trace ou detalhes do erro
+        } else if (res.status === 500) {
+          // Tentar extrair stack trace ou detalhes do erro para 500
           if (json.stack) {
             message = `Erro interno: ${json.stack}`;
           } else if (json.details) {

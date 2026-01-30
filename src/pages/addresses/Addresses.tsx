@@ -23,6 +23,7 @@ import {
   TablePagination,
   Fade,
   Chip,
+  InputAdornment,
 } from "@mui/material";
 import {
   Search as SearchIcon,
@@ -47,6 +48,7 @@ import {
   tablePaginationStyles,
 } from "../../styles/designSystem";
 import type { AddressPayload } from "../../core/http/services/addressesService";
+import { useAppSelector } from "../../core/store/hooks";
 
 type Mode = "create" | "edit";
 
@@ -62,6 +64,8 @@ const Addresses: React.FC = () => {
     closeSnackbar,
     fetchAddresses,
   } = useAddresses();
+  
+  const user = useAppSelector((state) => state.auth.user);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [mode, setMode] = useState<Mode>("create");
@@ -83,48 +87,64 @@ const Addresses: React.FC = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [loadingCep, setLoadingCep] = useState(false);
 
   useEffect(() => {
     fetchAddresses(page + 1, rowsPerPage, searchTerm.trim() || undefined);
   }, [fetchAddresses, page, rowsPerPage, searchTerm]);
 
   const handleOpen = (m: Mode, address?: typeof addresses[0]) => {
-    setMode(m);
-    if (m === "edit" && address) {
-      setForm({
-        cep: address.cep,
-        street: address.street,
-        number: address.number,
-        complement: address.complement ?? "",
-        neighborhood: address.neighborhood,
-        city: address.city,
-        state: address.state,
-        country: address.country,
-        latitude: address.latitude ?? undefined,
-        longitude: address.longitude ?? undefined,
-        reference: address.reference ?? "",
-      });
-      setEditingId(address.id);
-    } else {
-      setForm({
-        cep: "",
-        street: "",
-        number: "",
-        complement: "",
-        neighborhood: "",
-        city: "",
-        state: "",
-        country: "Brasil",
-        latitude: undefined,
-        longitude: undefined,
-        reference: "",
-      });
-      setEditingId(null);
+    try {
+      setMode(m);
+      if (m === "edit" && address) {
+        // Converter dados do formato da API (pode vir em português ou inglês)
+        const street = (address as any).logradouro || address.street || "";
+        const number = (address as any).numero || address.number || "";
+        const complement = (address as any).complemento || address.complement || "";
+        const neighborhood = (address as any).bairro || address.neighborhood || "";
+        const city = (address as any).cidade || address.city || "";
+        const state = (address as any).uf || address.state || "";
+        
+        setForm({
+          cep: address.cep ?? "",
+          street,
+          number,
+          complement,
+          neighborhood,
+          city,
+          state,
+          country: address.country ?? "Brasil",
+          latitude: address.latitude ?? undefined,
+          longitude: address.longitude ?? undefined,
+          reference: address.reference ?? "",
+        });
+        setEditingId(address.id ?? null);
+      } else {
+        setForm({
+          cep: "",
+          street: "",
+          number: "",
+          complement: "",
+          neighborhood: "",
+          city: "",
+          state: "",
+          country: "Brasil",
+          latitude: undefined,
+          longitude: undefined,
+          reference: "",
+        });
+        setEditingId(null);
+      }
+      setOpen(true);
+    } catch (error) {
+      console.error("Erro ao abrir modal de edição:", error);
+      // Log do erro para debug
     }
-    setOpen(true);
   };
 
   const handleClose = () => {
+    if (submitting) return; // Prevenir fechamento durante submissão
     setOpen(false);
     setForm({
       cep: "",
@@ -140,6 +160,8 @@ const Addresses: React.FC = () => {
       reference: "",
     });
     setEditingId(null);
+    setSubmitting(false);
+    setLoadingCep(false);
   };
 
   const handleSubmit = async () => {
@@ -148,27 +170,39 @@ const Addresses: React.FC = () => {
       return;
     }
 
-    const payload: AddressPayload = {
-      cep: form.cep.trim(),
-      street: form.street.trim(),
-      number: form.number.trim(),
-      neighborhood: form.neighborhood.trim(),
-      city: form.city.trim(),
-      state: form.state.trim().toUpperCase(),
-      country: form.country?.trim() || "Brasil",
-      ...(form.complement?.trim() && { complement: form.complement.trim() }),
-      ...(form.reference?.trim() && { reference: form.reference.trim() }),
-      ...(form.latitude !== undefined && form.latitude !== null && !isNaN(form.latitude) && { latitude: form.latitude }),
-      ...(form.longitude !== undefined && form.longitude !== null && !isNaN(form.longitude) && { longitude: form.longitude }),
-    };
+    setSubmitting(true);
 
-    if (mode === "create") {
-      await createAddress(payload);
-    } else if (mode === "edit" && editingId) {
-      await updateAddress(editingId, payload);
+    try {
+      // Remove formatação do CEP (remove hífen)
+      const cleanCep = form.cep.replace(/\D/g, "");
+      
+      // Converte para o formato esperado pela API (português)
+      const apiPayload: any = {
+        cep: cleanCep,
+        logradouro: form.street.trim(),
+        numero: form.number.trim(),
+        bairro: form.neighborhood.trim(),
+        cidade: form.city.trim(),
+        uf: form.state.trim().toUpperCase(),
+        ...(form.complement?.trim() && { complemento: form.complement.trim() }),
+      };
+
+      // Adiciona user_id apenas na criação (obrigatório pela API)
+      if (mode === "create") {
+        if (!user?.id) {
+          throw new Error("Usuário não identificado. Faça login novamente.");
+        }
+        apiPayload.user_id = user.id;
+        await createAddress(apiPayload);
+      } else if (mode === "edit" && editingId) {
+        // Para edição, não precisa de user_id
+        await updateAddress(editingId, apiPayload);
+      }
+
+      handleClose();
+    } finally {
+      setSubmitting(false);
     }
-
-    handleClose();
   };
 
   const handleDelete = async (id: number) => {
@@ -191,9 +225,54 @@ const Addresses: React.FC = () => {
   };
 
   const formatCEP = (value: string) => {
+    if (!value) return "";
     const numbers = value.replace(/\D/g, "");
     if (numbers.length <= 5) return numbers;
     return `${numbers.slice(0, 5)}-${numbers.slice(5, 8)}`;
+  };
+
+  const fetchCepData = async (cep: string) => {
+    // Remove formatação do CEP
+    const cleanCep = cep.replace(/\D/g, "");
+    
+    // Verifica se o CEP tem 8 dígitos
+    if (cleanCep.length !== 8) {
+      return;
+    }
+
+    setLoadingCep(true);
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+      const data = await response.json();
+
+      if (data.erro) {
+        // CEP não encontrado - não faz nada, mantém os campos como estão
+        return;
+      }
+
+      // Preenche os campos com os dados do ViaCEP
+      // Preserva número, complemento e referência que o usuário já digitou
+      setForm((prev) => ({
+        ...prev,
+        street: data.logradouro || prev.street,
+        neighborhood: data.bairro || prev.neighborhood,
+        city: data.localidade || prev.city,
+        state: data.uf || prev.state,
+        // Mantém número, complemento e referência
+        number: prev.number,
+        complement: prev.complement,
+        reference: prev.reference,
+      }));
+    } catch (error) {
+      console.error("Erro ao buscar CEP:", error);
+    } finally {
+      setLoadingCep(false);
+    }
+  };
+
+  const handleCepChange = (value: string) => {
+    const formatted = formatCEP(value);
+    setForm({ ...form, cep: formatted });
   };
 
   return (
@@ -397,19 +476,27 @@ const Addresses: React.FC = () => {
       </Box>
 
       {/* Dialog de Criar/Editar */}
-      <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+      <Dialog 
+        open={open} 
+        onClose={handleClose} 
+        maxWidth="md" 
+        fullWidth
+        disableEscapeKeyDown={submitting}
+      >
         <DialogTitle sx={{
           fontWeight: 600,
           color: designSystem.colors.text.primary,
           display: "flex",
           justifyContent: "space-between",
-          alignItems: "center"
+          alignItems: "center",
+          pb: 2
         }}>
           {mode === "create" ? "Novo Endereço" : "Editar Endereço"}
           <IconButton
             aria-label="close"
             onClick={handleClose}
             size="small"
+            disabled={submitting}
             sx={{
               color: designSystem.colors.text.disabled,
               "&:hover": {
@@ -433,18 +520,32 @@ const Addresses: React.FC = () => {
               <TextField
                 fullWidth
                 label="CEP"
-                value={form.cep}
-                onChange={(e) => setForm({ ...form, cep: formatCEP(e.target.value) })}
+                value={form.cep || ""}
+                onChange={(e) => handleCepChange(e.target.value)}
+                onBlur={(e) => {
+                  const cleanCep = e.target.value.replace(/\D/g, "");
+                  if (cleanCep.length === 8 && !loadingCep) {
+                    fetchCepData(cleanCep);
+                  }
+                }}
                 placeholder="12345-678"
                 required
                 inputProps={{ maxLength: 9 }}
+                InputProps={{
+                  endAdornment: loadingCep ? (
+                    <InputAdornment position="end">
+                      <CircularProgress size={20} />
+                    </InputAdornment>
+                  ) : null,
+                }}
+                helperText={loadingCep ? "Buscando endereço..." : "Digite o CEP e clique fora para buscar automaticamente"}
               />
             </Box>
             <Box sx={{ gridColumn: { xs: 'span 12', sm: 'span 8' } }}>
               <TextField
                 fullWidth
                 label="Logradouro/Rua"
-                value={form.street}
+                value={form.street || ""}
                 onChange={(e) => setForm({ ...form, street: e.target.value })}
                 placeholder="Ex: Avenida Paulista"
                 required
@@ -454,7 +555,7 @@ const Addresses: React.FC = () => {
               <TextField
                 fullWidth
                 label="Número"
-                value={form.number}
+                value={form.number || ""}
                 onChange={(e) => setForm({ ...form, number: e.target.value })}
                 placeholder="Ex: 1578"
                 required
@@ -464,7 +565,7 @@ const Addresses: React.FC = () => {
               <TextField
                 fullWidth
                 label="Complemento"
-                value={form.complement}
+                value={form.complement || ""}
                 onChange={(e) => setForm({ ...form, complement: e.target.value })}
                 placeholder="Ex: Andar 5, Sala 10 (opcional)"
               />
@@ -473,7 +574,7 @@ const Addresses: React.FC = () => {
               <TextField
                 fullWidth
                 label="Bairro"
-                value={form.neighborhood}
+                value={form.neighborhood || ""}
                 onChange={(e) => setForm({ ...form, neighborhood: e.target.value })}
                 placeholder="Ex: Bela Vista"
                 required
@@ -483,7 +584,7 @@ const Addresses: React.FC = () => {
               <TextField
                 fullWidth
                 label="Cidade"
-                value={form.city}
+                value={form.city || ""}
                 onChange={(e) => setForm({ ...form, city: e.target.value })}
                 placeholder="Ex: São Paulo"
                 required
@@ -493,8 +594,8 @@ const Addresses: React.FC = () => {
               <TextField
                 fullWidth
                 label="UF"
-                value={form.state}
-                onChange={(e) => setForm({ ...form, state: e.target.value.toUpperCase() })}
+                value={form.state || ""}
+                onChange={(e) => setForm({ ...form, state: (e.target.value || "").toUpperCase() })}
                 placeholder="SP"
                 required
                 inputProps={{ maxLength: 2 }}
@@ -504,7 +605,7 @@ const Addresses: React.FC = () => {
               <TextField
                 fullWidth
                 label="País"
-                value={form.country}
+                value={form.country || "Brasil"}
                 onChange={(e) => setForm({ ...form, country: e.target.value })}
                 placeholder="Brasil"
               />
@@ -513,7 +614,7 @@ const Addresses: React.FC = () => {
               <TextField
                 fullWidth
                 label="Ponto de Referência"
-                value={form.reference}
+                value={form.reference || ""}
                 onChange={(e) => setForm({ ...form, reference: e.target.value })}
                 placeholder="Ex: Próximo ao metrô (opcional)"
               />
@@ -542,14 +643,19 @@ const Addresses: React.FC = () => {
             </Box>
           </Box>
         </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={handleClose} variant="text">
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          <Button 
+            onClick={handleClose} 
+            variant="text"
+            disabled={submitting}
+          >
             Cancelar
           </Button>
           <Button
             onClick={handleSubmit}
-            variant="outlined"
+            variant="contained"
             disabled={
+              submitting ||
               !form.cep.trim() || 
               !form.street.trim() || 
               !form.number.trim() || 
@@ -557,8 +663,18 @@ const Addresses: React.FC = () => {
               !form.city.trim() || 
               !form.state.trim()
             }
+            startIcon={submitting ? <CircularProgress size={16} color="inherit" /> : null}
+            sx={{
+              bgcolor: designSystem.colors.primary.main,
+              "&:hover": {
+                bgcolor: designSystem.colors.primary.darker,
+              },
+            }}
           >
-            {mode === "create" ? "Criar" : "Salvar"}
+            {submitting 
+              ? (mode === "create" ? "Criando..." : "Salvando...") 
+              : (mode === "create" ? "Criar" : "Salvar")
+            }
           </Button>
         </DialogActions>
       </Dialog>

@@ -28,6 +28,7 @@ import PageHeader from "../../components/ui/page/PageHeader";
 import {
   designSystem,
   paperStyles,
+  toolbarStyles,
   iconButtonStyles,
   progressStyles,
   tableHeadStyles,
@@ -146,18 +147,15 @@ const Contratos: React.FC = () => {
           <Fade in timeout={1000}>
             <Paper {...paperStyles}>
               <Toolbar
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: 2,
-                  p: 3,
-                  backgroundColor: designSystem.colors.background.primary,
-                  borderBottom: `1px solid ${designSystem.colors.border.main}`,
-                }}
+                {...toolbarStyles}
               >
                 <Box display="flex" alignItems="center" sx={{ flex: 1, minWidth: 240, maxWidth: 420 }}>
-                  <SearchIcon sx={{ mr: 1, color: designSystem.colors.text.disabled }} />
+                  <SearchIcon sx={{ 
+                    mr: 1, 
+                    color: (theme) => theme.palette.mode === "dark" 
+                      ? designSystem.colors.text.disabledDark 
+                      : designSystem.colors.text.disabled 
+                  }} />
                   <TextField
                     placeholder="Pesquisar por nome, email, status..."
                     variant="standard"
@@ -185,20 +183,25 @@ const Contratos: React.FC = () => {
               ) : (
                 <>
                   <TableContainer sx={{ overflowX: "auto", width: "100%" }}>
-                  <Table stickyHeader size="small" sx={{ minWidth: 700 }}>
+                  <Table size="small" sx={{ minWidth: 700 }}>
                     <TableHead>
                       <TableRow>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 80 }}>ID</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 250 }}>Nome</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 200 }}>Email</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 150 }} align="center">Status</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 80 }}>ID</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 250 }}>Nome</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 300 }}>Email</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 150 }} align="center">Status</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {paginatedRows.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={4} align="center" sx={{ py: 3 }}>
-                            <Typography color="textSecondary">
+                          <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
+                            <Typography 
+                              sx={{ 
+                                color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#6B7280",
+                                fontSize: "0.95rem" 
+                              }}
+                            >
                               {searchTerm ? "Nenhum resultado encontrado" : "Nenhum contrato disponível"}
                             </Typography>
                           </TableCell>
@@ -206,24 +209,54 @@ const Contratos: React.FC = () => {
                       ) : (
                         paginatedRows.map((row) => (
                           <TableRow key={row.id} {...tableRowHoverStyles}>
-                            <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            <TableCell sx={{ 
+                              color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#374151",
+                              fontSize: "0.875rem", 
+                              py: 1.5, 
+                              width: 80 
+                            }}>
                               {row.id}
                             </TableCell>
-                            <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            <TableCell
+                              sx={{
+                                color: (theme) => theme.palette.mode === "dark" ? "#FFFFFF" : "#1F2937",
+                                fontWeight: 500,
+                                fontSize: "0.875rem",
+                                py: 1.5,
+                                width: 250,
+                                maxWidth: 250,
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                              }}
+                            >
                               {row.name}
                             </TableCell>
-                            <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            <TableCell
+                              sx={{
+                                color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#374151",
+                                fontSize: "0.875rem",
+                                py: 1.5,
+                                width: 300,
+                                maxWidth: 300,
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                              }}
+                            >
                               {row.email}
                             </TableCell>
-                            <TableCell align="center">
-                              <Typography
-                                sx={{
-                                  color: getStatusColor(row.status),
-                                  fontWeight: 600,
-                                }}
-                              >
-                                {row.status}
-                              </Typography>
+                            <TableCell 
+                              align="center"
+                              sx={{
+                                color: getStatusColor(row.status),
+                                fontWeight: 600,
+                                fontSize: "0.875rem",
+                                py: 1.5,
+                                width: 150
+                              }}
+                            >
+                              {row.status}
                             </TableCell>
                           </TableRow>
                         ))

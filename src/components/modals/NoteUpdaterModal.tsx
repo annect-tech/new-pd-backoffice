@@ -72,7 +72,7 @@ const NoteUpdaterModal: React.FC<NoteUpdaterModalProps> = ({
     }
   };
 
-  const selectedExamData = exams.find((e) => e.id === selectedExam);
+  const selectedExamData = exams.find((e) => String(e.id) === String(selectedExam));
 
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
@@ -91,7 +91,7 @@ const NoteUpdaterModal: React.FC<NoteUpdaterModalProps> = ({
                 onChange={(e) => {
                   const examId = e.target.value as number;
                   setSelectedExam(examId);
-                  const exam = exams.find((exam) => exam.id === examId);
+                  const exam = exams.find((exam) => String(exam.id) === String(examId));
                   setNewScore(exam?.score?.toString() || "");
                 }}
                 label="Selecione o Exame"

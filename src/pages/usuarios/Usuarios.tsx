@@ -159,12 +159,21 @@ export default function UserList() {
                   alignItems: "center",
                   gap: 2,
                   p: 3,
-                  backgroundColor: designSystem.colors.background.primary,
-                  borderBottom: `1px solid ${designSystem.colors.border.main}`,
+                  backgroundColor: (theme) => theme.palette.mode === "dark" 
+                    ? designSystem.colors.background.secondaryDark 
+                    : designSystem.colors.background.primary,
+                  borderBottom: (theme) => `1px solid ${theme.palette.mode === "dark" 
+                    ? designSystem.colors.border.mainDark 
+                    : designSystem.colors.border.main}`,
                 }}
               >
                 <Box display="flex" alignItems="center" sx={{ flex: 1, maxWidth: 500 }}>
-                  <SearchIcon sx={{ mr: 1, color: designSystem.colors.text.disabled }} />
+                  <SearchIcon sx={{ 
+                    mr: 1, 
+                    color: (theme) => theme.palette.mode === "dark" 
+                      ? designSystem.colors.text.disabledDark 
+                      : designSystem.colors.text.disabled 
+                  }} />
                   <TextField
                     placeholder="Pesquisar por nome, email ou username..."
                     variant="standard"
@@ -173,16 +182,22 @@ export default function UserList() {
                     fullWidth
                     sx={{
                       "& .MuiInput-underline:before": {
-                        borderBottomColor: designSystem.colors.border.light,
+                        borderBottomColor: (theme) => theme.palette.mode === "dark" 
+                          ? designSystem.colors.border.lightDark 
+                          : designSystem.colors.border.light,
                       },
                       "& .MuiInput-underline:hover:before": {
-                        borderBottomColor: designSystem.colors.border.dark,
+                        borderBottomColor: (theme) => theme.palette.mode === "dark" 
+                          ? designSystem.colors.border.darkDark 
+                          : designSystem.colors.border.dark,
                       },
                       "& .MuiInput-underline:after": {
                         borderBottomColor: designSystem.colors.primary.main,
                       },
                       "& input": {
-                        color: designSystem.colors.text.primary,
+                        color: (theme) => theme.palette.mode === "dark" 
+                          ? designSystem.colors.text.primaryDark 
+                          : designSystem.colors.text.primary,
                       },
                     }}
                   />
@@ -207,9 +222,13 @@ export default function UserList() {
                   <IconButton
                     onClick={refetch}
                     sx={{
-                      color: designSystem.colors.text.disabled,
+                      color: (theme) => theme.palette.mode === "dark" 
+                        ? designSystem.colors.text.disabledDark 
+                        : designSystem.colors.text.disabled,
                       "&:hover": {
-                        backgroundColor: designSystem.colors.primary.lightest,
+                        backgroundColor: (theme) => theme.palette.mode === "dark" 
+                          ? "rgba(166, 80, 240, 0.15)" 
+                          : designSystem.colors.primary.lightest,
                         color: designSystem.colors.primary.main,
                       },
                     }}
@@ -232,7 +251,14 @@ export default function UserList() {
                   </Box>
                 ) : filteredUsers.length === 0 ? (
                   <Box display="flex" justifyContent="center" p={4}>
-                    <Typography color={designSystem.colors.text.disabled} fontSize="0.95rem">
+                    <Typography 
+                      sx={{
+                        color: (theme) => theme.palette.mode === "dark" 
+                          ? designSystem.colors.text.disabledDark 
+                          : designSystem.colors.text.disabled,
+                        fontSize: "0.95rem"
+                      }}
+                    >
                       {searchTerm
                         ? "Nenhum usuário encontrado"
                         : "Nenhum usuário disponível"}
@@ -249,13 +275,21 @@ export default function UserList() {
                           alignItems: "center",
                           padding: 2.5,
                           borderRadius: 2,
-                          backgroundColor: designSystem.colors.background.secondary,
-                          border: `1px solid ${designSystem.colors.border.main}`,
+                          backgroundColor: (theme) => theme.palette.mode === "dark" 
+                            ? "#181818" 
+                            : designSystem.colors.background.secondary,
+                          border: (theme) => `1px solid ${theme.palette.mode === "dark" 
+                            ? designSystem.colors.border.mainDark 
+                            : designSystem.colors.border.main}`,
                           transition: `all ${designSystem.transitions.fast}`,
                           "&:hover": {
-                            backgroundColor: designSystem.colors.primary.lightest,
+                            backgroundColor: (theme) => theme.palette.mode === "dark" 
+                              ? "rgba(166, 80, 240, 0.15)" 
+                              : designSystem.colors.primary.lightest,
                             borderColor: designSystem.colors.primary.main,
-                            boxShadow: designSystem.shadows.small,
+                            boxShadow: (theme) => theme.palette.mode === "dark" 
+                              ? designSystem.shadows.smallDark 
+                              : designSystem.shadows.small,
                           },
                         }}
                       >
@@ -276,25 +310,37 @@ export default function UserList() {
                           <Typography
                             variant="h6"
                             fontWeight={600}
-                            color={designSystem.colors.text.primary}
                             noWrap
-                            sx={{ fontSize: "1.1rem" }}
+                            sx={{ 
+                              color: (theme) => theme.palette.mode === "dark" 
+                                ? designSystem.colors.text.primaryDark 
+                                : designSystem.colors.text.primary,
+                              fontSize: "1.1rem",
+                            }}
                           >
                             {getUserDisplayName(user)}
                           </Typography>
                           <Typography
                             variant="body2"
-                            color={designSystem.colors.text.disabled}
                             noWrap
-                            sx={{ fontSize: "0.875rem" }}
+                            sx={{ 
+                              color: (theme) => theme.palette.mode === "dark" 
+                                ? designSystem.colors.text.disabledDark 
+                                : designSystem.colors.text.disabled,
+                              fontSize: "0.875rem",
+                            }}
                           >
                             {getUserEmail(user)}
                           </Typography>
                           {getUserUsername(user) && (
                             <Typography
                               variant="caption"
-                              color={designSystem.colors.text.tertiary}
-                              sx={{ fontSize: "0.8rem" }}
+                              sx={{ 
+                                color: (theme) => theme.palette.mode === "dark" 
+                                  ? designSystem.colors.text.tertiaryDark 
+                                  : designSystem.colors.text.tertiary,
+                                fontSize: "0.8rem" 
+                              }}
                             >
                               @{getUserUsername(user)}
                             </Typography>
@@ -345,8 +391,12 @@ export default function UserList() {
                                     backgroundColor: designSystem.colors.primary.lightest,
                                   },
                                   "&.Mui-disabled": {
-                                    borderColor: designSystem.colors.border.main,
-                                    color: designSystem.colors.text.disabled,
+                                    borderColor: (theme) => theme.palette.mode === "dark" 
+                                      ? designSystem.colors.border.mainDark 
+                                      : designSystem.colors.border.main,
+                                    color: (theme) => theme.palette.mode === "dark" 
+                                      ? designSystem.colors.text.disabledDark 
+                                      : designSystem.colors.text.disabled,
                                   },
                                 }}
                               >
@@ -372,8 +422,12 @@ export default function UserList() {
                                     backgroundColor: designSystem.colors.primary.dark,
                                   },
                                   "&.Mui-disabled": {
-                                    backgroundColor: designSystem.colors.border.main,
-                                    color: designSystem.colors.text.disabled,
+                                    backgroundColor: (theme) => theme.palette.mode === "dark" 
+                                      ? designSystem.colors.border.mainDark 
+                                      : designSystem.colors.border.main,
+                                    color: (theme) => theme.palette.mode === "dark" 
+                                      ? designSystem.colors.text.disabledDark 
+                                      : designSystem.colors.text.disabled,
                                   },
                                 }}
                               >

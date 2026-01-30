@@ -76,6 +76,18 @@ export const useExamsScheduled = () => {
             };
           }
 
+          // API retorna status em português (pendente, aprovado, ausente, desqualificado)
+          const statusMap: Record<string, string> = {
+            pendente: "scheduled",
+            aprovado: "present",
+            ausente: "absent",
+            desqualificado: "desqualificado",
+          };
+          list = list.map((exam: any) => ({
+            ...exam,
+            status: statusMap[exam.status?.toLowerCase()] ?? exam.status,
+          }));
+
           setExams(list);
           setPagination(paginationData);
           showSnackbar("Dados carregados com sucesso", "success");

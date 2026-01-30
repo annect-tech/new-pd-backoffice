@@ -10,6 +10,7 @@ import {
   Snackbar,
 } from "@mui/material";
 import { useAcademicMerit } from "../../hooks/useAcademicMerit";
+import { selectiveService } from "../../core/http/services/selectiveService";
 import { APP_ROUTES } from "../../util/constants";
 import PageHeader from "../../components/ui/page/PageHeader";
 import { designSystem, paperStyles, progressStyles } from "../../styles/designSystem";
@@ -33,11 +34,42 @@ const AprovacaoMerito: React.FC = () => {
 
   const [documentError, setDocumentError] = useState(false);
   const [documentLoading, setDocumentLoading] = useState(true);
+  const [userName, setUserName] = useState<string | null>(null);
 
   useEffect(() => {
     fetchMerits(1, 10, "pending");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Buscar nome do usuário quando user_data_display não estiver presente
+  useEffect(() => {
+    if (currentMerit?.user_data_id && !currentMerit?.user_data_display?.user?.first_name && !currentMerit?.user_data_display?.user?.last_name) {
+      const fetchUserName = async () => {
+        try {
+          const response = await selectiveService.getById(currentMerit.user_data_id!);
+          if (response.status === 200 && response.data) {
+            const userData = response.data as any;
+            // UserProfile tem first_name e last_name diretamente
+            const firstName = userData.first_name || '';
+            const lastName = userData.last_name || '';
+            const fullName = `${firstName} ${lastName}`.trim();
+            if (fullName) {
+              setUserName(fullName);
+            } else {
+              setUserName(null);
+            }
+          } else {
+            setUserName(null);
+          }
+        } catch {
+          setUserName(null);
+        }
+      };
+      fetchUserName();
+    } else {
+      setUserName(null);
+    }
+  }, [currentMerit?.id, currentMerit?.user_data_id, currentMerit?.user_data_display]);
 
   // Verificar se o documento existe quando mudar de documento
   useEffect(() => {
@@ -225,7 +257,14 @@ const AprovacaoMerito: React.FC = () => {
                   textAlign: "center",
                 }}
               >
-                <Typography variant="h6" color={designSystem.colors.text.primary}>
+                <Typography 
+                  variant="h6" 
+                  sx={{
+                    color: (theme) => theme.palette.mode === "dark" 
+                      ? designSystem.colors.text.primaryDark 
+                      : designSystem.colors.text.primary
+                  }}
+                >
                   Não há documentos pendentes para avaliação.
                 </Typography>
               </Paper>
@@ -281,9 +320,9 @@ const AprovacaoMerito: React.FC = () => {
                   display: "flex",
                   flexDirection: "column",
                   borderRadius: 3,
-                  border: `1px solid ${designSystem.colors.border.main}`,
-                  bgcolor: "#FFFFFF",
-                  boxShadow: "0 1px 3px rgba(0, 0, 0, 0.08)",
+                  border: (theme) => `1px solid ${theme.palette.mode === "dark" ? designSystem.colors.border.mainDark : designSystem.colors.border.main}`,
+                  bgcolor: (theme) => theme.palette.mode === "dark" ? designSystem.colors.background.secondaryDark : "#FFFFFF",
+                  boxShadow: (theme) => theme.palette.mode === "dark" ? designSystem.shadows.smallDark : "0 1px 3px rgba(0, 0, 0, 0.08)",
                 }}
               >
                 <Box
@@ -312,7 +351,7 @@ const AprovacaoMerito: React.FC = () => {
                     </Typography>
                   </Box>
                 </Box>
-                <Box sx={{ flex: 1, position: "relative", bgcolor: "#FAFAFA" }}>
+                <Box sx={{ flex: 1, position: "relative", bgcolor: (theme) => theme.palette.mode === "dark" ? designSystem.colors.background.tertiaryDark : "#FAFAFA" }}>
                   {documentError || !currentMerit.document ? (
                     <Box
                       sx={{
@@ -362,7 +401,7 @@ const AprovacaoMerito: React.FC = () => {
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            bgcolor: "rgba(255, 255, 255, 0.9)",
+                            bgcolor: (theme) => theme.palette.mode === "dark" ? "rgba(30, 30, 30, 0.9)" : "rgba(255, 255, 255, 0.9)",
                             zIndex: 1,
                           }}
                         >
@@ -421,19 +460,19 @@ const AprovacaoMerito: React.FC = () => {
                   display: "flex",
                   flexDirection: "column",
                   borderRadius: 3,
-                  border: `1px solid ${designSystem.colors.border.main}`,
-                  bgcolor: "#FFFFFF",
+                  border: (theme) => `1px solid ${theme.palette.mode === "dark" ? designSystem.colors.border.mainDark : designSystem.colors.border.main}`,
+                  bgcolor: (theme) => theme.palette.mode === "dark" ? designSystem.colors.background.secondaryDark : "#FFFFFF",
                   // permitir scroll quando o conteúdo for maior que o painel
                   overflow: "auto",
-                  boxShadow: "0 1px 3px rgba(0, 0, 0, 0.08)",
+                  boxShadow: (theme) => theme.palette.mode === "dark" ? designSystem.shadows.smallDark : "0 1px 3px rgba(0, 0, 0, 0.08)",
                 }}
               >
                 <Box
                   sx={{
                     px: 3,
                     py: 2.5,
-                    borderBottom: `1px solid ${designSystem.colors.border.main}`,
-                    bgcolor: designSystem.colors.background.secondary,
+                    borderBottom: (theme) => `1px solid ${theme.palette.mode === "dark" ? designSystem.colors.border.mainDark : designSystem.colors.border.main}`,
+                    bgcolor: (theme) => theme.palette.mode === "dark" ? designSystem.colors.background.tertiaryDark : designSystem.colors.background.secondary,
                   }}
                 >
                   <Typography variant="body1" fontWeight={600} color={designSystem.colors.primary.main}>
@@ -448,32 +487,44 @@ const AprovacaoMerito: React.FC = () => {
                       mb: 3,
                       p: 2.5,
                       borderRadius: 2,
-                      bgcolor: designSystem.colors.primary.lightest,
-                      border: `1px solid ${designSystem.colors.primary.lighter}`,
+                      bgcolor: (theme) => theme.palette.mode === "dark" ? "rgba(166, 80, 240, 0.12)" : designSystem.colors.primary.lightest,
+                      border: (theme) => `1px solid ${theme.palette.mode === "dark" ? "rgba(166, 80, 240, 0.25)" : designSystem.colors.primary.lighter}`,
                     }}
                   >
                     <Box sx={{ mb: 2.5 }}>
                       <Typography
                         variant="caption"
                         sx={{
-                          color: designSystem.colors.primary.dark,
+                          color: (theme) => theme.palette.mode === "dark" ? designSystem.colors.primary.light : designSystem.colors.primary.dark,
                           fontWeight: 600,
                           textTransform: "uppercase",
                           letterSpacing: 0.5,
                           fontSize: "0.7rem",
                         }}
                       >
-                        ID do Documento
+                        Nome do Estudante
                       </Typography>
                       <Typography
                         variant="body2"
                         sx={{
-                          color: designSystem.colors.text.primary,
+                          color: (theme) => theme.palette.mode === "dark" ? designSystem.colors.text.primaryDark : designSystem.colors.text.primary,
                           fontWeight: 600,
                           mt: 0.5,
                         }}
                       >
-                        {currentMerit.id}
+                        {(() => {
+                          // Tentar usar user_data_display primeiro
+                          if (currentMerit?.user_data_display?.user?.first_name || currentMerit?.user_data_display?.user?.last_name) {
+                            const firstName = currentMerit.user_data_display.user.first_name || "";
+                            const lastName = currentMerit.user_data_display.user.last_name || "";
+                            return `${firstName} ${lastName}`.trim() || "Nome não disponível";
+                          }
+                          // Fallback: usar nome buscado separadamente
+                          if (userName) {
+                            return userName;
+                          }
+                          return "Nome não disponível";
+                        })()}
                       </Typography>
                     </Box>
 
@@ -481,7 +532,7 @@ const AprovacaoMerito: React.FC = () => {
                       <Typography
                         variant="caption"
                         sx={{
-                          color: designSystem.colors.primary.dark,
+                          color: (theme) => theme.palette.mode === "dark" ? designSystem.colors.primary.light : designSystem.colors.primary.dark,
                           fontWeight: 600,
                           textTransform: "uppercase",
                           letterSpacing: 0.5,
@@ -493,14 +544,24 @@ const AprovacaoMerito: React.FC = () => {
                       <Typography
                         variant="body1"
                         sx={{
-                          color: designSystem.colors.text.primary,
+                          color: (theme) => theme.palette.mode === "dark" ? designSystem.colors.text.primaryDark : designSystem.colors.text.primary,
                           fontWeight: 600,
                           mt: 0.5,
                         }}
                       >
-                        {currentMerit?.user_data_display?.user?.first_name || currentMerit?.user_data_display?.user?.last_name
-                          ? `${currentMerit.user_data_display.user.first_name || ""} ${currentMerit.user_data_display.user.last_name || ""}`.trim()
-                          : "Nome não disponível"}
+                        {(() => {
+                          // Tentar usar user_data_display primeiro
+                          if (currentMerit?.user_data_display?.user?.first_name || currentMerit?.user_data_display?.user?.last_name) {
+                            const firstName = currentMerit.user_data_display.user.first_name || "";
+                            const lastName = currentMerit.user_data_display.user.last_name || "";
+                            return `${firstName} ${lastName}`.trim() || "Nome não disponível";
+                          }
+                          // Fallback: usar nome buscado separadamente
+                          if (userName) {
+                            return userName;
+                          }
+                          return "Nome não disponível";
+                        })()}
                       </Typography>
                     </Box>
 
@@ -508,7 +569,7 @@ const AprovacaoMerito: React.FC = () => {
                       <Typography
                         variant="caption"
                         sx={{
-                          color: designSystem.colors.primary.dark,
+                          color: (theme) => theme.palette.mode === "dark" ? designSystem.colors.primary.light : designSystem.colors.primary.dark,
                           fontWeight: 600,
                           textTransform: "uppercase",
                           letterSpacing: 0.5,
@@ -520,7 +581,7 @@ const AprovacaoMerito: React.FC = () => {
                       <Typography
                         variant="body2"
                         sx={{
-                          color: designSystem.colors.text.secondary,
+                          color: (theme) => theme.palette.mode === "dark" ? designSystem.colors.text.secondaryDark : designSystem.colors.text.secondary,
                           fontWeight: 500,
                           mt: 0.5,
                         }}
@@ -545,11 +606,11 @@ const AprovacaoMerito: React.FC = () => {
                         fontSize: "0.875rem",
                         "&:hover": {
                           borderColor: designSystem.colors.primary.darker,
-                          backgroundColor: designSystem.colors.primary.lightest,
+                          backgroundColor: (theme) => theme.palette.mode === "dark" ? "rgba(166, 80, 240, 0.15)" : designSystem.colors.primary.lightest,
                         },
                         "&:disabled": {
-                          borderColor: designSystem.colors.border.main,
-                          color: designSystem.colors.text.disabled,
+                          borderColor: (theme) => theme.palette.mode === "dark" ? designSystem.colors.border.mainDark : designSystem.colors.border.main,
+                          color: (theme) => theme.palette.mode === "dark" ? designSystem.colors.text.disabledDark : designSystem.colors.text.disabled,
                         },
                       }}
                     >
@@ -568,11 +629,11 @@ const AprovacaoMerito: React.FC = () => {
                         fontSize: "0.875rem",
                         "&:hover": {
                           borderColor: designSystem.colors.primary.darker,
-                          backgroundColor: designSystem.colors.primary.lightest,
+                          backgroundColor: (theme) => theme.palette.mode === "dark" ? "rgba(166, 80, 240, 0.15)" : designSystem.colors.primary.lightest,
                         },
                         "&:disabled": {
-                          borderColor: designSystem.colors.border.main,
-                          color: designSystem.colors.text.disabled,
+                          borderColor: (theme) => theme.palette.mode === "dark" ? designSystem.colors.border.mainDark : designSystem.colors.border.main,
+                          color: (theme) => theme.palette.mode === "dark" ? designSystem.colors.text.disabledDark : designSystem.colors.text.disabled,
                         },
                       }}
                     >
@@ -599,12 +660,12 @@ const AprovacaoMerito: React.FC = () => {
                         bgcolor: "transparent",
                         boxShadow: "none",
                         "&:hover": {
-                          bgcolor: "rgba(16, 185, 129, 0.04)",
+                          bgcolor: (theme) => theme.palette.mode === "dark" ? "rgba(16, 185, 129, 0.12)" : "rgba(16, 185, 129, 0.04)",
                           borderColor: designSystem.colors.success.main,
                         },
                         "&:disabled": {
-                          color: designSystem.colors.text.disabled,
-                          borderColor: designSystem.colors.border.main,
+                          color: (theme) => theme.palette.mode === "dark" ? designSystem.colors.text.disabledDark : designSystem.colors.text.disabled,
+                          borderColor: (theme) => theme.palette.mode === "dark" ? designSystem.colors.border.mainDark : designSystem.colors.border.main,
                         },
                       }}
                     >
@@ -626,12 +687,12 @@ const AprovacaoMerito: React.FC = () => {
                         bgcolor: "transparent",
                         boxShadow: "none",
                         "&:hover": {
-                          bgcolor: "rgba(239, 68, 68, 0.04)",
+                          bgcolor: (theme) => theme.palette.mode === "dark" ? "rgba(239, 68, 68, 0.12)" : "rgba(239, 68, 68, 0.04)",
                           borderColor: designSystem.colors.error.main,
                         },
                         "&:disabled": {
-                          color: designSystem.colors.text.disabled,
-                          borderColor: designSystem.colors.border.main,
+                          color: (theme) => theme.palette.mode === "dark" ? designSystem.colors.text.disabledDark : designSystem.colors.text.disabled,
+                          borderColor: (theme) => theme.palette.mode === "dark" ? designSystem.colors.border.mainDark : designSystem.colors.border.main,
                         },
                       }}
                     >

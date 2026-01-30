@@ -63,11 +63,11 @@ export const enemResultsService = {
 
   /**
    * Cria um novo resultado ENEM
-   * @param payload - Dados do resultado
+   * @param payload - Dados do resultado (precisa de user_id)
    */
-  create: (payload: Partial<EnemResult>) => {
+  create: (payload: { user_id: number }) => {
     const prefix = getEndpointPrefix();
-    return httpClient.post<{ id: string; message: string }>(
+    return httpClient.post<{ id: string; message: string; languages_score: number; math_score: number; natural_sciences_score: number; human_sciences_score: number; essay_score: number }>(
       API_URL,
       `/${prefix}/enem-results`,
       payload

@@ -37,26 +37,26 @@ export const examsService = {
 
   /**
    * Obtém detalhes de um exame específico
-   * @param id - ID do exame
+   * @param id - ID do exame (student exam)
    */
   getById: (id: string | number) => {
     const prefix = getEndpointPrefix();
     return httpClient.get<Exam>(
       API_URL,
-      `/${prefix}/exam/${id}`
+      `/${prefix}/student-exams/${id}`
     );
   },
 
   /**
    * Atualiza o status de um exame
-   * @param id - ID do exame
+   * @param id - ID do exame (student exam)
    * @param status - Novo status
    */
   updateStatus: (id: string | number, status: string) => {
     const prefix = getEndpointPrefix();
     return httpClient.patch<{ message: string }>(
       API_URL,
-      `/${prefix}/exam`,
+      `/${prefix}/student-exams`,
       id,
       { status }
     );
@@ -64,14 +64,14 @@ export const examsService = {
 
   /**
    * Atualiza a nota de um exame
-   * @param id - ID do exame
+   * @param id - ID do exame (student exam)
    * @param score - Nova nota
    */
   updateScore: (id: string | number, score: number) => {
     const prefix = getEndpointPrefix();
     return httpClient.patch<{ message: string }>(
       API_URL,
-      `/${prefix}/exam`,
+      `/${prefix}/student-exams`,
       id,
       { score }
     );

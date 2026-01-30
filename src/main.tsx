@@ -3,8 +3,7 @@ import ReactDOM from "react-dom/client";
 import { Provider } from "react-redux";
 import { persistor, store } from "./core/store";
 import { BrowserRouter } from "react-router";
-import { ThemeProvider } from "@mui/material";
-import theme from "./assets/styles/theme";
+import { ThemeProvider } from "./app/providers/ThemeProvider";
 import { AuthProvider } from "./app/providers/AuthProvider";
 import { AppRoutes } from "./app/routes/routes";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -18,7 +17,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
         <BrowserRouter>
-          <ThemeProvider theme={theme("light")}>
+          <ThemeProvider>
             <ErrorBoundary>
               <AuthProvider>
                 <AppRoutes />

@@ -1,17 +1,22 @@
 import { httpClient } from "../httpClient";
 import { getEndpointPrefix } from "../utils/endpointPrefix";
+import { getApiUrl } from "../apiUrl";
 
-const API_URL = import.meta.env.VITE_API_URL as string || "http://186.248.135.172:31535";
+const API_URL = getApiUrl();
 
 export interface TenantCity {
   id: string;
+  name?: string | null;
   domain: string | null;
+  tag?: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface TenantCityPayload {
-  domain?: string;
+  name: string;
+  domain: string;
+  tag: string;
 }
 
 export interface PaginatedResponse<T> {

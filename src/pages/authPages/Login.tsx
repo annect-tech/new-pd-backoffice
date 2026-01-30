@@ -27,7 +27,7 @@ export default function Login() {
   }
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#F8F9FA' }}>
       {/* Seção promocional lateral */}
       <AuthPromotionalSection />
 
@@ -40,7 +40,7 @@ export default function Login() {
           alignItems: 'center',
           justifyContent: 'center',
           p: 3,
-          bgcolor: '#fff',
+          bgcolor: '#F8F9FA',
         }}
       >
         <Box
@@ -90,16 +90,38 @@ export default function Login() {
               required
               autoFocus
               variant="outlined"
+              InputLabelProps={{
+                sx: {
+                  color: '#374151',
+                  fontWeight: 500,
+                  '&.Mui-focused': {
+                    color: 'primary.main',
+                  },
+                },
+              }}
               sx={{
                 mb: 2.5,
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 1.5,
                   bgcolor: '#fafafa',
+                  color: '#000',
+                  '& input': {
+                    color: '#000',
+                  },
+                  '& fieldset': {
+                    borderColor: '#d1d5db',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#9ca3af',
+                  },
                   '&:hover': {
                     bgcolor: '#f5f5f5',
                   },
                   '&.Mui-focused': {
                     bgcolor: '#fff',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderWidth: 2,
                   },
                 },
               }}
@@ -113,16 +135,38 @@ export default function Login() {
               fullWidth
               required
               variant="outlined"
+              InputLabelProps={{
+                sx: {
+                  color: '#374151',
+                  fontWeight: 500,
+                  '&.Mui-focused': {
+                    color: 'primary.main',
+                  },
+                },
+              }}
               sx={{
                 mb: 2.5,
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 1.5,
                   bgcolor: '#fafafa',
+                  color: '#000',
+                  '& input': {
+                    color: '#000',
+                  },
+                  '& fieldset': {
+                    borderColor: '#d1d5db',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#9ca3af',
+                  },
                   '&:hover': {
                     bgcolor: '#f5f5f5',
                   },
                   '&.Mui-focused': {
                     bgcolor: '#fff',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderWidth: 2,
                   },
                 },
               }}
@@ -131,10 +175,23 @@ export default function Login() {
                   <InputAdornment position="end">
                     <IconButton
                       onClick={() => setShowPassword(v => !v)}
+                      onMouseDown={e => e.preventDefault()}
                       edge="end"
                       size="small"
+                      aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                      sx={{
+                        color: '#374151',
+                        '&:hover': {
+                          color: 'primary.main',
+                          bgcolor: 'rgba(0, 0, 0, 0.04)',
+                        },
+                      }}
                     >
-                      {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                      {showPassword ? (
+                        <VisibilityOff fontSize="medium" />
+                      ) : (
+                        <Visibility fontSize="medium" />
+                      )}
                     </IconButton>
                   </InputAdornment>
                 ),

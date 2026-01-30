@@ -89,10 +89,22 @@ export function useUsers(page: number = 1, size: number = 10) {
     setError(null);
     
     try {
-      // O backend não aceita birth_date no CreateUser, então enviamos o payload como está
+      // Enviar payload completo incluindo birth_date (formato DD-MM-YYYY)
       const response = await usersService.createUser(payload);
       
       if (response.status === 201 || response.status === 200) {
+        // Ativar o usuário automaticamente após a criação
+        try {
+          const activateResponse = await usersService.toggleUserActive(payload.email, true);
+          if (activateResponse.status !== 200) {
+            // Se falhar ao ativar, logar o erro mas não impedir a criação
+            console.warn("Usuário criado mas falhou ao ativar:", activateResponse.message);
+          }
+        } catch (activateError: any) {
+          // Se falhar ao ativar, logar o erro mas não impedir a criação
+          console.warn("Usuário criado mas falhou ao ativar:", activateError.message || activateError);
+        }
+        
         // Recarregar lista de usuários após criar
         await fetchUsers();
         return response.data || null;

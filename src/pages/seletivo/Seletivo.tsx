@@ -125,33 +125,25 @@ const Seletivo: React.FC = () => {
     
     // Filtrar admin
     result = result.filter((u) => {
-      const firstName = (u?.first_name || "").toLowerCase();
-      return firstName !== "admin";
+      const username = (u?.username || "").toLowerCase();
+      return username !== "admin";
     });
     
     if (debouncedSearchTerm && debouncedSearchTerm.trim()) {
       const searchLower = debouncedSearchTerm.trim().toLowerCase();
       
       result = result.filter((u) => {
-        // Buscar em CPF
-        const cpf = (u.cpf || "").toLowerCase();
-        if (cpf.includes(searchLower)) return true;
+        // Buscar em ID
+        const id = String(u.id || "").toLowerCase();
+        if (id.includes(searchLower)) return true;
         
-        // Buscar em celular
-        const celphone = (u.celphone || "").toLowerCase();
-        if (celphone.includes(searchLower)) return true;
+        // Buscar em username
+        const username = (u.username || "").toLowerCase();
+        if (username.includes(searchLower)) return true;
         
         // Buscar em email
         const email = (u.email || "").toLowerCase();
         if (email.includes(searchLower)) return true;
-        
-        // Buscar em nome completo
-        const fullName = [u.first_name, u.last_name].filter(Boolean).join(" ").toLowerCase();
-        if (fullName.includes(searchLower)) return true;
-        
-        // Buscar em name (fallback)
-        const name = ((u as any).name || "").toLowerCase();
-        if (name.includes(searchLower)) return true;
         
         return false;
       });
@@ -175,15 +167,11 @@ const Seletivo: React.FC = () => {
     
     if (sortOrder !== "none") {
       result.sort((a, b) => {
-        // Usar a mesma lógica de nome da tabela
-        const getFullName = (user: any) => {
-          return [user.first_name, user.last_name].filter(Boolean).join(" ") || user.name || "";
-        };
+        // Ordenar por username
+        const usernameA = (a.username || "").trim().toLowerCase();
+        const usernameB = (b.username || "").trim().toLowerCase();
         
-        const nameA = getFullName(a).trim().toLowerCase();
-        const nameB = getFullName(b).trim().toLowerCase();
-        
-        const comparison = nameA.localeCompare(nameB, 'pt-BR');
+        const comparison = usernameA.localeCompare(usernameB, 'pt-BR');
         const finalResult = sortOrder === "asc" ? comparison : -comparison;
         
         return finalResult;
@@ -367,9 +355,14 @@ const Seletivo: React.FC = () => {
             <Paper {...paperStyles}>
               <Toolbar {...toolbarStyles}>
                 <Box display="flex" alignItems="center" sx={{ flex: 1, maxWidth: 500 }}>
-                  <SearchIcon sx={{ mr: 1, color: designSystem.colors.text.disabled }} />
+                  <SearchIcon sx={{ 
+                    mr: 1, 
+                    color: (theme) => theme.palette.mode === "dark" 
+                      ? designSystem.colors.text.disabledDark 
+                      : designSystem.colors.text.disabled 
+                  }} />
                   <TextField
-                    placeholder="Pesquisar por CPF, nome, email..."
+                    placeholder="Pesquisar por ID, username ou email..."
                     variant="standard"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -389,8 +382,14 @@ const Seletivo: React.FC = () => {
                       paper: {
                         sx: {
                           borderRadius: 2,
-                          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                          boxShadow: (theme) => theme.palette.mode === "dark" 
+                            ? "0 4px 12px rgba(0,0,0,0.5)" 
+                            : "0 4px 12px rgba(0,0,0,0.1)",
                           minWidth: 200,
+                          bgcolor: (theme) => theme.palette.mode === "dark" ? "#2C2C2C" : "#FFFFFF",
+                          border: (theme) => theme.palette.mode === "dark" 
+                            ? "1px solid rgba(255, 255, 255, 0.1)" 
+                            : "none",
                         },
                       },
                     }}
@@ -425,14 +424,28 @@ const Seletivo: React.FC = () => {
                     >
                       Inativos
                     </MenuItem> */}
-                    <Box sx={{ borderTop: "1px solid #E5E7EB", my: 1 }} />
-                    <Typography sx={{ px: 2, py: 1, fontWeight: 600, fontSize: "0.875rem", color: "#6B7280" }}>
-                      Ordenar por Nome
+                    <Box sx={{ 
+                      borderTop: (theme) => theme.palette.mode === "dark" 
+                        ? "1px solid rgba(255, 255, 255, 0.1)" 
+                        : "1px solid #E5E7EB", 
+                      my: 1 
+                    }} />
+                    <Typography sx={{ 
+                      px: 2, 
+                      py: 1, 
+                      fontWeight: 600, 
+                      fontSize: "0.875rem", 
+                      color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#6B7280" 
+                    }}>
+                      Ordenar por Username
                     </Typography>
                     <MenuItem 
                       onClick={() => applySortOrder("none")}
                       sx={{ 
-                        backgroundColor: sortOrder === "none" ? "#F3F4F6" : "transparent",
+                        backgroundColor: (theme) => sortOrder === "none" 
+                          ? (theme.palette.mode === "dark" ? "rgba(255, 255, 255, 0.1)" : "#F3F4F6")
+                          : "transparent",
+                        color: (theme) => theme.palette.mode === "dark" ? "#FFFFFF" : "inherit",
                         fontWeight: sortOrder === "none" ? 600 : 400 
                       }}
                     >
@@ -441,7 +454,10 @@ const Seletivo: React.FC = () => {
                     <MenuItem 
                       onClick={() => applySortOrder("asc")}
                       sx={{ 
-                        backgroundColor: sortOrder === "asc" ? "#F3F4F6" : "transparent",
+                        backgroundColor: (theme) => sortOrder === "asc" 
+                          ? (theme.palette.mode === "dark" ? "rgba(255, 255, 255, 0.1)" : "#F3F4F6")
+                          : "transparent",
+                        color: (theme) => theme.palette.mode === "dark" ? "#FFFFFF" : "inherit",
                         fontWeight: sortOrder === "asc" ? 600 : 400 
                       }}
                     >
@@ -450,7 +466,10 @@ const Seletivo: React.FC = () => {
                     <MenuItem 
                       onClick={() => applySortOrder("desc")}
                       sx={{ 
-                        backgroundColor: sortOrder === "desc" ? "#F3F4F6" : "transparent",
+                        backgroundColor: (theme) => sortOrder === "desc" 
+                          ? (theme.palette.mode === "dark" ? "rgba(255, 255, 255, 0.1)" : "#F3F4F6")
+                          : "transparent",
+                        color: (theme) => theme.palette.mode === "dark" ? "#FFFFFF" : "inherit",
                         fontWeight: sortOrder === "desc" ? 600 : 400 
                       }}
                     >
@@ -468,7 +487,13 @@ const Seletivo: React.FC = () => {
                       paper: {
                         sx: {
                           borderRadius: 2,
-                          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                          boxShadow: (theme) => theme.palette.mode === "dark" 
+                            ? "0 4px 12px rgba(0,0,0,0.5)" 
+                            : "0 4px 12px rgba(0,0,0,0.1)",
+                          bgcolor: (theme) => theme.palette.mode === "dark" ? "#2C2C2C" : "#FFFFFF",
+                          border: (theme) => theme.palette.mode === "dark" 
+                            ? "1px solid rgba(255, 255, 255, 0.1)" 
+                            : "none",
                         },
                       },
                     }}
@@ -478,6 +503,9 @@ const Seletivo: React.FC = () => {
                         handleExportCSV();
                         setDownloadAnchor(null);
                       }}
+                      sx={{
+                        color: (theme) => theme.palette.mode === "dark" ? "#FFFFFF" : "inherit",
+                      }}
                     >
                       CSV
                     </MenuItem>
@@ -486,6 +514,9 @@ const Seletivo: React.FC = () => {
                         handleExportJSON();
                         setDownloadAnchor(null);
                       }}
+                      sx={{
+                        color: (theme) => theme.palette.mode === "dark" ? "#FFFFFF" : "inherit",
+                      }}
                     >
                       JSON
                     </MenuItem>
@@ -493,6 +524,9 @@ const Seletivo: React.FC = () => {
                       onClick={() => {
                         handleExportXLSX();
                         setDownloadAnchor(null);
+                      }}
+                      sx={{
+                        color: (theme) => theme.palette.mode === "dark" ? "#FFFFFF" : "inherit",
                       }}
                     >
                       XLSX
@@ -513,17 +547,12 @@ const Seletivo: React.FC = () => {
                 </Box>
               ) : (
                 <TableContainer sx={{ overflowX: "auto", width: "100%" }}>
-                  <Table size="small" sx={{ minWidth: 1200 }}>
+                  <Table size="small" sx={{ minWidth: 600 }}>
                     <TableHead>
                       <TableRow>
                         <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 60 }}>ID</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 130 }}>CPF</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 200 }}>Nome</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 120 }}>Data Nasc.</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 130 }}>Celular</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 240 }}>Email</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 150 }}>Cidade</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 60 }}>UF</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 200 }}>Username</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 300 }}>Email</TableCell>
                         <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 150 }} align="center">
                           Ações
                         </TableCell>
@@ -532,8 +561,13 @@ const Seletivo: React.FC = () => {
                     <TableBody>
                       {filtered.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={12} align="center" sx={{ py: 4 }}>
-                            <Typography color="#6B7280" fontSize="0.95rem">
+                          <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
+                            <Typography 
+                              sx={{ 
+                                color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#6B7280",
+                                fontSize: "0.95rem" 
+                              }}
+                            >
                               {searchTerm || filterStatus !== "all"
                                 ? "Nenhum resultado encontrado"
                                 : "Nenhum dado disponível"}
@@ -550,15 +584,17 @@ const Seletivo: React.FC = () => {
                                 cursor: "pointer",
                               }}
                             >
-                            <TableCell sx={{ color: "#374151", fontSize: "0.875rem", py: 1.5, width: 60 }}>
+                            <TableCell sx={{ 
+                              color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#374151", 
+                              fontSize: "0.875rem", 
+                              py: 1.5, 
+                              width: 60 
+                            }}>
                               {user.id}
-                            </TableCell>
-                            <TableCell sx={{ color: "#374151", fontSize: "0.875rem", py: 1.5, width: 130 }}>
-                              {user.cpf || "—"}
                             </TableCell>
                             <TableCell
                               sx={{
-                                color: "#1F2937",
+                                color: (theme) => theme.palette.mode === "dark" ? "#FFFFFF" : "#1F2937",
                                 fontWeight: 500,
                                 fontSize: "0.875rem",
                                 py: 1.5,
@@ -569,52 +605,21 @@ const Seletivo: React.FC = () => {
                                 textOverflow: "ellipsis",
                               }}
                             >
-                              {[user.first_name, user.last_name].filter(Boolean).join(" ") ||
-                                (user as any)?.name ||
-                                "—"}
-                            </TableCell>
-                            <TableCell sx={{ color: "#374151", fontSize: "0.875rem", py: 1.5, width: 120 }}>
-                              {user.birth_date || "—"}
-                            </TableCell>
-                            <TableCell sx={{ color: "#374151", fontSize: "0.875rem", py: 1.5, width: 130 }}>
-                              {user.celphone || "—"}
+                              {user.username || "—"}
                             </TableCell>
                             <TableCell
                               sx={{
-                                color: "#374151",
+                                color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#374151",
                                 fontSize: "0.875rem",
                                 py: 1.5,
-                                width: 240,
-                                maxWidth: 240,
+                                width: 300,
+                                maxWidth: 300,
                                 whiteSpace: "nowrap",
                                 overflow: "hidden",
                                 textOverflow: "ellipsis",
                               }}
                             >
                               {user.email || "—"}
-                            </TableCell>
-                            <TableCell
-                              sx={{
-                                color: "#374151",
-                                fontSize: "0.875rem",
-                                py: 1.5,
-                                width: 150,
-                                maxWidth: 150,
-                                whiteSpace: "nowrap",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                              }}
-                            >
-                              {user.allowed_city?.localidade || 
-                               user.addresses?.[0]?.localidade || 
-                               addressesMap.get(user.id)?.[0]?.localidade ||
-                               "—"}
-                            </TableCell>
-                            <TableCell sx={{ color: "#374151", fontSize: "0.875rem", py: 1.5, width: 60 }}>
-                              {user.allowed_city?.uf || 
-                               user.addresses?.[0]?.uf || 
-                               addressesMap.get(user.id)?.[0]?.uf ||
-                               "—"}
                             </TableCell>
                             <TableCell align="center" sx={{ py: 1.5, width: 150 }}>
                               <Box display="flex" alignItems="center" justifyContent="center" gap={1}>
@@ -623,6 +628,8 @@ const Seletivo: React.FC = () => {
                                   onClick={() => openModal("persona", user)}
                                   {...iconButtonStyles}
                                   sx={{ ...iconButtonStyles.sx, padding: "4px" }}
+                                  disabled={!user.personas}
+                                  title={!user.personas ? "Dados de persona não disponíveis" : "Ver dados de persona"}
                                 >
                                   <PersonIcon sx={{ fontSize: "1rem" }} />
                                 </IconButton>
@@ -631,6 +638,8 @@ const Seletivo: React.FC = () => {
                                   onClick={() => openModal("addresses", user)}
                                   {...iconButtonStyles}
                                   sx={{ ...iconButtonStyles.sx, padding: "4px" }}
+                                  disabled={!user.addresses || user.addresses.length === 0}
+                                  title={!user.addresses || user.addresses.length === 0 ? "Endereços não disponíveis" : "Ver endereços"}
                                 >
                                   <HomeIcon sx={{ fontSize: "1rem" }} />
                                 </IconButton>
@@ -639,6 +648,8 @@ const Seletivo: React.FC = () => {
                                   onClick={() => openModal("guardians", user)}
                                   {...iconButtonStyles}
                                   sx={{ ...iconButtonStyles.sx, padding: "4px" }}
+                                  disabled={!user.guardians || user.guardians.length === 0}
+                                  title={!user.guardians || user.guardians.length === 0 ? "Guardiões não disponíveis" : "Ver guardiões"}
                                 >
                                   <PeopleIcon sx={{ fontSize: "1rem" }} />
                                 </IconButton>
@@ -647,6 +658,8 @@ const Seletivo: React.FC = () => {
                                   onClick={() => openModal("registration", user)}
                                   {...iconButtonStyles}
                                   sx={{ ...iconButtonStyles.sx, padding: "4px" }}
+                                  disabled={!user.registration_data}
+                                  title={!user.registration_data ? "Dados de registro não disponíveis" : "Ver dados de registro"}
                                 >
                                   <DescriptionIcon sx={{ fontSize: "1rem" }} />
                                 </IconButton>

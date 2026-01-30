@@ -47,17 +47,35 @@ export const examsScheduledService = {
   },
 
   /**
+   * Mapeia status do frontend para o valor aceito pela API (português).
+   * API aceita: pendente | aprovado | ausente | desqualificado
+   */
+  _mapStatusToApi(status: string): string {
+    const map: Record<string, string> = {
+      scheduled: "pendente",
+      present: "aprovado",
+      absent: "ausente",
+      pendente: "pendente",
+      aprovado: "aprovado",
+      ausente: "ausente",
+      desqualificado: "desqualificado",
+    };
+    return map[status.toLowerCase()] ?? status;
+  },
+
+  /**
    * Atualiza o status de um exame agendado
    * @param id - ID do exame agendado
-   * @param status - Novo status (present, absent, scheduled)
+   * @param status - Novo status (present, absent, scheduled ou pendente, aprovado, ausente)
    */
   updateStatus: (id: string | number, status: string) => {
     const prefix = getEndpointPrefix();
+    const apiStatus = examsScheduledService._mapStatusToApi(status);
     return httpClient.patch<{ message: string }>(
       API_URL,
       `/${prefix}/student-exams`,
       id,
-      { status }
+      { status: apiStatus }
     );
   },
 

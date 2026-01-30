@@ -21,9 +21,11 @@ export const academicMeritService = {
    */
   list: (page: number = 1, size: number = 10, status?: string) => {
     const prefix = getEndpointPrefix();
+    // Admin usa /admin/academic-merit, User usa /user/academic-merit-documents
+    const endpoint = prefix === "admin" ? "academic-merit" : "academic-merit-documents";
     return httpClient.get<PaginatedResponse<AcademicMerit>>(
       API_URL,
-      `/${prefix}/academic-merit-documents`,
+      `/${prefix}/${endpoint}`,
       {
         queryParams: {
           page,
@@ -36,12 +38,21 @@ export const academicMeritService = {
 
   /**
    * Lista apenas documentos pendentes (para revisão)
+   * Nota: Este endpoint não existe no Swagger, usando list com filtro
    */
   listPending: () => {
     const prefix = getEndpointPrefix();
-    return httpClient.get<AcademicMerit[]>(
+    const endpoint = prefix === "admin" ? "academic-merit" : "academic-merit-documents";
+    return httpClient.get<PaginatedResponse<AcademicMerit>>(
       API_URL,
-      `/${prefix}/academic-merit-documents/pending`
+      `/${prefix}/${endpoint}`,
+      {
+        queryParams: {
+          page: 1,
+          size: 1000,
+          status: "PENDING",
+        },
+      }
     );
   },
 
@@ -51,9 +62,16 @@ export const academicMeritService = {
    */
   listAll: () => {
     const prefix = getEndpointPrefix();
+    const endpoint = prefix === "admin" ? "academic-merit" : "academic-merit-documents";
     return httpClient.get<PaginatedResponse<AcademicMerit>>(
       API_URL,
-      `/${prefix}/academic-merit-documents?page=1&size=1000`
+      `/${prefix}/${endpoint}`,
+      {
+        queryParams: {
+          page: 1,
+          size: 1000,
+        },
+      }
     );
   },
 
@@ -63,26 +81,27 @@ export const academicMeritService = {
    */
   getById: (id: string | number) => {
     const prefix = getEndpointPrefix();
+    // Admin usa /admin/academic-merit/{id}, User usa /user/academic-merit-documents/{id}
+    const endpoint = prefix === "admin" ? "academic-merit" : "academic-merit-documents";
     return httpClient.get<AcademicMerit>(
       API_URL,
-      `/${prefix}/academic-merit-documents/${id}`
+      `/${prefix}/${endpoint}/${id}`
     );
   },
 
   /**
    * Aprova um documento de mérito acadêmico (atualiza status para APPROVED)
    * @param id - ID do documento
-   * @param user_data_id - ID do user_data (opcional, mas pode ser necessário)
    */
-  approve: (id: string | number, user_data_id?: string) => {
+  approve: (id: string | number) => {
     const prefix = getEndpointPrefix();
+    const endpoint = prefix === "admin" ? "academic-merit" : "academic-merit-documents";
     return httpClient.put<AcademicMerit>(
       API_URL,
-      `/${prefix}/academic-merit-documents`,
+      `/${prefix}/${endpoint}`,
       id,
       { 
-        status: "APPROVED",
-        ...(user_data_id && { user_data_id })
+        status: "APPROVED"
       }
     );
   },
@@ -90,17 +109,34 @@ export const academicMeritService = {
   /**
    * Reprova um documento de mérito acadêmico (atualiza status para REJECTED)
    * @param id - ID do documento
-   * @param user_data_id - ID do user_data (opcional, mas pode ser necessário)
    */
-  reject: (id: string | number, user_data_id?: string) => {
+  reject: (id: string | number) => {
     const prefix = getEndpointPrefix();
+    const endpoint = prefix === "admin" ? "academic-merit" : "academic-merit-documents";
     return httpClient.put<AcademicMerit>(
       API_URL,
-      `/${prefix}/academic-merit-documents`,
+      `/${prefix}/${endpoint}`,
       id,
       { 
-        status: "REJECTED",
-        ...(user_data_id && { user_data_id })
+        status: "REJECTED"
+      }
+    );
+  },
+
+  /**
+   * Atualiza o status de um documento de mérito acadêmico
+   * @param id - ID do documento
+   * @param status - Novo status (PENDING, APPROVED, REJECTED)
+   */
+  updateStatus: (id: string | number, status: "PENDING" | "APPROVED" | "REJECTED") => {
+    const prefix = getEndpointPrefix();
+    const endpoint = prefix === "admin" ? "academic-merit" : "academic-merit-documents";
+    return httpClient.put<AcademicMerit>(
+      API_URL,
+      `/${prefix}/${endpoint}`,
+      id,
+      { 
+        status
       }
     );
   },
@@ -111,10 +147,34 @@ export const academicMeritService = {
    */
   delete: (id: string | number) => {
     const prefix = getEndpointPrefix();
+    const endpoint = prefix === "admin" ? "academic-merit" : "academic-merit-documents";
     return httpClient.delete<{ message: string }>(
       API_URL,
-      `/${prefix}/academic-merit-documents`,
+      `/${prefix}/${endpoint}`,
       id
+    );
+  },
+
+  /**
+   * Lista documentos com dados completos de usuário (inclui user_data_display)
+   * @param page - Número da página (padrão: 1)
+   * @param size - Itens por página (padrão: 10)
+   * @param search - Termo de busca (opcional)
+   */
+  listDetailed: (page: number = 1, size: number = 10, search?: string) => {
+    const prefix = getEndpointPrefix();
+    // Admin usa /admin/academic-merit/detailed, User usa /user/academic-merit-documents/detailed
+    const endpoint = prefix === "admin" ? "academic-merit/detailed" : "academic-merit-documents/detailed";
+    return httpClient.get<PaginatedResponse<AcademicMerit>>(
+      API_URL,
+      `/${prefix}/${endpoint}`,
+      {
+        queryParams: {
+          page,
+          size,
+          ...(search ? { search } : {}),
+        },
+      }
     );
   },
 };

@@ -1,9 +1,8 @@
-import { useState, useMemo, useEffect } from "react";
-import { Box, ThemeProvider, CssBaseline } from "@mui/material";
+import { useState, useEffect, useMemo } from "react";
+import { Box } from "@mui/material";
 import { Outlet } from "react-router";
 import Header from "../ui/header/Header";
 import LayoutSidebar from "../ui/sidebar/LayoutSidebar";
-import getTheme from "../../assets/styles/theme";
 import { APP_ROUTES } from "../../util/constants";
 import { useAuthContext } from "../../app/providers/AuthProvider";
 import { useUserProfile } from "../../hooks/useUserProfile";
@@ -26,12 +25,14 @@ import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import PersonIcon from "@mui/icons-material/Person";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import DescriptionIcon from "@mui/icons-material/Description";
+import HowToRegIcon from "@mui/icons-material/HowToReg";
 
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(true);
-  const themeMode = "light";
-  const theme = useMemo(() => getTheme(themeMode), [themeMode]);
   const { user, accessToken } = useAuthContext();
+  const drawerWidth = 240;
+  const collapsedWidth = 60;
   const { fetchProfileByUserId, fetchProfileByCpf, createProfile, uploadPhoto } = useUserProfile();
   const [showCreateProfile, setShowCreateProfile] = useState(false);
   const [profileData, setProfileData] = useState<UserProfilePayload>({});
@@ -237,7 +238,7 @@ export default function AppLayout() {
         },
         {
           icon: <LocationCityIcon />,
-          label: "Allowed Cities",
+          label: "Cidades permitidas",
           to: APP_ROUTES.ALLOWED_CITIES,
         },
         {
@@ -256,31 +257,26 @@ export default function AppLayout() {
           to: APP_ROUTES.DOCUMENTS,
         },
         {
+          icon: <DescriptionIcon />,
+          label: "Documentos de Cotas",
+          to: APP_ROUTES.QUOTA_DOCUMENTS,
+        },
+        {
           icon: <PersonIcon />,
           label: "Usuários",
           to: APP_ROUTES.USERS_LIST,
+        },
+        {
+          icon: <HowToRegIcon />,
+          label: "Criação de Usuários",
+          to: APP_ROUTES.USER_CREATION,
         },
       ],
     },
   ];
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Box display="flex" height="100vh" sx={{ position: "relative" }}>
-        {/* Overlay para melhor legibilidade */}
-        <Box
-          sx={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            bgcolor: "rgba(255, 255, 255, 0.7)",
-            zIndex: 0,
-          }}
-        />
-
+    <Box display="flex" height="100vh" sx={{ position: "relative" }}>
         <LayoutSidebar
           collapsed={collapsed}
           menuGroups={sidebarMenuGroups}
@@ -301,18 +297,21 @@ export default function AppLayout() {
               width: "100%",
               position: "relative",
               zIndex: 1100,
-              display: "none", // Temporariamente oculto
             }}
           >
-            <Header onMenuClick={() => setCollapsed((p) => !p)} />
+            <Header 
+              onMenuClick={() => setCollapsed((p) => !p)} 
+              sidebarCollapsed={collapsed}
+            />
           </Box>
           <Box
             component="main"
             flexGrow={1}
             overflow="auto"
             sx={{
-              marginLeft: "60px", // Espaço para o sidebar colapsado
-              width: "calc(100% - 60px)",
+              marginLeft: collapsed ? `${collapsedWidth}px` : `${drawerWidth}px`,
+              width: collapsed ? `calc(100% - ${collapsedWidth}px)` : `calc(100% - ${drawerWidth}px)`,
+              transition: "margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
               overflowX: "hidden",
               boxSizing: "border-box",
             }}
@@ -320,7 +319,6 @@ export default function AppLayout() {
             <Outlet />
           </Box>
         </Box>
-      </Box>
 
       {/* Modal de Criação de Perfil */}
       <CreateProfileModal
@@ -332,6 +330,6 @@ export default function AppLayout() {
         onUploadPhoto={handleUploadPhoto}
         onClose={() => setShowCreateProfile(false)}
       />
-    </ThemeProvider>
+    </Box>
   );
 }

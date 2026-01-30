@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Card, CardContent, Box, Typography } from "@mui/material";
+import { Card, CardContent, Box, Typography, useTheme } from "@mui/material";
 
 interface DashboardCardProps {
   title: string;
@@ -14,7 +14,8 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
   onClick,
   isAdmin = false,
 }) => {
-  const cardColor = isAdmin ? "#1F2937" : "#1F2937";
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
 
   // Cores do gradiente
   const startColor = isAdmin ? "#F97316" : "#3B82F6";
@@ -29,16 +30,20 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
         width: "100%",
         height: 130,
         borderRadius: 2.5,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+        boxShadow: isDark 
+          ? "0 1px 3px rgba(0,0,0,0.3)" 
+          : "0 1px 3px rgba(0,0,0,0.04)",
         cursor: onClick ? "pointer" : "default",
         transition: "all 0.2s ease",
-        bgcolor: "#FFFFFF",
+        bgcolor: isDark ? "#181818" : "#FFFFFF",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
         boxSizing: "border-box",
         margin: 0,
-        border: "1px solid rgba(0,0,0,0.06)",
+        border: isDark 
+          ? "1px solid rgba(255, 255, 255, 0.1)" 
+          : "1px solid rgba(0,0,0,0.06)",
         position: "relative",
         "&::before": {
           content: '""',
@@ -55,8 +60,12 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
         },
         "&:hover": {
           transform: "translateY(-2px)",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-          borderColor: "rgba(0,0,0,0.1)",
+          boxShadow: isDark 
+            ? "0 4px 12px rgba(0,0,0,0.5)" 
+            : "0 4px 12px rgba(0,0,0,0.08)",
+          borderColor: isDark 
+            ? "rgba(255, 255, 255, 0.2)" 
+            : "rgba(0,0,0,0.1)",
           "&::before": {
             opacity: 1,
           },
@@ -107,7 +116,7 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
         <Typography
           variant="h6"
           sx={{
-            color: cardColor,
+            color: isDark ? "#FFFFFF" : "#1F2937",
             fontWeight: 600,
             textAlign: "center",
             fontSize: "0.8rem",

@@ -2,7 +2,7 @@
 
 > Sistema de backoffice para gerenciamento do processo seletivo e administração de candidatos.
 
-**Backend API:** `http://186.248.135.172:31535`
+**Backend API:** configurável via `VITE_API_URL` (em dev/local, aponte para seu backend, ex.: `http://localhost:31535`)
 
 ---
 
@@ -97,10 +97,10 @@ O **PD Backoffice** é uma aplicação administrativa desenvolvida com **Vite**,
    # ou
    yarn install
    ```
-3. Crie um arquivo de ambiente `.env.local` na raiz do projeto com as variáveis:
+3. Crie um arquivo de ambiente `.env.local` na raiz do projeto com as variáveis (**recomendado em dev/local para evitar usar um backend inesperado**):
 
    ```bash
-   VITE_API_URL=sua_url_aqui.com   
+   VITE_API_URL=http://localhost:31535
    VITE_PERSIST_SECRET=SEU_SECRET_PARA_CRIPTOGRAFIA
    ```
 4. Inicie o servidor de desenvolvimento:

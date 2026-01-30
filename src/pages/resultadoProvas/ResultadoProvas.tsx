@@ -28,7 +28,6 @@ import {
   Download as DownloadIcon,
 } from "@mui/icons-material";
 import { useExams } from "../../hooks/useExams";
-import { usersService } from "../../core/http/services/usersService";
 import NoteUpdaterModal from "../../components/modals/NoteUpdaterModal";
 import { APP_ROUTES } from "../../util/constants";
 import PageHeader from "../../components/ui/page/PageHeader";
@@ -70,31 +69,18 @@ const ResultadoProvas: React.FC = () => {
   const [downloadAnchor, setDownloadAnchor] = useState<null | HTMLElement>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [userInfoMap, setUserInfoMap] = useState<Record<string, { name?: string; cpf?: string }>>({});
-  const [loadingUsers, setLoadingUsers] = useState(false);
 
-  // Transform exams to rows
+  // Transform exams to rows - dados já vêm completos da API
   const rows = useMemo(() => {
     return exams.map((exam) => {
       const userData = exam.user_data;
       const user = userData?.user;
-      const userDataId = (exam as any)?.user_data_id;
-      const userIdKey = userDataId ? String(userDataId) : undefined;
 
-      // CPF: prioriza dados do mapa, depois nested data, depois ID
-      const cpf =
-        (userIdKey && userInfoMap[userIdKey]?.cpf) ||
-        userData?.cpf ||
-        (userDataId ? String(userDataId) : "N/A");
-      
-      // Nome: prioriza dados do mapa, depois nested data, depois fallback
-      const nome =
-        (userIdKey && userInfoMap[userIdKey]?.name) ||
-        (user?.first_name || user?.last_name
-          ? `${user?.first_name ?? ""} ${user?.last_name ?? ""}`.trim()
-          : userDataId
-          ? `Usuário ${userDataId}`
-          : "N/A");
+      // CPF e Nome direto da API
+      const cpf = userData?.cpf || "N/A";
+      const nome = user
+        ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
+        : "N/A";
 
       // Normalizar status para exibição/filtragem
       const statusMap: Record<string, string> = {
@@ -110,16 +96,16 @@ const ResultadoProvas: React.FC = () => {
       return {
         id: exam.id,
         cpf,
-        name: nome,
+        name: nome || "N/A",
         score: exam.score ?? null,
         status: statusNormalizado,
         local: exam.exam_scheduled_hour?.exam_date?.local?.name ?? "N/A",
         date: exam.exam_scheduled_hour?.exam_date?.date ?? "N/A",
         hour: exam.exam_scheduled_hour?.hour ?? "N/A",
-        user_data_id: userDataId,
+        user_data_id: exam.user_data_id,
       };
     });
-  }, [exams, userInfoMap]);
+  }, [exams]);
 
   // Filter rows
   const filtered = useMemo(() => {
@@ -149,65 +135,6 @@ const ResultadoProvas: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Buscar dados de usuário (nome/cpf) a partir de user_data_id
-  useEffect(() => {
-    if (!exams || exams.length === 0) return;
-
-    const uniqueUserIds = [
-      ...new Set(
-        exams
-          .map((e) => (e as any)?.user_data_id)
-          .filter(Boolean)
-          .map((id) => String(id))
-      ),
-    ];
-
-    if (uniqueUserIds.length === 0) {
-      return;
-    }
-
-    const fetchUsers = async () => {
-      setLoadingUsers(true);
-      const map: Record<string, { name?: string; cpf?: string }> = {};
-      
-      try {
-        const resp = await usersService.listAllUsers(1, 1000);
-        
-        if (resp.status === 200 && resp.data) {
-          let users: any[] = [];
-          
-          if (Array.isArray(resp.data)) {
-            users = resp.data;
-          } else if (resp.data?.data && Array.isArray(resp.data.data)) {
-            users = resp.data.data;
-          }
-          
-          uniqueUserIds.forEach((userId) => {
-            const user = users.find((u) => String(u.id) === userId);
-            
-            if (user) {
-              const firstName = user.first_name || "";
-              const lastName = user.last_name || "";
-              const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
-              
-              map[userId] = {
-                name: fullName || user.username || undefined,
-                cpf: user.cpf || undefined,
-              };
-            }
-          });
-        }
-        
-        setUserInfoMap((prev) => ({ ...prev, ...map }));
-      } catch {
-      } finally {
-        setLoadingUsers(false);
-      }
-    };
-
-    fetchUsers();
-  }, [exams]);
-
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
   };
@@ -230,13 +157,14 @@ const ResultadoProvas: React.FC = () => {
   };
 
   const handleExportCSV = () => {
-    if (rows.length === 0) {
+    // Usar filtered em vez de rows para respeitar os filtros aplicados
+    if (filtered.length === 0) {
       // O snackbar será gerenciado pelo hook
       return;
     }
 
     const headers = ["CPF", "Nome", "Score", "Status"];
-    const csvRows = rows.map((row) => [
+    const csvRows = filtered.map((row) => [
       row.cpf,
       row.name,
       row.score?.toString() || "N/A",
@@ -307,20 +235,50 @@ const ResultadoProvas: React.FC = () => {
                       paper: {
                         sx: {
                           borderRadius: 2,
-                          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                          boxShadow: (theme) => theme.palette.mode === "dark" 
+                            ? designSystem.shadows.mediumDark 
+                            : designSystem.shadows.medium,
                           minWidth: 200,
+                          backgroundColor: (theme) => theme.palette.mode === "dark" 
+                            ? designSystem.colors.background.secondaryDark 
+                            : designSystem.colors.background.primary,
+                          border: (theme) => `1px solid ${theme.palette.mode === "dark" 
+                            ? designSystem.colors.border.mainDark 
+                            : designSystem.colors.border.main}`,
                         },
                       },
                     }}
                   >
-                    <Typography sx={{ px: 2, py: 1, fontWeight: 600, fontSize: "0.875rem", color: "#6B7280" }}>
+                    <Typography 
+                      sx={{ 
+                        px: 2, 
+                        py: 1, 
+                        fontWeight: 600, 
+                        fontSize: "0.875rem", 
+                        color: (theme) => theme.palette.mode === "dark" 
+                          ? designSystem.colors.text.disabledDark 
+                          : designSystem.colors.text.disabled 
+                      }}
+                    >
                       Filtrar por Status
                     </Typography>
                     <MenuItem 
                       onClick={() => applyFilter("all")}
                       sx={{ 
-                        backgroundColor: filterStatus === "all" ? "#F3F4F6" : "transparent",
-                        fontWeight: filterStatus === "all" ? 600 : 400 
+                        backgroundColor: (theme) => filterStatus === "all" 
+                          ? (theme.palette.mode === "dark" 
+                            ? "rgba(166, 80, 240, 0.15)" 
+                            : designSystem.colors.background.tertiary)
+                          : "transparent",
+                        color: (theme) => theme.palette.mode === "dark" 
+                          ? designSystem.colors.text.primaryDark 
+                          : designSystem.colors.text.primary,
+                        fontWeight: filterStatus === "all" ? 600 : 400,
+                        "&:hover": {
+                          backgroundColor: (theme) => theme.palette.mode === "dark" 
+                            ? "rgba(166, 80, 240, 0.2)" 
+                            : designSystem.colors.primary.lightest,
+                        },
                       }}
                     >
                       Todos ({rows.length})
@@ -328,8 +286,20 @@ const ResultadoProvas: React.FC = () => {
                     <MenuItem 
                       onClick={() => applyFilter("aprovado")}
                       sx={{ 
-                        backgroundColor: filterStatus === "aprovado" ? "#F3F4F6" : "transparent",
-                        fontWeight: filterStatus === "aprovado" ? 600 : 400 
+                        backgroundColor: (theme) => filterStatus === "aprovado" 
+                          ? (theme.palette.mode === "dark" 
+                            ? "rgba(166, 80, 240, 0.15)" 
+                            : designSystem.colors.background.tertiary)
+                          : "transparent",
+                        color: (theme) => theme.palette.mode === "dark" 
+                          ? designSystem.colors.text.primaryDark 
+                          : designSystem.colors.text.primary,
+                        fontWeight: filterStatus === "aprovado" ? 600 : 400,
+                        "&:hover": {
+                          backgroundColor: (theme) => theme.palette.mode === "dark" 
+                            ? "rgba(166, 80, 240, 0.2)" 
+                            : designSystem.colors.primary.lightest,
+                        },
                       }}
                     >
                       Aprovados ({rows.filter((r) => r.status === "aprovado").length})
@@ -337,8 +307,20 @@ const ResultadoProvas: React.FC = () => {
                     <MenuItem 
                       onClick={() => applyFilter("reprovado")}
                       sx={{ 
-                        backgroundColor: filterStatus === "reprovado" ? "#F3F4F6" : "transparent",
-                        fontWeight: filterStatus === "reprovado" ? 600 : 400 
+                        backgroundColor: (theme) => filterStatus === "reprovado" 
+                          ? (theme.palette.mode === "dark" 
+                            ? "rgba(166, 80, 240, 0.15)" 
+                            : designSystem.colors.background.tertiary)
+                          : "transparent",
+                        color: (theme) => theme.palette.mode === "dark" 
+                          ? designSystem.colors.text.primaryDark 
+                          : designSystem.colors.text.primary,
+                        fontWeight: filterStatus === "reprovado" ? 600 : 400,
+                        "&:hover": {
+                          backgroundColor: (theme) => theme.palette.mode === "dark" 
+                            ? "rgba(166, 80, 240, 0.2)" 
+                            : designSystem.colors.primary.lightest,
+                        },
                       }}
                     >
                       Reprovados ({rows.filter((r) => r.status === "reprovado").length})
@@ -346,8 +328,20 @@ const ResultadoProvas: React.FC = () => {
                     <MenuItem 
                       onClick={() => applyFilter("pendente")}
                       sx={{ 
-                        backgroundColor: filterStatus === "pendente" ? "#F3F4F6" : "transparent",
-                        fontWeight: filterStatus === "pendente" ? 600 : 400 
+                        backgroundColor: (theme) => filterStatus === "pendente" 
+                          ? (theme.palette.mode === "dark" 
+                            ? "rgba(166, 80, 240, 0.15)" 
+                            : designSystem.colors.background.tertiary)
+                          : "transparent",
+                        color: (theme) => theme.palette.mode === "dark" 
+                          ? designSystem.colors.text.primaryDark 
+                          : designSystem.colors.text.primary,
+                        fontWeight: filterStatus === "pendente" ? 600 : 400,
+                        "&:hover": {
+                          backgroundColor: (theme) => theme.palette.mode === "dark" 
+                            ? "rgba(166, 80, 240, 0.2)" 
+                            : designSystem.colors.primary.lightest,
+                        },
                       }}
                     >
                       Pendentes ({rows.filter((r) => r.status === "pendente").length})
@@ -360,11 +354,37 @@ const ResultadoProvas: React.FC = () => {
                     anchorEl={downloadAnchor}
                     open={Boolean(downloadAnchor)}
                     onClose={() => setDownloadAnchor(null)}
+                    slotProps={{
+                      paper: {
+                        sx: {
+                          borderRadius: 2,
+                          boxShadow: (theme) => theme.palette.mode === "dark" 
+                            ? designSystem.shadows.mediumDark 
+                            : designSystem.shadows.medium,
+                          backgroundColor: (theme) => theme.palette.mode === "dark" 
+                            ? designSystem.colors.background.secondaryDark 
+                            : designSystem.colors.background.primary,
+                          border: (theme) => `1px solid ${theme.palette.mode === "dark" 
+                            ? designSystem.colors.border.mainDark 
+                            : designSystem.colors.border.main}`,
+                        },
+                      },
+                    }}
                   >
                     <MenuItem
                       onClick={() => {
                         handleExportCSV();
                         setDownloadAnchor(null);
+                      }}
+                      sx={{
+                        color: (theme) => theme.palette.mode === "dark" 
+                          ? designSystem.colors.text.primaryDark 
+                          : designSystem.colors.text.primary,
+                        "&:hover": {
+                          backgroundColor: (theme) => theme.palette.mode === "dark" 
+                            ? "rgba(166, 80, 240, 0.2)" 
+                            : designSystem.colors.primary.lightest,
+                        },
                       }}
                     >
                       CSV
@@ -380,11 +400,37 @@ const ResultadoProvas: React.FC = () => {
                     anchorEl={generalAnchor}
                     open={Boolean(generalAnchor)}
                     onClose={handleCloseGeneralMenu}
+                    slotProps={{
+                      paper: {
+                        sx: {
+                          borderRadius: 2,
+                          boxShadow: (theme) => theme.palette.mode === "dark" 
+                            ? designSystem.shadows.mediumDark 
+                            : designSystem.shadows.medium,
+                          backgroundColor: (theme) => theme.palette.mode === "dark" 
+                            ? designSystem.colors.background.secondaryDark 
+                            : designSystem.colors.background.primary,
+                          border: (theme) => `1px solid ${theme.palette.mode === "dark" 
+                            ? designSystem.colors.border.mainDark 
+                            : designSystem.colors.border.main}`,
+                        },
+                      },
+                    }}
                   >
                     <MenuItem
                       onClick={() => {
                         setModalOpen(true);
                         handleCloseGeneralMenu();
+                      }}
+                      sx={{
+                        color: (theme) => theme.palette.mode === "dark" 
+                          ? designSystem.colors.text.primaryDark 
+                          : designSystem.colors.text.primary,
+                        "&:hover": {
+                          backgroundColor: (theme) => theme.palette.mode === "dark" 
+                            ? "rgba(166, 80, 240, 0.2)" 
+                            : designSystem.colors.primary.lightest,
+                        },
                       }}
                     >
                       Atualizar Notas
@@ -402,23 +448,15 @@ const ResultadoProvas: React.FC = () => {
                   <Alert severity="error">{error}</Alert>
                 </Box>
               ) : (
-                <>
-                  {loadingUsers && (
-                    <Box sx={{ px: 2, py: 1 }}>
-                      <Alert severity="info" sx={{ fontSize: "0.875rem" }}>
-                        Carregando dados dos usuários...
-                      </Alert>
-                    </Box>
-                  )}
                 <TableContainer sx={{ maxWidth: "100%" }}>
                   <Table stickyHeader size="small" sx={{ tableLayout: "fixed", width: "100%" }}>
                     <TableHead>
                       <TableRow>
                         <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 120 }}>
-                          ID Resultado
+                          CPF
                         </TableCell>
                         <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 200 }}>
-                          ID Usuário
+                          Nome
                         </TableCell>
                         <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, minWidth: 100 }}>
                           Score
@@ -476,7 +514,6 @@ const ResultadoProvas: React.FC = () => {
                     {...tablePaginationStyles}
                   />
                 </TableContainer>
-                </>
               )}
             </Paper>
           </Fade>
@@ -487,9 +524,53 @@ const ResultadoProvas: React.FC = () => {
         anchorEl={rowAnchor}
         open={Boolean(rowAnchor)}
         onClose={handleCloseRowMenu}
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: 2,
+              boxShadow: (theme) => theme.palette.mode === "dark" 
+                ? designSystem.shadows.mediumDark 
+                : designSystem.shadows.medium,
+              backgroundColor: (theme) => theme.palette.mode === "dark" 
+                ? designSystem.colors.background.secondaryDark 
+                : designSystem.colors.background.primary,
+              border: (theme) => `1px solid ${theme.palette.mode === "dark" 
+                ? designSystem.colors.border.mainDark 
+                : designSystem.colors.border.main}`,
+            },
+          },
+        }}
       >
-        <MenuItem onClick={goToDetail}>Ver detalhes</MenuItem>
-        <MenuItem onClick={handleCloseRowMenu}>Cancelar</MenuItem>
+        <MenuItem 
+          onClick={goToDetail}
+          sx={{
+            color: (theme) => theme.palette.mode === "dark" 
+              ? designSystem.colors.text.primaryDark 
+              : designSystem.colors.text.primary,
+            "&:hover": {
+              backgroundColor: (theme) => theme.palette.mode === "dark" 
+                ? "rgba(166, 80, 240, 0.2)" 
+                : designSystem.colors.primary.lightest,
+            },
+          }}
+        >
+          Ver detalhes
+        </MenuItem>
+        <MenuItem 
+          onClick={handleCloseRowMenu}
+          sx={{
+            color: (theme) => theme.palette.mode === "dark" 
+              ? designSystem.colors.text.primaryDark 
+              : designSystem.colors.text.primary,
+            "&:hover": {
+              backgroundColor: (theme) => theme.palette.mode === "dark" 
+                ? "rgba(166, 80, 240, 0.2)" 
+                : designSystem.colors.primary.lightest,
+            },
+          }}
+        >
+          Cancelar
+        </MenuItem>
       </Menu>
 
       <NoteUpdaterModal

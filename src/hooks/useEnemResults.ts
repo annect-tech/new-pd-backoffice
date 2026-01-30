@@ -136,7 +136,20 @@ export const useEnemResults = () => {
   const createEnemResult = useCallback(
     async (payload: Partial<EnemResult>) => {
       try {
-        const response = await enemResultsService.create(payload);
+        // Garantir que user_id seja um número e não seja undefined
+        if (payload.user_id === undefined || payload.user_id === null) {
+          throw new Error("user_id é obrigatório");
+        }
+        
+        const userId = typeof payload.user_id === 'string' 
+          ? parseInt(payload.user_id, 10) 
+          : payload.user_id;
+        
+        if (isNaN(userId)) {
+          throw new Error("user_id deve ser um número válido");
+        }
+        
+        const response = await enemResultsService.create({ user_id: userId });
 
         if (response.status >= 200 && response.status < 300) {
           showSnackbar("Resultado ENEM criado com sucesso", "success");

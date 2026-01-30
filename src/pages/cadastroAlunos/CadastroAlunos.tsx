@@ -128,14 +128,26 @@ const CadastroAlunos: React.FC = () => {
         borderWidth: "2px",
       },
       "& fieldset": {
-        borderColor: designSystem.colors.border.main,
+        borderColor: (theme: any) => theme.palette.mode === "dark" 
+          ? designSystem.colors.border.mainDark 
+          : designSystem.colors.border.main,
       },
+      backgroundColor: (theme: any) => theme.palette.mode === "dark" 
+        ? "#2C2C2C" 
+        : "#FFFFFF",
+    },
+    "& .MuiInputLabel-root": {
+      color: (theme: any) => theme.palette.mode === "dark" 
+        ? designSystem.colors.text.secondaryDark 
+        : designSystem.colors.text.secondary,
     },
     "& .MuiInputLabel-root.Mui-focused": {
       color: designSystem.colors.primary.main,
     },
     "& .MuiInputBase-input": {
-      color: designSystem.colors.text.primary,
+      color: (theme: any) => theme.palette.mode === "dark" 
+        ? designSystem.colors.text.primaryDark 
+        : designSystem.colors.text.primary,
     },
   };
   const [isFetching, setIsFetching] = useState(false);
@@ -365,7 +377,9 @@ const CadastroAlunos: React.FC = () => {
                 {...paperStyles}
                 sx={{
                   ...paperStyles.sx,
-                  backgroundColor: designSystem.colors.background.primary,
+                  backgroundColor: (theme) => theme.palette.mode === "dark" 
+                    ? "#181818" 
+                    : designSystem.colors.background.primary,
                 }}
               >
                 <Box component="form" onSubmit={onSubmit} noValidate sx={{ p: { xs: 3, sm: 4, md: 5 } }}>
@@ -375,7 +389,9 @@ const CadastroAlunos: React.FC = () => {
                       variant="h6" 
                       fontWeight={600} 
                       sx={{ 
-                        color: designSystem.colors.text.primary,
+                        color: (theme) => theme.palette.mode === "dark" 
+                          ? designSystem.colors.text.primaryDark 
+                          : designSystem.colors.text.primary,
                         mb: 3,
                         display: "flex",
                         alignItems: "center",
@@ -414,7 +430,12 @@ const CadastroAlunos: React.FC = () => {
                     </Tooltip>
                   </Box>
 
-                  <Divider sx={{ my: 4, borderColor: designSystem.colors.border.main }} />
+                  <Divider sx={{ 
+                    my: 4, 
+                    borderColor: (theme) => theme.palette.mode === "dark" 
+                      ? designSystem.colors.border.mainDark 
+                      : designSystem.colors.border.main 
+                  }} />
 
                   {/* Seção: Informações Acadêmicas */}
                   <Box sx={{ mb: 4 }}>
@@ -422,7 +443,9 @@ const CadastroAlunos: React.FC = () => {
                       variant="h6" 
                       fontWeight={600} 
                       sx={{ 
-                        color: designSystem.colors.text.primary,
+                        color: (theme) => theme.palette.mode === "dark" 
+                          ? designSystem.colors.text.primaryDark 
+                          : designSystem.colors.text.primary,
                         mb: 3,
                         display: "flex",
                         alignItems: "center",
@@ -463,7 +486,12 @@ const CadastroAlunos: React.FC = () => {
                     </Box>
                   </Box>
 
-                  <Divider sx={{ my: 4, borderColor: designSystem.colors.border.main }} />
+                  <Divider sx={{ 
+                    my: 4, 
+                    borderColor: (theme) => theme.palette.mode === "dark" 
+                      ? designSystem.colors.border.mainDark 
+                      : designSystem.colors.border.main 
+                  }} />
 
                   {/* Seção: Configurações do Aluno */}
                   <Box sx={{ mb: 4 }}>
@@ -471,7 +499,9 @@ const CadastroAlunos: React.FC = () => {
                       variant="h6" 
                       fontWeight={600} 
                       sx={{ 
-                        color: designSystem.colors.text.primary,
+                        color: (theme) => theme.palette.mode === "dark" 
+                          ? designSystem.colors.text.primaryDark 
+                          : designSystem.colors.text.primary,
                         mb: 3,
                         display: "flex",
                         alignItems: "center",
@@ -492,7 +522,9 @@ const CadastroAlunos: React.FC = () => {
                       <FormControl fullWidth error={!!errors.monitor}>
                         <InputLabel
                           sx={{
-                            color: designSystem.colors.text.secondary,
+                            color: (theme) => theme.palette.mode === "dark" 
+                              ? designSystem.colors.text.secondaryDark 
+                              : designSystem.colors.text.secondary,
                             "&.Mui-focused": {
                               color: designSystem.colors.primary.main,
                             },
@@ -505,8 +537,13 @@ const CadastroAlunos: React.FC = () => {
                           value={monitorOpt}
                           onChange={handleMonitorChange}
                           sx={{
+                            backgroundColor: (theme) => theme.palette.mode === "dark" 
+                              ? "#2C2C2C" 
+                              : "#FFFFFF",
                             "& .MuiOutlinedInput-notchedOutline": {
-                              borderColor: designSystem.colors.border.main,
+                              borderColor: (theme) => theme.palette.mode === "dark" 
+                                ? designSystem.colors.border.mainDark 
+                                : designSystem.colors.border.main,
                             },
                             "&:hover .MuiOutlinedInput-notchedOutline": {
                               borderColor: designSystem.colors.primary.main,
@@ -516,7 +553,9 @@ const CadastroAlunos: React.FC = () => {
                               borderWidth: "2px",
                             },
                             "& .MuiSelect-select": {
-                              color: designSystem.colors.text.primary,
+                              color: (theme) => theme.palette.mode === "dark" 
+                                ? designSystem.colors.text.primaryDark 
+                                : designSystem.colors.text.primary,
                             },
                           }}
                         >
@@ -541,7 +580,9 @@ const CadastroAlunos: React.FC = () => {
                       <FormControl fullWidth error={!!errors.status}>
                         <InputLabel
                           sx={{
-                            color: designSystem.colors.text.secondary,
+                            color: (theme) => theme.palette.mode === "dark" 
+                              ? designSystem.colors.text.secondaryDark 
+                              : designSystem.colors.text.secondary,
                             "&.Mui-focused": {
                               color: designSystem.colors.primary.main,
                             },
@@ -554,8 +595,13 @@ const CadastroAlunos: React.FC = () => {
                           value={statusOpt}
                           onChange={handleStatusChange}
                           sx={{
+                            backgroundColor: (theme) => theme.palette.mode === "dark" 
+                              ? "#2C2C2C" 
+                              : "#FFFFFF",
                             "& .MuiOutlinedInput-notchedOutline": {
-                              borderColor: designSystem.colors.border.main,
+                              borderColor: (theme) => theme.palette.mode === "dark" 
+                                ? designSystem.colors.border.mainDark 
+                                : designSystem.colors.border.main,
                             },
                             "&:hover .MuiOutlinedInput-notchedOutline": {
                               borderColor: designSystem.colors.primary.main,
@@ -565,7 +611,9 @@ const CadastroAlunos: React.FC = () => {
                               borderWidth: "2px",
                             },
                             "& .MuiSelect-select": {
-                              color: designSystem.colors.text.primary,
+                              color: (theme) => theme.palette.mode === "dark" 
+                                ? designSystem.colors.text.primaryDark 
+                                : designSystem.colors.text.primary,
                             },
                           }}
                         >
@@ -613,7 +661,12 @@ const CadastroAlunos: React.FC = () => {
                     </Box>
                   </Box>
 
-                  <Divider sx={{ my: 4, borderColor: designSystem.colors.border.main }} />
+                  <Divider sx={{ 
+                    my: 4, 
+                    borderColor: (theme) => theme.palette.mode === "dark" 
+                      ? designSystem.colors.border.mainDark 
+                      : designSystem.colors.border.main 
+                  }} />
 
                   {/* Botões de Ação */}
                   <Box 
