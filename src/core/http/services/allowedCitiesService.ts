@@ -28,7 +28,7 @@ export interface AllowedCityPayload {
   complemento: string;
   bairro: string;
   cnpj: string;
-  tenant_city_id: string;
+  tenant_city_id: string | null;
 }
 
 export interface PaginatedResponse<T> {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, type ChangeEvent } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Paper,
@@ -152,11 +152,6 @@ const TenantCities: React.FC = () => {
     setPage(0);
   };
 
-  const onSearchChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement, Element>) => {
-    setSearchTerm(e.target.value);
-    setPage(0);
-  }
-
   return (
     <Box
       sx={{
@@ -204,7 +199,10 @@ const TenantCities: React.FC = () => {
                     placeholder="Pesquisar por domínio..."
                     variant="standard"
                     value={searchTerm}
-                    onChange={(e) => onSearchChange(e)}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setPage(0);
+                    }}
                     fullWidth
                     sx={textFieldStyles}
                   />
