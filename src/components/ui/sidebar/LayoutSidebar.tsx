@@ -21,7 +21,7 @@ import logoFechadaBranca from "../../../assets/images/logo/logo fechada branca.p
 import { APP_ROUTES } from "../../../util/constants";
 import { designSystem } from "../../../styles/designSystem";
 
-const drawerWidth = 240;
+const drawerWidth = 320;
 const collapsedWidth = 60;
 
 interface SidebarMenu {
