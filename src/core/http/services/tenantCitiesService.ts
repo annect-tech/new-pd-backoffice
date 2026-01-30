@@ -1,6 +1,6 @@
+import { getApiUrl } from "../apiUrl";
 import { httpClient } from "../httpClient";
 import { getEndpointPrefix } from "../utils/endpointPrefix";
-import { getApiUrl } from "../apiUrl";
 
 const API_URL = getApiUrl();
 
@@ -42,7 +42,7 @@ export interface DeleteTenantCityResponse {
 
 export const tenantCitiesService = {
   /**
-   * Lista todas as Tenant Cities com paginação
+   * Lista todas as Cidades Sedes com paginação
    * @param page - Número da página (padrão: 1)
    * @param size - Itens por página (padrão: 10)
    * @param search - Termo de busca opcional
@@ -63,8 +63,8 @@ export const tenantCitiesService = {
   },
 
   /**
-   * Cria uma nova Tenant City
-   * @param payload - Dados da Tenant City (domain)
+   * Cria uma nova Cidade Sede
+   * @param payload - Dados da Cidade Sede (domain)
    */
   create: (payload: TenantCityPayload) => {
     const prefix = getEndpointPrefix();
@@ -76,8 +76,8 @@ export const tenantCitiesService = {
   },
 
   /**
-   * Atualiza uma Tenant City existente
-   * @param id - ID da Tenant City
+   * Atualiza uma Cidade Sede existente
+   * @param id - ID da Cidade Sede
    * @param payload - Dados atualizados
    */
   update: (id: string | number, payload: TenantCityPayload) => {
@@ -91,8 +91,8 @@ export const tenantCitiesService = {
   },
 
   /**
-   * Deleta uma Tenant City
-   * @param id - ID da Tenant City
+   * Deleta uma Cidade Sede
+   * @param id - ID da Cidade Sede
    */
   delete: (id: string | number) => {
     const prefix = getEndpointPrefix();

@@ -27,7 +27,7 @@
 - **Dados recebidos:** ID, nome da cidade, tenant_city_id, data de criação
 - **Observações:** Dados completos
 
-### 5. **Tenant Cities**
+### 5. **Cidades Sedes**
 - **Status:** ✅ OK
 - **Dados recebidos:** ID, domínio, data de criação
 - **Observações:** Dados completos
@@ -176,7 +176,7 @@
 
 | Status | Quantidade | Páginas |
 |--------|-----------|---------|
-| ✅ OK | 6 | Contratos, Endereços, Usuários, Cidades Permitidas, Tenant Cities, Documentos, Resultados ENEM |
+| ✅ OK | 6 | Contratos, Endereços, Usuários, Cidades Permitidas, Cidades Sedes, Documentos, Resultados ENEM |
 | ⚠️ PARCIAL | 5 | Seletivo, Lista de Presença, Resultado das Provas, Resultados Mérito, Dados de Alunos |
 | ❌ CRÍTICO | 1 | Aprovação Mérito |
 | ⚠️ NÃO IMPLEMENTADA | 1 | Retenção |

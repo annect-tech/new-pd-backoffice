@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useCallback, useState } from "react";
 import {
   tenantCitiesService,
   type TenantCity,
@@ -51,7 +51,7 @@ export const useTenantCities = () => {
         const response = await tenantCitiesService.list(page, size, search);
 
         if (response.status >= 200 && response.status < 300 && response.data) {
-          const raw = response.data as any;
+          const raw = response.data;
           const list = Array.isArray(raw?.data) ? raw.data : Array.isArray(raw) ? raw : [];
 
           setTenantCities(list);
@@ -66,15 +66,15 @@ export const useTenantCities = () => {
           setTenantCities([]);
           setPagination((prev) => ({ ...prev, totalItems: 0, totalPages: 0 }));
           showSnackbar(
-            response.message || "Erro ao buscar tenant cities",
+            response.message || "Erro ao buscar cidades sedes",
             "error"
           );
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         setTenantCities([]);
         setPagination((prev) => ({ ...prev, totalItems: 0, totalPages: 0 }));
         showSnackbar(
-          error?.message || "Erro ao buscar tenant cities",
+          (error as Error)?.message || "Erro ao buscar cidades sedes",
           "error"
         );
       } finally {
@@ -90,20 +90,20 @@ export const useTenantCities = () => {
         const response = await tenantCitiesService.create(payload);
 
         if (response.status >= 200 && response.status < 300) {
-          showSnackbar("Tenant City criada com sucesso!", "success");
+          showSnackbar("Cidade Sede criada com sucesso!", "success");
           // Recarregar lista após criar
           await fetchTenantCities();
           return true;
         } else {
           showSnackbar(
-            response.message || "Erro ao criar tenant city",
+            response.message || "Erro ao criar cidade sede",
             "error"
           );
           return false;
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         showSnackbar(
-          error?.message || "Erro ao criar tenant city",
+          (error as Error)?.message || "Erro ao criar cidade sede",
           "error"
         );
         return false;
@@ -118,20 +118,20 @@ export const useTenantCities = () => {
         const response = await tenantCitiesService.update(id, payload);
 
         if (response.status >= 200 && response.status < 300) {
-          showSnackbar("Tenant City atualizada com sucesso!", "success");
+          showSnackbar("Cidade Sede atualizada com sucesso!", "success");
           // Recarregar lista após atualizar
           await fetchTenantCities();
           return true;
         } else {
           showSnackbar(
-            response.message || "Erro ao atualizar tenant city",
+            response.message || "Erro ao atualizar cidade sede",
             "error"
           );
           return false;
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         showSnackbar(
-          error?.message || "Erro ao atualizar tenant city",
+          (error as Error)?.message || "Erro ao atualizar cidade sede",
           "error"
         );
         return false;
@@ -146,20 +146,20 @@ export const useTenantCities = () => {
         const response = await tenantCitiesService.delete(id);
 
         if (response.status >= 200 && response.status < 300) {
-          showSnackbar("Tenant City deletada com sucesso!", "success");
+          showSnackbar("Cidade Sede deletada com sucesso!", "success");
           // Recarregar lista após deletar
           await fetchTenantCities();
           return true;
         } else {
           showSnackbar(
-            response.message || "Erro ao deletar tenant city",
+            response.message || "Erro ao deletar cidade sede",
             "error"
           );
           return false;
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         showSnackbar(
-          error?.message || "Erro ao deletar tenant city",
+          (error as Error)?.message || "Erro ao deletar cidade sede",
           "error"
         );
         return false;
