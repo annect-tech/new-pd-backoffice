@@ -242,8 +242,13 @@ export default function AppLayout() {
           to: APP_ROUTES.ALLOWED_CITIES,
         },
         {
+          icon: <WorkspacePremiumIcon />,
+          label: "Aprovação Contratos",
+          to: APP_ROUTES.CONTRACT_APPROVAL,
+        },
+        {
           icon: <EditIcon />,
-          label: "Contratos",
+          label: "Resultados Contratos",
           to: APP_ROUTES.CONTRACTS,
         },
         {

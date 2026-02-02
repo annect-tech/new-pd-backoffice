@@ -103,7 +103,13 @@ const Dashboard: React.FC = () => {
       isAdmin: true,
     },
     {
-      title: "Contratos",
+      title: "Aprovação Contratos",
+      icon: <WorkspacePremiumIcon sx={{ fontSize: 48 }} />,
+      link: APP_ROUTES.CONTRACT_APPROVAL,
+      isAdmin: true,
+    },
+    {
+      title: "Resultados Contratos",
       icon: <EditIcon sx={{ fontSize: 48 }} />,
       link: APP_ROUTES.CONTRACTS,
       isAdmin: true,
