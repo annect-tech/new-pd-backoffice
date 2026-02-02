@@ -107,7 +107,7 @@ export const useContractDocuments = () => {
     try {
       const response = await candidateDocumentsService.update(
         currentDocument.user_data_id,
-        { contract_doc_status: "APPROVED" }
+        { contract_doc_status: "approved" }
       );
 
       if (response.status >= 200 && response.status < 300) {
@@ -137,7 +137,7 @@ export const useContractDocuments = () => {
     setActionLoading(true);
     try {
       const payload: { contract_doc_status: string; contract_doc_refuse_reason?: string } = {
-        contract_doc_status: "REJECTED",
+        contract_doc_status: "refused",
       };
 
       if (reason) {

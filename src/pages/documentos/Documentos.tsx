@@ -20,6 +20,11 @@ import {
   Select,
   MenuItem,
   FormControl,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
 } from "@mui/material";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import VisibilityIcon from "@mui/icons-material/Visibility";
@@ -40,14 +45,18 @@ import {
 import { useDocuments } from "../../hooks/useDocuments";
 import PdfViewModal from "../../components/modals/PdfViewModal";
 import { APP_ROUTES } from "../../util/constants";
+import { getApiUrl } from "../../core/http/apiUrl";
 
-const API_URL = import.meta.env.VITE_API_URL as string || "http://186.248.135.172:31535";
+const API_URL = getApiUrl();
 
 export default function DocumentsList() {
   const { documents, loading, snackbar, closeSnackbar, fetchDocuments, uploadId, uploadAddress, uploadSchoolHistory, pagination, updateDocument } =
     useDocuments();
 
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectingUserDataId, setRejectingUserDataId] = useState<string | null>(null);
 
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -135,6 +144,11 @@ export default function DocumentsList() {
 
   // Função para atualizar o status do contrato
   const handleContractStatusChange = async (userDataId: string, newStatus: string) => {
+    if (newStatus === "refused") {
+      setRejectingUserDataId(userDataId);
+      setRejectDialogOpen(true);
+      return;
+    }
     setUpdatingStatus(userDataId);
     try {
       const success = await updateDocument(userDataId, { contract_doc_status: newStatus });
@@ -143,6 +157,26 @@ export default function DocumentsList() {
       }
     } finally {
       setUpdatingStatus(null);
+    }
+  };
+
+  // Função para confirmar rejeição com motivo
+  const handleRejectConfirm = async () => {
+    if (!rejectingUserDataId) return;
+    setRejectDialogOpen(false);
+    setUpdatingStatus(rejectingUserDataId);
+    try {
+      const success = await updateDocument(rejectingUserDataId, {
+        contract_doc_status: "refused",
+        contract_doc_refuse_reason: rejectReason.trim(),
+      });
+      if (success) {
+        fetchDocuments(page + 1, rowsPerPage);
+      }
+    } finally {
+      setUpdatingStatus(null);
+      setRejectReason("");
+      setRejectingUserDataId(null);
     }
   };
 
@@ -282,8 +316,7 @@ export default function DocumentsList() {
                   <Table size="small" sx={{ minWidth: 1100 }}>
                     <TableHead>
                       <TableRow>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 60 }}>ID Doc</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 80 }}>User ID</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 80 }}>ID</TableCell>
                         <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 300 }}>Email</TableCell>
                         <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 180 }}>Nome do Usuário</TableCell>
                         <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 100 }} align="center">Identidade</TableCell>
@@ -297,7 +330,7 @@ export default function DocumentsList() {
                     <TableBody>
                       {paginatedRows.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={10} align="center" sx={{ py: 4 }}>
+                          <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
                             <Typography 
                               sx={{ 
                                 color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#6B7280",
@@ -311,14 +344,6 @@ export default function DocumentsList() {
                       ) : (
                         paginatedRows.map((row) => (
                           <TableRow key={row.id} {...tableRowHoverStyles}>
-                            <TableCell sx={{
-                              color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#374151",
-                              fontSize: "0.875rem",
-                              py: 1.5,
-                              width: 60
-                            }}>
-                              {row.documentId}
-                            </TableCell>
                             <TableCell sx={{
                               color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#374151",
                               fontSize: "0.875rem",
@@ -491,6 +516,51 @@ export default function DocumentsList() {
           onClose={closeViewer}
         />
       )}
+
+      {/* Dialog de rejeição */}
+      <Dialog
+        open={rejectDialogOpen}
+        onClose={() => {
+          setRejectDialogOpen(false);
+          setRejectReason("");
+          setRejectingUserDataId(null);
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Reprovar contrato</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Motivo da reprovação"
+            fullWidth
+            multiline
+            minRows={3}
+            value={rejectReason}
+            onChange={(e) => setRejectReason(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setRejectDialogOpen(false);
+              setRejectReason("");
+              setRejectingUserDataId(null);
+            }}
+          >
+            Cancelar
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            disabled={!rejectReason.trim()}
+            onClick={handleRejectConfirm}
+          >
+            Reprovar
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Snackbar */}
       <Snackbar

@@ -1,7 +1,8 @@
 import { ENDPOINTS } from "../../../util/constants";
 import { httpClient } from "../httpClient";
+import { getApiUrl } from "../apiUrl";
 
-const API_URL = import.meta.env.VITE_API_URL as string || "http://186.248.135.172:31535";
+const API_URL = getApiUrl();
 
 export interface MylselfResponse {
   id: number,
