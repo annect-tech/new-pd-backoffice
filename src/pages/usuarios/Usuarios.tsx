@@ -73,7 +73,10 @@ export default function UserList() {
 
   const handleCreateUser = async (payload: CreateUserPayload) => {
     try {
-      const result = await createUser(payload);
+      const result = await createUser({
+        ...payload,
+        createByAdmin: true,
+      });
       if (result) {
         setCreateModalOpen(false);
       }

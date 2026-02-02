@@ -84,7 +84,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
       setFormError(null);
       setShowPassword(false);
       
-      // Fetch tenant cities if not already loaded
+      // Fetch cidades sedes if not already loaded
       if (tenantCities.length === 0) {
         fetchTenantCities();
       }
@@ -157,7 +157,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
     }
 
     if (!formData.tenant_city_id) {
-      newErrors.tenant_city_id = "Tenant City é obrigatória";
+      newErrors.tenant_city_id = "Cidade Sede é obrigatória";
     }
 
     if (!formData.cellphone || !formData.cellphone.trim()) {
@@ -422,14 +422,14 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
             />
 
             <FormControl fullWidth required error={!!errors.tenant_city_id} disabled={loading}>
-              <InputLabel>Tenant City</InputLabel>
+              <InputLabel>Cidade Sede</InputLabel>
               <Select
                 value={formData.tenant_city_id}
                 onChange={(e) => {
                   setFormData((prev) => ({ ...prev, tenant_city_id: e.target.value }));
                   setErrors((prev) => ({ ...prev, tenant_city_id: undefined }));
                 }}
-                label="Tenant City"
+                label="Cidade Sede"
               >
                 {tenantCities.map((tenantCity) => (
                   <MenuItem key={tenantCity.id} value={tenantCity.id}>

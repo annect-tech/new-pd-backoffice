@@ -16,6 +16,7 @@ import PersonIcon from "@mui/icons-material/Person";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import HomeIcon from "@mui/icons-material/Home";
 import DescriptionIcon from "@mui/icons-material/Description";
+import ApartmentIcon from "@mui/icons-material/Apartment";
 import HowToRegIcon from "@mui/icons-material/HowToReg";
 import DashboardCard from "../../components/ui/card/DashboardCard";
 import { APP_ROUTES } from "../../util/constants";
@@ -90,7 +91,13 @@ const Dashboard: React.FC = () => {
       link: APP_ROUTES.RETENTION,
     },
     {
-      title: "Cidades",
+      title: "Cidades Sedes",
+      icon: <ApartmentIcon sx={{ fontSize: 48 }} />,
+      link: APP_ROUTES.TENANT_CITIES,
+      isAdmin: true,
+    },
+    {
+      title: "Cidades Permitidas",
       icon: <LocationCityIcon sx={{ fontSize: 48 }} />,
       link: APP_ROUTES.ALLOWED_CITIES,
       isAdmin: true,

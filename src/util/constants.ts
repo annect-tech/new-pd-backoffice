@@ -55,6 +55,7 @@ export const ENDPOINTS = {
     // REGISTER: Não existe no backend - apenas admin pode criar usuários
     RESET_PASSWORD: "/auth/reset-password/",
     REFRESH_TOKEN: "/auth/refresh-token", // Endpoint correto do backend
+    MYSELF: '/user/users/myself/',
   },
   CRM: {
     CLIENTS: "/crm/clientes/",

@@ -319,19 +319,19 @@ const CriacaoUsuarios: React.FC = () => {
             errorCount++;
             const errorMessage = response.message || "Erro desconhecido";
             
-            // Tratar erro específico de tenant city/domain
+            // Tratar erro específico de cidade sede/domain
             // Obs: no schema atual existe apenas "domain" em tenant_city (não existe "tag")
             if (
-              errorMessage.toLowerCase().includes("tenant city") ||
+              errorMessage.toLowerCase().includes("cidade sede") ||
               errorMessage.toLowerCase().includes("tenant_city") ||
               errorMessage.toLowerCase().includes("domain") ||
               errorMessage.toLowerCase().includes("domínio")
             ) {
-              console.error(`Erro de tenant city ao atualizar ${userDataId}:`, errorMessage);
+              console.error(`Erro de cidade sede ao atualizar ${userDataId}:`, errorMessage);
               return { 
                 success: false, 
                 id, 
-                error: "Tenant city não encontrada ou sem domínio configurado. Verifique o domínio da tenant city e tente novamente."
+                error: "Cidade sede não encontrada ou sem domínio configurado. Verifique o domínio da cidade sede e tente novamente."
               };
             }
             
@@ -360,19 +360,19 @@ const CriacaoUsuarios: React.FC = () => {
           errorCount++;
           const errorMessage = error?.message || error?.response?.data?.message || String(error);
 
-          // Tratar erro específico de tenant city/domain
+          // Tratar erro específico de cidade sede/domain
           if (
-            errorMessage.toLowerCase().includes("tenant city") ||
+            errorMessage.toLowerCase().includes("cidade sede") ||
             errorMessage.toLowerCase().includes("tenant_city") ||
             errorMessage.toLowerCase().includes("domain") ||
             errorMessage.toLowerCase().includes("domínio")
           ) {
-            console.error(`Erro de tenant city ao atualizar ${id}:`, errorMessage);
+            console.error(`Erro de cidade sede ao atualizar ${id}:`, errorMessage);
             return {
               success: false,
               id,
               candidate,
-              error: "Tenant city não encontrada ou sem domínio configurado. Verifique o domínio da tenant city e tente novamente."
+              error: "Cidade sede não encontrada ou sem domínio configurado. Verifique o domínio da cidade sede e tente novamente."
             };
           }
 
@@ -408,7 +408,7 @@ const CriacaoUsuarios: React.FC = () => {
           result &&
           !result.success &&
           result.error &&
-          (result.error.toLowerCase().includes("tenant city") ||
+          (result.error.toLowerCase().includes("cidade sede") ||
             result.error.toLowerCase().includes("tenant_city") ||
             result.error.toLowerCase().includes("domain") ||
             result.error.toLowerCase().includes("domínio"))
@@ -511,7 +511,7 @@ const CriacaoUsuarios: React.FC = () => {
         }
         
         if (tenantCityErrors.length > 0) {
-          errorMessage += "\nAlguns erros podem estar relacionados à configuração do tenant city (tag/domain).";
+          errorMessage += "\nAlguns erros podem estar relacionados à configuração do cidade sede (tag/domain).";
         }
         
         setSnackbar({
@@ -533,7 +533,7 @@ const CriacaoUsuarios: React.FC = () => {
           }
         } else if (tenantCityErrors.length > 0) {
           errorMessage =
-            "Erro: Tenant city não encontrada ou sem domínio configurado. Verifique o domínio da tenant city antes de tentar novamente.";
+            "Erro: Cidade sede não encontrada ou sem domínio configurado. Verifique o domínio da cidade sede antes de tentar novamente.";
         }
         
         setSnackbar({

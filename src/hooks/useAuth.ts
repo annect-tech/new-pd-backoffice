@@ -1,7 +1,9 @@
 // src/hooks/useAuth.ts
 import { useState } from 'react'
-import { authService } from '../core/http/services/authService'
 import { useAuthContext } from '../app/providers/AuthProvider'
+import { accountProfileService } from '../core/http/services/accountProfileService'
+import { authService } from '../core/http/services/authService'
+import type { User } from '../interfaces/authInterfaces'
 import { decodeJWT } from '../util/jwt'
 
 export function useAuth() {
@@ -25,16 +27,31 @@ export function useAuth() {
 
         const jwtPayload = decodeJWT(accessToken)
 
-        const user = {
+        const user: User = {
           id: jwtPayload.sub,
           roles: jwtPayload.roles,
           tenant_city_id: jwtPayload.tenant_city_id,
         }
-
         setCredentials({
           accessToken,
           refreshToken,
           user
+        })
+
+        const myself = await accountProfileService.getMyself()
+        
+        const userWithMoreData: User = {
+          id: jwtPayload.sub,
+          roles: jwtPayload.roles,
+          tenant_city_id: jwtPayload.tenant_city_id,
+          first_name: myself.data?.firstName,
+          last_name: myself.data?.lastName,
+          email: myself.data?.email,
+        }
+        setCredentials({
+          accessToken,
+          refreshToken,
+          user: userWithMoreData
         })
 
         return { success: true }

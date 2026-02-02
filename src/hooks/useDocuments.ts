@@ -1,7 +1,7 @@
-import { useState, useCallback } from "react";
+import { useCallback, useState } from "react";
 import {
-  candidateDocumentsService,
-  type CandidateDocument,
+    candidateDocumentsService,
+    type CandidateDocument,
 } from "../core/http/services/candidateDocumentsService";
 
 interface SnackbarState {
@@ -277,15 +277,15 @@ export const useDocuments = () => {
         } else {
           const errorMessage = response.message || "Erro ao atualizar documento";
 
-          // Verificar se é erro de tenant city - nesse caso a operação principal pode ter sido bem-sucedida
-          const isTenantCityError = errorMessage.toLowerCase().includes("tenant city") ||
+          // Verificar se é erro de cidade sede - nesse caso a operação principal pode ter sido bem-sucedida
+          const isTenantCityError = errorMessage.toLowerCase().includes("cidade sede") ||
                                      errorMessage.toLowerCase().includes("no tag") ||
                                      errorMessage.toLowerCase().includes("no domain");
 
           if (isTenantCityError) {
             // Recarregar a lista para verificar se o status foi atualizado
             await fetchDocuments(pagination.currentPage, pagination.itemsPerPage);
-            showSnackbar("Documento atualizado, mas há um problema de configuração de Tenant City (verifique domain/tag)", "warning");
+            showSnackbar("Documento atualizado, mas há um problema de configuração de Cidade Sede (verifique domain/tag)", "warning");
             return true; // Retorna true pois a operação principal foi bem-sucedida
           } else {
             showSnackbar(errorMessage, "error");

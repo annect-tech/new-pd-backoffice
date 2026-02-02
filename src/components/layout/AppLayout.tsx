@@ -233,18 +233,13 @@ export default function AppLayout() {
       menus: [
         {
           icon: <ApartmentIcon />,
-          label: "Tenant Cities",
+          label: "Cidades Sedes",
           to: APP_ROUTES.TENANT_CITIES,
         },
         {
           icon: <LocationCityIcon />,
-          label: "Cidades permitidas",
+          label: "Cidades Permitidas",
           to: APP_ROUTES.ALLOWED_CITIES,
-        },
-        {
-          icon: <HomeIcon />,
-          label: "Endereços",
-          to: APP_ROUTES.ADDRESSES,
         },
         {
           icon: <EditIcon />,
@@ -260,6 +255,11 @@ export default function AppLayout() {
           icon: <DescriptionIcon />,
           label: "Documentos de Cotas",
           to: APP_ROUTES.QUOTA_DOCUMENTS,
+        },
+        {
+          icon: <HomeIcon />,
+          label: "Endereços",
+          to: APP_ROUTES.ADDRESSES,
         },
         {
           icon: <PersonIcon />,

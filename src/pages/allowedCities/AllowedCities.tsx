@@ -85,8 +85,8 @@ const AllowedCities: React.FC = () => {
       : userTenantId
         ? [{
             id: userTenantId,
-            domain: "Sua Tenant City",
-            name: "Sua Tenant City",
+            domain: "Sua Cidade Sede",
+            name: "Sua Cidade Sede",
             tag: null,
             createdAt: "",
             updatedAt: "",
@@ -111,10 +111,21 @@ const AllowedCities: React.FC = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
 
   useEffect(() => {
-    fetchAllowedCities(page + 1, rowsPerPage, searchTerm.trim() || undefined);
-  }, [fetchAllowedCities, page, rowsPerPage, searchTerm]);
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchTerm]);
+
+  useEffect(() => {
+    fetchAllowedCities(page + 1, rowsPerPage, debouncedSearchTerm.trim() || undefined);
+  }, [fetchAllowedCities, page, rowsPerPage, debouncedSearchTerm]);
 
   const handleOpen = (m: Mode, allowedCity?: typeof allowedCities[0]) => {
     setMode(m);
@@ -131,7 +142,7 @@ const AllowedCities: React.FC = () => {
         complemento: allowedCity.complemento && allowedCity.complemento !== "—" ? allowedCity.complemento : "",
         bairro: allowedCity.bairro || "",
         cnpj: applyCnpjMask(allowedCity.cnpj || ""),
-        tenant_city_id: allowedCity.tenant_city_id || "",
+        tenant_city_id: null,
       });
       setEditingId(allowedCity.id);
     } else {
@@ -168,25 +179,21 @@ const AllowedCities: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    if (!form.cidade.trim() || !form.uf.trim() || !form.rua.trim() || 
-        !form.numero.trim() || !form.bairro.trim() || !form.cnpj.trim() || 
-        !form.tenant_city_id.trim()) {
+    if (!form.cidade.trim() || !form.uf.trim() || !form.rua.trim() || !form.numero.trim() || !form.bairro.trim() || !form.cnpj.trim() || (mode === "create" && !form.tenant_city_id?.trim())) {
       return;
     }
 
-    const complementoTrim = form.complemento?.trim();
     const payload: AllowedCityPayload = {
       cidade: form.cidade.trim(),
       uf: form.uf.trim().toUpperCase(),
       active: form.active,
       rua: form.rua.trim(),
+      complemento: form.complemento?.trim().length ? form.complemento.trim() : "—",
       numero: form.numero.trim(),
       bairro: form.bairro.trim(),
       cnpj: removeCnpjMask(form.cnpj),
-      tenant_city_id: form.tenant_city_id.trim(),
+      tenant_city_id: form.tenant_city_id?.trim() || null,
     };
-    // API rejeita "" e exige string não vazia; quando vazio, envia placeholder
-    payload.complemento = complementoTrim || "—";
 
     if (mode === "create") {
       await createAllowedCity(payload);
@@ -287,7 +294,7 @@ const AllowedCities: React.FC = () => {
                     onClick={() => navigate(APP_ROUTES.TENANT_CITIES)}
                     sx={{ whiteSpace: "nowrap" }}
                   >
-                    Tenant Cities
+                    Cidades Sedes
                   </Button>
                   <Button
                     variant="outlined"
@@ -313,7 +320,7 @@ const AllowedCities: React.FC = () => {
                           <TableCell>ID</TableCell>
                           <TableCell>Cidade / UF</TableCell>
                           <TableCell>Status</TableCell>
-                          <TableCell sx={{ minWidth: 280 }}>Tenant City ID</TableCell>
+                          <TableCell sx={{ minWidth: 280 }}>Cidade Sede ID</TableCell>
                           <TableCell align="right">Ações</TableCell>
                         </TableRow>
                       </TableHead>
@@ -498,26 +505,27 @@ const AllowedCities: React.FC = () => {
               placeholder="00.000.000/0001-00"
               required
             />
-            <FormControl margin="dense" fullWidth required>
-              <InputLabel>Tenant City</InputLabel>
-              <Select
-                value={form.tenant_city_id}
-                onChange={(e) => setForm({ ...form, tenant_city_id: e.target.value })}
-                label="Tenant City"
-                error={!userTenantId}
-              >
-                {selectableTenants.map((tc) => (
-                  <MenuItem key={tc.id} value={tc.id}>
-                    {tc.name ?? tc.domain ?? tc.id}
-                  </MenuItem>
-                ))}
-              </Select>
-              {!userTenantId && (
-                <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
-                  Seu usuário não está associado a uma tenant. Entre em contato com o administrador.
-                </Typography>
-              )}
-            </FormControl>
+            {mode === 'create' && (<FormControl margin="dense" fullWidth required>
+                <InputLabel>Cidade Sede</InputLabel>
+                <Select
+                  value={form.tenant_city_id}
+                  onChange={(e) => setForm({ ...form, tenant_city_id: e.target.value })}
+                  label="Cidade Sede"
+                  error={!userTenantId}
+                >
+                  {selectableTenants.map((tc) => (
+                    <MenuItem key={tc.id} value={tc.id}>
+                      {tc.name ?? tc.domain ?? tc.id}
+                    </MenuItem>
+                  ))}
+                </Select>
+                {!userTenantId && (
+                  <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
+                    Seu usuário não está associado a uma tenant. Entre em contato com o administrador.
+                  </Typography>
+                )}
+              </FormControl>
+            )}
           </Box>
         </DialogContent>
         <DialogActions>
@@ -529,8 +537,7 @@ const AllowedCities: React.FC = () => {
             variant="outlined"
             disabled={
               !form.cidade.trim() || !form.uf.trim() || !form.rua.trim() || 
-              !form.numero.trim() || !form.bairro.trim() || !form.cnpj.trim() || 
-              !form.tenant_city_id.trim()
+              !form.numero.trim() || !form.bairro.trim() || !form.cnpj.trim() || (mode ==='create' && !form.tenant_city_id?.trim())
             }
           >
             {mode === "create" ? "Criar" : "Salvar"}

@@ -104,9 +104,9 @@ const ENDPOINTS: Endpoint[] = [
   { name: "Listar Contracts (Admin)", method: "GET", path: "/admin/contract", description: "Lista todos os contratos gerados", category: "📜 Contracts", queryParams: [{ name: "page", default: 1, description: "Página" }, { name: "size", default: 10, description: "Itens por página" }] },
   { name: "Listar Contracts (User)", method: "GET", path: "/user/contract", description: "Lista todos os contratos gerados", category: "📜 Contracts", queryParams: [{ name: "page", default: 1, description: "Página" }, { name: "size", default: 10, description: "Itens por página" }] },
   
-  // ==================== TENANT CITIES ====================
-  { name: "Listar Tenant Cities (Admin)", method: "GET", path: "/admin/tenant-cities", description: "Lista todas as Tenant Cities", category: "🏙️ Tenant Cities", queryParams: [{ name: "page", default: 1, description: "Página" }, { name: "size", default: 10, description: "Itens por página" }] },
-  { name: "Listar Tenant Cities (User)", method: "GET", path: "/user/tenant-cities", description: "Lista todas as Tenant Cities", category: "🏙️ Tenant Cities", queryParams: [{ name: "page", default: 1, description: "Página" }, { name: "size", default: 10, description: "Itens por página" }] },
+  // ==================== CIDADES SEDES ====================
+  { name: "Listar Cidades Sedes (Admin)", method: "GET", path: "/admin/tenant-cities", description: "Lista todas as Cidades Sedes", category: "🏙️ Cidades Sedes", queryParams: [{ name: "page", default: 1, description: "Página" }, { name: "size", default: 10, description: "Itens por página" }] },
+  { name: "Listar Cidades Sedes (User)", method: "GET", path: "/user/tenant-cities", description: "Lista todas as Cidades Sedes", category: "🏙️ Cidades Sedes", queryParams: [{ name: "page", default: 1, description: "Página" }, { name: "size", default: 10, description: "Itens por página" }] },
   
   // ==================== ALLOWED CITIES ====================
   { name: "Listar Allowed Cities (Admin)", method: "GET", path: "/admin/allowed-cities", description: "Lista as cidades permitidas", category: "🗺️ Allowed Cities", queryParams: [{ name: "page", default: 1, description: "Página" }, { name: "size", default: 10, description: "Itens por página" }] },

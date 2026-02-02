@@ -62,6 +62,7 @@ const TenantCities: React.FC = () => {
   } = useTenantCities();
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [mode, setMode] = useState<Mode>("create");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<TenantCityPayload>({
@@ -75,8 +76,18 @@ const TenantCities: React.FC = () => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchTenantCities(page + 1, rowsPerPage, searchTerm.trim() || undefined);
-  }, [fetchTenantCities, page, rowsPerPage, searchTerm]);
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchTerm]);
+
+  useEffect(() => {
+    fetchTenantCities(page + 1, rowsPerPage, debouncedSearchTerm.trim() || undefined);
+  }, [fetchTenantCities, page, rowsPerPage, debouncedSearchTerm]);
 
   const handleOpen = (m: Mode, tenantCity?: typeof tenantCities[0]) => {
     setMode(m);
@@ -123,7 +134,7 @@ const TenantCities: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm("Tem certeza que deseja deletar esta Tenant City?")) {
+    if (window.confirm("Tem certeza que deseja deletar esta Cidade Sede?")) {
       setDeletingId(id);
       await deleteTenantCity(id);
       setDeletingId(null);
@@ -166,12 +177,12 @@ const TenantCities: React.FC = () => {
           }}
         >
           <PageHeader
-            title="Tenant Cities"
-            subtitle="Gerencie as Tenant Cities do sistema."
-            description="Tenant Cities são domínios que representam diferentes organizações ou cidades no sistema. Cada usuário deve estar associado a uma Tenant City."
+            title="Cidades Sedes"
+            subtitle="Gerencie as cidades sedes do sistema."
+            description="Cidades Sedes são domínios que representam diferentes organizações ou cidades no sistema. Cada usuário deve estar associado a uma cidade sede."
             breadcrumbs={[
               { label: "Dashboard", path: APP_ROUTES.DASHBOARD },
-              { label: "Tenant Cities" },
+              { label: "Cidades Sedes" },
             ]}
           />
 
@@ -196,22 +207,25 @@ const TenantCities: React.FC = () => {
                     sx={textFieldStyles}
                   />
                 </Box>
-                <IconButton
-                  onClick={() =>
-                    fetchTenantCities(page + 1, rowsPerPage, searchTerm.trim() || undefined)
-                  }
-                  {...iconButtonStyles}
-                >
-                  <RefreshIcon />
-                </IconButton>
-                <Button
-                  variant="outlined"
-                  startIcon={<AddIcon />}
-                  onClick={() => handleOpen("create")}
-                  sx={{ whiteSpace: "nowrap" }}
-                >
-                  Nova Tenant City
-                </Button>
+                <div>
+                  <IconButton
+                    onClick={() =>
+                      fetchTenantCities(page + 1, rowsPerPage, searchTerm.trim() || undefined)
+                    }
+                    {...iconButtonStyles}
+                  >
+                    <RefreshIcon />
+                  </IconButton>
+                  <Button
+                    style={{ marginLeft: "10px" }}
+                    variant="outlined"
+                    startIcon={<AddIcon />}
+                    onClick={() => handleOpen("create")}
+                    sx={{ whiteSpace: "nowrap" }}
+                  >
+                    Nova Cidade Sede
+                  </Button>
+                </div>
               </Toolbar>
 
               {loading ? (
@@ -238,8 +252,8 @@ const TenantCities: React.FC = () => {
                             <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
                               <Typography color={designSystem.colors.text.disabled}>
                                 {searchTerm
-                                  ? "Nenhuma Tenant City encontrada"
-                                  : "Nenhuma Tenant City cadastrada"}
+                                  ? "Nenhuma Cidade Sede encontrada"
+                                  : "Nenhuma Cidade Sede cadastrada"}
                               </Typography>
                             </TableCell>
                           </TableRow>
@@ -304,6 +318,10 @@ const TenantCities: React.FC = () => {
                     onRowsPerPageChange={handleChangeRowsPerPage}
                     rowsPerPageOptions={[5, 10, 25, 50]}
                     sx={tablePaginationStyles}
+                    labelRowsPerPage="Linhas por página"
+                    labelDisplayedRows={({ from, to, count }) => 
+                      `${from}-${to} de ${count !== -1 ? count : `mais de ${to}`}`
+                    }
                   />
                 </>
               )}
@@ -315,7 +333,7 @@ const TenantCities: React.FC = () => {
       {/* Dialog de Criar/Editar */}
       <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
         <DialogTitle>
-          {mode === "create" ? "Nova Tenant City" : "Editar Tenant City"}
+          {mode === "create" ? "Nova Cidade Sede" : "Editar Cidade Sede"}
         </DialogTitle>
         <DialogContent>
           <TextField
