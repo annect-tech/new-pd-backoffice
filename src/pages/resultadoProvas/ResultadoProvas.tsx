@@ -63,7 +63,7 @@ const ResultadoProvas: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<
-    "all" | "aprovado" | "reprovado" | "pendente"
+    "all" | "aprovado" | "reprovado" | "pendente" | "ausente"
   >("all");
   const [filterAnchor, setFilterAnchor] = useState<null | HTMLElement>(null);
   const [downloadAnchor, setDownloadAnchor] = useState<null | HTMLElement>(null);
@@ -87,6 +87,7 @@ const ResultadoProvas: React.FC = () => {
         APPROVED: "aprovado",
         REJECTED: "reprovado",
         PENDING: "pendente",
+        ABSENT: "ausente",
       };
       const statusNormalizado =
         exam.status && statusMap[exam.status.toUpperCase()]
@@ -120,6 +121,7 @@ const ResultadoProvas: React.FC = () => {
         if (filterStatus === "aprovado") return row.status === "aprovado";
         if (filterStatus === "reprovado") return row.status === "reprovado";
         if (filterStatus === "pendente") return row.status === "pendente";
+        if (filterStatus === "ausente") return row.status === "ausente";
         return true;
       });
   }, [rows, searchTerm, filterStatus]);
@@ -151,7 +153,7 @@ const ResultadoProvas: React.FC = () => {
   const openDownloadMenu = (e: React.MouseEvent<HTMLElement>) =>
     setDownloadAnchor(e.currentTarget);
   const closeFilterMenu = () => setFilterAnchor(null);
-  const applyFilter = (status: "all" | "aprovado" | "reprovado" | "pendente") => {
+  const applyFilter = (status: "all" | "aprovado" | "reprovado" | "pendente" | "ausente") => {
     setFilterStatus(status);
     closeFilterMenu();
   };
@@ -191,6 +193,8 @@ const ResultadoProvas: React.FC = () => {
         return "#F44336"; // Vermelho
       case "pendente":
         return "#FF9800"; // Laranja
+      case "ausente":
+        return "#9E9E9E"; // Cinza
       default:
         return "#666"; // Cinza
     }
@@ -345,6 +349,27 @@ const ResultadoProvas: React.FC = () => {
                       }}
                     >
                       Pendentes ({rows.filter((r) => r.status === "pendente").length})
+                    </MenuItem>
+                    <MenuItem
+                      onClick={() => applyFilter("ausente")}
+                      sx={{
+                        backgroundColor: (theme) => filterStatus === "ausente"
+                          ? (theme.palette.mode === "dark"
+                            ? "rgba(166, 80, 240, 0.15)"
+                            : designSystem.colors.background.tertiary)
+                          : "transparent",
+                        color: (theme) => theme.palette.mode === "dark"
+                          ? designSystem.colors.text.primaryDark
+                          : designSystem.colors.text.primary,
+                        fontWeight: filterStatus === "ausente" ? 600 : 400,
+                        "&:hover": {
+                          backgroundColor: (theme) => theme.palette.mode === "dark"
+                            ? "rgba(166, 80, 240, 0.2)"
+                            : designSystem.colors.primary.lightest,
+                        },
+                      }}
+                    >
+                      Ausentes ({rows.filter((r) => r.status === "ausente").length})
                     </MenuItem>
                   </Menu>
                   <IconButton {...iconButtonStyles} onClick={openDownloadMenu}>

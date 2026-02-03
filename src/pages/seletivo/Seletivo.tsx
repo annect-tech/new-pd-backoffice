@@ -67,10 +67,7 @@ const Seletivo: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
-  // const [filterStatus, setFilterStatus] = useState<
-  //   "all" | "active" | "inactive"
-  // >("all");
-  const filterStatus = "all"; // Filtro de status desabilitado por enquanto
+  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc" | "none">("none");
   const [filterAnchor, setFilterAnchor] = useState<null | HTMLElement>(null);
   const [downloadAnchor, setDownloadAnchor] = useState<null | HTMLElement>(
@@ -123,57 +120,48 @@ const Seletivo: React.FC = () => {
     
     let result = [...enrichedUsers];
     
-    // Filtrar admin
-    result = result.filter((u) => {
-      const username = (u?.username || "").toLowerCase();
-      return username !== "admin";
-    });
+    // Filtrar por status (ativo/inativo)
+    if (filterStatus !== "all") {
+      result = result.filter((u) => {
+        const isActive = u.allowed_city?.active ?? true;
+        return filterStatus === "active" ? isActive : !isActive;
+      });
+    }
     
+    // Filtrar por termo de busca
     if (debouncedSearchTerm && debouncedSearchTerm.trim()) {
       const searchLower = debouncedSearchTerm.trim().toLowerCase();
-      
+
       result = result.filter((u) => {
         // Buscar em ID
         const id = String(u.id || "").toLowerCase();
         if (id.includes(searchLower)) return true;
-        
-        // Buscar em username
-        const username = (u.username || "").toLowerCase();
-        if (username.includes(searchLower)) return true;
-        
+
+        // Buscar em nome
+        const name = (u.name || "").toLowerCase();
+        if (name.includes(searchLower)) return true;
+
+        // Buscar em CPF
+        const cpf = (u.cpf || "").toLowerCase();
+        if (cpf.includes(searchLower)) return true;
+
         // Buscar em email
         const email = (u.email || "").toLowerCase();
         if (email.includes(searchLower)) return true;
-        
+
         return false;
       });
     }
-    
-    // Aplicar filtro de status
-    if (filterStatus !== "all") {
-      result = result.filter((u) => {
-        if (!u?.allowed_city) {
-          return filterStatus === "inactive";
-        }
-        if (filterStatus === "active") {
-          return u.allowed_city.active === true;
-        }
-        if (filterStatus === "inactive") {
-          return u.allowed_city.active === false || u.allowed_city.active === null;
-        }
-        return true;
-      });
-    }
-    
+
     if (sortOrder !== "none") {
       result.sort((a, b) => {
-        // Ordenar por username
-        const usernameA = (a.username || "").trim().toLowerCase();
-        const usernameB = (b.username || "").trim().toLowerCase();
-        
-        const comparison = usernameA.localeCompare(usernameB, 'pt-BR');
+        // Ordenar por nome
+        const nameA = (a.name || "").trim().toLowerCase();
+        const nameB = (b.name || "").trim().toLowerCase();
+
+        const comparison = nameA.localeCompare(nameB, 'pt-BR');
         const finalResult = sortOrder === "asc" ? comparison : -comparison;
-        
+
         return finalResult;
       });
     }
@@ -227,10 +215,10 @@ const Seletivo: React.FC = () => {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  // Resetar página quando o termo de pesquisa mudar
+  // Resetar página quando o termo de pesquisa ou filtro de status mudar
   useEffect(() => {
     setPage(0);
-  }, [debouncedSearchTerm]);
+  }, [debouncedSearchTerm, filterStatus]);
 
   // Buscar dados quando página ou rowsPerPage mudarem
   // Não enviamos o searchTerm ao backend, pois filtramos localmente
@@ -255,10 +243,10 @@ const Seletivo: React.FC = () => {
   const openDownloadMenu = (e: React.MouseEvent<HTMLElement>) =>
     setDownloadAnchor(e.currentTarget);
   const closeFilterMenu = () => setFilterAnchor(null);
-  // const applyFilter = (status: "all" | "active" | "inactive") => {
-  //   setFilterStatus(status);
-  //   closeFilterMenu();
-  // };
+  const applyFilter = (status: "all" | "active" | "inactive") => {
+    setFilterStatus(status);
+    closeFilterMenu();
+  };
   const applySortOrder = (order: "asc" | "desc" | "none") => {
     setSortOrder(order);
     closeFilterMenu();
@@ -343,7 +331,7 @@ const Seletivo: React.FC = () => {
           <PageHeader
             title="Seletivo"
             subtitle="Gerencie e visualize todos os candidatos do processo seletivo."
-            description="Pesquise candidatos por CPF, nome ou email, filtre por status (ativos/inativos), exporte os dados em diferentes formatos (CSV, JSON, XLSX) e visualize informações detalhadas de cada candidato, incluindo dados de persona, endereços, guardiões e informações de registro."
+            description="Pesquise candidatos por CPF, nome ou email, exporte os dados em diferentes formatos (CSV, JSON, XLSX) e visualize informações detalhadas de cada candidato, incluindo dados de persona, endereços, guardiões e informações de registro."
             breadcrumbs={[
               { label: "Dashboard", path: APP_ROUTES.DASHBOARD },
               { label: "Seletivo" },
@@ -362,7 +350,7 @@ const Seletivo: React.FC = () => {
                       : designSystem.colors.text.disabled 
                   }} />
                   <TextField
-                    placeholder="Pesquisar por ID, username ou email..."
+                    placeholder="Pesquisar por ID, nome, CPF ou email..."
                     variant="standard"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -394,22 +382,34 @@ const Seletivo: React.FC = () => {
                       },
                     }}
                   >
-                    {/* <Typography sx={{ px: 2, py: 1, fontWeight: 600, fontSize: "0.875rem", color: "#6B7280" }}>
-                      Status
+                    <Typography sx={{ 
+                      px: 2, 
+                      py: 1, 
+                      fontWeight: 600, 
+                      fontSize: "0.875rem", 
+                      color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#6B7280" 
+                    }}>
+                      Filtrar por Status
                     </Typography>
                     <MenuItem 
                       onClick={() => applyFilter("all")}
                       sx={{ 
-                        backgroundColor: filterStatus === "all" ? "#F3F4F6" : "transparent",
+                        backgroundColor: (theme) => filterStatus === "all" 
+                          ? (theme.palette.mode === "dark" ? "rgba(255, 255, 255, 0.1)" : "#F3F4F6")
+                          : "transparent",
+                        color: (theme) => theme.palette.mode === "dark" ? "#FFFFFF" : "inherit",
                         fontWeight: filterStatus === "all" ? 600 : 400 
                       }}
                     >
                       Todos
-                    </MenuItem> */}
-                    {/* <MenuItem 
+                    </MenuItem>
+                    <MenuItem 
                       onClick={() => applyFilter("active")}
                       sx={{ 
-                        backgroundColor: filterStatus === "active" ? "#F3F4F6" : "transparent",
+                        backgroundColor: (theme) => filterStatus === "active" 
+                          ? (theme.palette.mode === "dark" ? "rgba(255, 255, 255, 0.1)" : "#F3F4F6")
+                          : "transparent",
+                        color: (theme) => theme.palette.mode === "dark" ? "#FFFFFF" : "inherit",
                         fontWeight: filterStatus === "active" ? 600 : 400 
                       }}
                     >
@@ -418,12 +418,15 @@ const Seletivo: React.FC = () => {
                     <MenuItem 
                       onClick={() => applyFilter("inactive")}
                       sx={{ 
-                        backgroundColor: filterStatus === "inactive" ? "#F3F4F6" : "transparent",
+                        backgroundColor: (theme) => filterStatus === "inactive" 
+                          ? (theme.palette.mode === "dark" ? "rgba(255, 255, 255, 0.1)" : "#F3F4F6")
+                          : "transparent",
+                        color: (theme) => theme.palette.mode === "dark" ? "#FFFFFF" : "inherit",
                         fontWeight: filterStatus === "inactive" ? 600 : 400 
                       }}
                     >
                       Inativos
-                    </MenuItem> */}
+                    </MenuItem>
                     <Box sx={{ 
                       borderTop: (theme) => theme.palette.mode === "dark" 
                         ? "1px solid rgba(255, 255, 255, 0.1)" 
@@ -437,7 +440,7 @@ const Seletivo: React.FC = () => {
                       fontSize: "0.875rem", 
                       color: (theme) => theme.palette.mode === "dark" ? "#B0B0B0" : "#6B7280" 
                     }}>
-                      Ordenar por Username
+                      Ordenar por Nome
                     </Typography>
                     <MenuItem 
                       onClick={() => applySortOrder("none")}
@@ -551,7 +554,7 @@ const Seletivo: React.FC = () => {
                     <TableHead>
                       <TableRow>
                         <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 60 }}>ID</TableCell>
-                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 200 }}>Username</TableCell>
+                        <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 200 }}>Nome</TableCell>
                         <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 300 }}>Email</TableCell>
                         <TableCell {...tableHeadStyles} sx={{ ...tableHeadStyles.sx, width: 150 }} align="center">
                           Ações
@@ -605,7 +608,7 @@ const Seletivo: React.FC = () => {
                                 textOverflow: "ellipsis",
                               }}
                             >
-                              {user.username || "—"}
+                              {user.name || "—"}
                             </TableCell>
                             <TableCell
                               sx={{

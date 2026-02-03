@@ -6,17 +6,31 @@ const API_URL = getApiUrl();
 
 export interface StudentData {
   id: number;
-  completeName: string;
   registration: string;
   corp_email: string;
   monitor: string;
   status: string;
-  cpf: string;
-  birth_date: string;
-  username: string;
+  first_name?: string;
+  last_name?: string;
+  completeName?: string;
+  cpf?: string;
+  birth_date?: string;
+  username?: string;
   user_id?: number;
+  user_data_id?: number;
+  defaultPassword?: string;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface StudentReadyToEnrolledCsvDto {
+  student_data_id: string;
+  registration: string;
+  corp_email: string;
+  full_name: string;
+  personal_email: string;
+  cpf: string;
+  city: string;
 }
 
 export interface PaginatedResponse<T> {
@@ -171,5 +185,53 @@ export const studentDataService = {
     }
 
     return directResponse;
+  },
+
+  /**
+   * Lista estudantes prontos para matrícula via CSV
+   * @param page - Número da página (padrão: 1)
+   * @param size - Itens por página (padrão: 10)
+   */
+  listReadyToEnrolledCsv: (page: number = 1, size: number = 10) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.get<PaginatedResponse<StudentReadyToEnrolledCsvDto>>(
+      API_URL,
+      `/${prefix}/student-data/ready-to-enrolled-csv`,
+      {
+        queryParams: {
+          page,
+          size,
+        },
+      }
+    );
+  },
+
+  /**
+   * Matrícula um único estudante via CSV
+   * Reutiliza o endpoint de confirmação em lote com um único ID
+   * @param studentId - ID do estudante para matricular
+   */
+  enrollSingleStudent: (studentId: string) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.request<{ message: string }>(
+      "PATCH",
+      API_URL,
+      `/${prefix}/student-data/confirm-enrolled-students`,
+      { studentDataIds: [studentId] }
+    );
+  },
+
+  /**
+   * Matrícula múltiplos estudantes via CSV
+   * @param studentIds - Array de IDs dos estudantes para matricular
+   */
+  enrollMultipleStudents: (studentIds: string[]) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.request<{ message: string }>(
+      "PATCH",
+      API_URL,
+      `/${prefix}/student-data/confirm-enrolled-students`,
+      { studentDataIds: studentIds }
+    );
   },
 };

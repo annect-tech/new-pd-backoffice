@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   TextField,
@@ -25,20 +25,10 @@ import { useNavigate } from "react-router";
 import { APP_ROUTES } from "../../util/constants";
 import PageHeader from "../../components/ui/page/PageHeader";
 import { designSystem, primaryButtonStyles, paperStyles } from "../../styles/designSystem";
-
-// Funções utilitárias para CPF
-const formatCPF = (value: string): string => {
-  const numbers = value.replace(/\D/g, "");
-  return numbers
-    .replace(/(\d{3})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d{1,2})$/, "$1-$2")
-    .slice(0, 14);
-};
-
-const cleanCPF = (value: string): string => {
-  return value.replace(/\D/g, "");
-};
+import { applyCpfMask, removeCpfMask } from "../../util/masks";
+import { userProfileService } from "../../core/http/services/userProfileService";
+import { usersService, type UserResponse } from "../../core/http/services/usersService";
+import { studentDataService } from "../../core/http/services/studentDataService";
 
 const statusOptions = [
   { label: "Ativo", value: "Ativo" },
@@ -48,32 +38,6 @@ const statusOptions = [
   { label: "Atenção", value: "Atencao" },
 ];
 
-// Dados mockados de monitores
-const MOCK_MONITORS = [
-  { id: 1, username: "carlos.mendes", first_name: "Carlos", last_name: "Mendes" },
-  { id: 2, username: "ana.prado", first_name: "Ana", last_name: "Prado" },
-  { id: 3, username: "joao.silva", first_name: "João", last_name: "Silva" },
-];
-
-// Dados mockados de usuários para buscar por CPF
-const MOCK_USERS = [
-  {
-    id: 1,
-    cpf: "12345678900",
-    registration: "2025A001",
-    email: "candidato1@projetodesenvolve.com.br",
-    first_name: "Candidato",
-    last_name: "Um",
-  },
-  {
-    id: 2,
-    cpf: "98765432100",
-    registration: "2025A002",
-    email: "candidato2@projetodesenvolve.com.br",
-    first_name: "Candidato",
-    last_name: "Dois",
-  },
-];
 
 interface FormValues {
   cpf: string;
@@ -86,7 +50,7 @@ interface FormValues {
 const validateForm = (values: FormValues): Record<string, string> => {
   const errors: Record<string, string> = {};
   
-  const cleanCpf = cleanCPF(values.cpf || "");
+  const cleanCpf = removeCpfMask(values.cpf || "");
   if (!cleanCpf) {
     errors.cpf = "CPF é obrigatório";
   } else if (!/^\d{11}$/.test(cleanCpf)) {
@@ -153,6 +117,7 @@ const CadastroAlunos: React.FC = () => {
   const [isFetching, setIsFetching] = useState(false);
   const [cpfFetchError, setCpfFetchError] = useState<string | null>(null);
   const [cpfDisplay, setCpfDisplay] = useState("");
+  const [foundUserId, setFoundUserId] = useState<number | null>(null);
   const [formValues, setFormValues] = useState<FormValues>({
     cpf: "",
     registration: "",
@@ -167,11 +132,31 @@ const CadastroAlunos: React.FC = () => {
   const [statusOther, setStatusOther] = useState<string>("");
   const [formError, setFormError] = useState<string | null>(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" as "success" | "error" });
+  const [monitors, setMonitors] = useState<UserResponse[]>([]);
+
+  useEffect(() => {
+    const fetchMonitors = async () => {
+      try {
+        const response = await usersService.listUsers(1, 1000);
+        if (response.status === 200 && response.data) {
+          const users: UserResponse[] = Array.isArray(response.data)
+            ? response.data
+            : Array.isArray((response.data as any)?.data)
+              ? (response.data as any).data
+              : [];
+          setMonitors(users);
+        }
+      } catch {
+        console.error("Erro ao buscar monitores");
+      }
+    };
+    fetchMonitors();
+  }, []);
 
   const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatCPF(e.target.value);
+    const formatted = applyCpfMask(e.target.value);
     setCpfDisplay(formatted);
-    const cleanValue = cleanCPF(formatted);
+    const cleanValue = removeCpfMask(formatted);
     setFormValues((prev) => ({ ...prev, cpf: cleanValue }));
     if (errors.cpf) {
       setErrors((prev) => ({ ...prev, cpf: "" }));
@@ -179,23 +164,23 @@ const CadastroAlunos: React.FC = () => {
   };
 
   const onCpfBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
-    const cpf = cleanCPF(e.target.value);
+    const cpf = removeCpfMask(e.target.value);
     if (!/^\d{11}$/.test(cpf)) return;
 
     setIsFetching(true);
     setCpfFetchError(null);
+    setFoundUserId(null);
 
     try {
-      // Mock: buscar dados do usuário
-      const usr = MOCK_USERS.find((u) => u.cpf === cpf);
+      const profile = await userProfileService.getByCpf(cpf);
 
-      if (!usr) {
+      if (!profile) {
         setCpfFetchError("Nenhum usuário encontrado para este CPF");
       } else {
+        setFoundUserId(profile.user_id);
         setFormValues((prev) => ({
           ...prev,
-          registration: usr.registration,
-          corp_email: usr.email,
+          corp_email: profile.user_display?.email || prev.corp_email,
         }));
       }
     } catch {
@@ -259,25 +244,21 @@ const CadastroAlunos: React.FC = () => {
     }
     
     try {
-      // Mock: buscar usuário pelo CPF
-      const usr = MOCK_USERS.find((u) => u.cpf === formValues.cpf);
-      if (!usr) {
-        throw new Error("Usuário não encontrado para este CPF");
+      if (!foundUserId) {
+        throw new Error("Usuário não encontrado para este CPF. Busque o CPF primeiro.");
       }
 
-      // Mock: criar aluno (simular requisição)
-      // Simular delay de requisição
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const createResponse = await studentDataService.create({
+        user_id: foundUserId,
+        registration: formValues.registration,
+        corp_email: formValues.corp_email,
+        monitor: formValues.monitor,
+        status: formValues.status,
+      });
 
-      // Em produção, aqui faria a requisição real:
-      // await fetch("https://form-api-hml.pdinfinita.com.br/enrolled", {
-      //   method: "POST",
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //     "Api-Key": "Rm9ybUFwaUZlaXRhUGVsb0plYW5QaWVycmVQYXJhYURlc2Vudm9sdmU=",
-      //   },
-      //   body: JSON.stringify(payload),
-      // });
+      if (createResponse.status !== 200 && createResponse.status !== 201) {
+        throw new Error(createResponse.message || "Erro ao cadastrar aluno");
+      }
 
       setSnackbar({
         open: true,
@@ -559,9 +540,11 @@ const CadastroAlunos: React.FC = () => {
                             },
                           }}
                         >
-                          {MOCK_MONITORS.map((m) => (
+                          {monitors.map((m) => (
                             <MenuItem key={m.id} value={m.username}>
-                              {m.first_name} {m.last_name}
+                              {m.first_name || m.last_name
+                                ? `${m.first_name || ""} ${m.last_name || ""}`.trim()
+                                : m.username || m.email}
                             </MenuItem>
                           ))}
                           <MenuItem value="Outro">Outro</MenuItem>
