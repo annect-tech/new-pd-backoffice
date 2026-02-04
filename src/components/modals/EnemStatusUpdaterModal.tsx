@@ -119,7 +119,9 @@ const EnemStatusUpdaterModal: React.FC<EnemStatusUpdaterModalProps> = ({
             label="Selecione o registro"
             onChange={(e) => setSelectedId(e.target.value as string)}
           >
-            {results.map((item) => (
+            {results
+              .filter((item) => item.status.toLowerCase() !== 'approved')
+              .map((item) => (
               <MenuItem key={item.id} value={item.id}>
                 {item.inscription_number} - {item.name} CPF {item.cpf}
               </MenuItem>
