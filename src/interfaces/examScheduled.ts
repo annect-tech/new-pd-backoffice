@@ -6,7 +6,7 @@ export interface ExamScheduled {
   id: string;
   user_data_id: number;
   score: number;
-  status: "scheduled" | "absent" | "present" | string;
+  status: "pendente" | "aprovado" | "ausente" | 'desqualificado' | string;
   exam_scheduled_hour_id: string | null;
   user_data: {
     cpf: string;
