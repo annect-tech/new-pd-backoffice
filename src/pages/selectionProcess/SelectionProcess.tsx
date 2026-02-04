@@ -4,7 +4,6 @@ import {
   Paper,
   Toolbar,
   IconButton,
-  Typography,
   CircularProgress,
   Alert,
   TextField,
@@ -21,6 +20,10 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import {
   Refresh as RefreshIcon,
@@ -69,7 +72,7 @@ const GestaoProcessosSeletivos: React.FC = () => {
       if (response && response.data) {
         setProcesses(response.data.data || []);
       }
-      
+
     } catch (err) {
       showSnackbar("Erro ao carregar processos seletivos", "error");
     } finally {
@@ -77,30 +80,29 @@ const GestaoProcessosSeletivos: React.FC = () => {
     }
   };
 
+  const fetchCities = async () => {
+    try {
+      const allCities = await tenantCitiesService.list();
+
+      if (allCities && allCities.data) {        
+        const filteredCities = allCities.data.data.filter((currentCity => currentCity.name));
+
+        setTenantCities(filteredCities || []);
+      }
+    } catch (err) {
+      console.error("Erro ao carregar cidades", err);
+    }
+  };
+
   useEffect(() => {
     fetchProcesses();
+    fetchCities();
   }, []);
 
-  useEffect(() => {
-    if (!processes || !processes.length) return;
-
-    const getCities = async () => {
-      const allCities = await tenantCitiesService.list();
-      
-      if (allCities && allCities.data) {
-        setTenantCities(allCities.data.data || []);
-      }
-    }
-
-    getCities();
-  }, [processes])
-
-  // useEffect(() => {
-  //   if (!tenantCities || !tenantCities.length) return;
-
-
-
-  // }, [tenantCities])
+  const getCityName = (cityId: string) => {
+    const city = tenantCities.find((c) => c.id === cityId);
+    return city?.name || "Cidade não identificada";
+  };
 
   const showSnackbar = (message: string, severity: "success" | "error") => {
     setSnackbar({ open: true, message, severity });
@@ -199,7 +201,7 @@ const GestaoProcessosSeletivos: React.FC = () => {
                   <TableRow>
                     <TableCell {...tableHeadStyles}>ID</TableCell>
                     <TableCell {...tableHeadStyles}>Nome do Processo</TableCell>
-                    <TableCell {...tableHeadStyles}>ID Cidade Sede (Tenant)</TableCell>
+                    <TableCell {...tableHeadStyles}>Cidade Sede</TableCell>
                     <TableCell {...tableHeadStyles} align="center">Ações</TableCell>
                   </TableRow>
                 </TableHead>
@@ -208,12 +210,6 @@ const GestaoProcessosSeletivos: React.FC = () => {
                     <TableRow>
                       <TableCell colSpan={4} align="center" sx={{ py: 5 }}>
                         <CircularProgress {...progressStyles} />
-                      </TableCell>
-                    </TableRow>
-                  ) : filteredProcesses.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={4} align="center" sx={{ py: 5 }}>
-                        <Typography color="textSecondary">Nenhum processo seletivo encontrado.</Typography>
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -228,7 +224,7 @@ const GestaoProcessosSeletivos: React.FC = () => {
                           {p.id.split("-")[0]}...
                         </TableCell>
                         <TableCell sx={{ fontWeight: 600 }}>{p.name}</TableCell>
-                        <TableCell>{p.tenant_city_id}</TableCell>
+                        <TableCell>{getCityName(p.tenant_city_id)}</TableCell>
                         <TableCell align="center">
                           <IconButton size="small" color="primary">
                             <EditIcon fontSize="small" />
@@ -255,15 +251,29 @@ const GestaoProcessosSeletivos: React.FC = () => {
               fullWidth
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Ex: Vestibular 2024.2"
             />
-            <TextField
-              label="ID da Cidade Sede (Tenant)"
-              fullWidth
-              value={formData.tenant_city_id}
-              onChange={(e) => setFormData({ ...formData, tenant_city_id: e.target.value })}
-              placeholder="UUID da cidade"
-            />
+            
+            <FormControl fullWidth>
+              <InputLabel id="select-city-label">Cidade Sede</InputLabel>
+              <Select
+                labelId="select-city-label"
+                label="Cidade Sede"
+                value={formData.tenant_city_id}
+                onChange={(e) => setFormData({ ...formData, tenant_city_id: e.target.value })}
+              >
+                {tenantCities.length === 0 ? (
+                  <MenuItem disabled value="">
+                    <em>Nenhuma cidade carregada</em>
+                  </MenuItem>
+                ) : (
+                  tenantCities.map((city) => (
+                    <MenuItem key={city.id} value={city.id}>
+                      {city.name || "Cidade sem nome"}
+                    </MenuItem>
+                  ))
+                )}
+              </Select>
+            </FormControl>
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 2, gap: 1 }}>
