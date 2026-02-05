@@ -29,6 +29,7 @@ import Login from "../../pages/authPages/Login";
 import { AuthMiddleware } from "../../core/middleware/AuthMiddleware";
 import { RoleGuard } from "../../core/middleware/RoleGuard";
 import Unauthorized from "../../pages/unauthorized/Unauthorized";
+import GestaoProcessosSeletivos from "../../pages/selectionProcess/SelectionProcess";
 
 export const AppRoutes = () => (
   <Routes>
@@ -49,6 +50,7 @@ export const AppRoutes = () => (
 
       {/* Rotas dos Cards Gerais */}
       <Route path={APP_ROUTES.SELECTIVE} element={<Seletivo />} />
+      <Route path={APP_ROUTES.SELECTION_PROCESS} element={<GestaoProcessosSeletivos />} />
       <Route path={APP_ROUTES.EXAM_SCHEDULED} element={<ListaPresenca />} />
       <Route path={APP_ROUTES.MERIT_VALIDATION} element={<AprovacaoMerito />} />
       <Route path={APP_ROUTES.EXAMS} element={<ResultadoProvas />} />
