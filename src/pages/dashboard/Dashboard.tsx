@@ -18,6 +18,7 @@ import HomeIcon from "@mui/icons-material/Home";
 import DescriptionIcon from "@mui/icons-material/Description";
 import ApartmentIcon from "@mui/icons-material/Apartment";
 import HowToRegIcon from "@mui/icons-material/HowToReg";
+import AssignmentIcon from "@mui/icons-material/Assignment";
 import DashboardCard from "../../components/ui/card/DashboardCard";
 import { APP_ROUTES } from "../../util/constants";
 import { useAuthContext } from "../../app/providers/AuthProvider";
@@ -49,6 +50,11 @@ const Dashboard: React.FC = () => {
       title: "Seletivo",
       icon: <TrackChangesIcon sx={{ fontSize: 48 }} />,
       link: APP_ROUTES.SELECTIVE,
+    },
+    {
+      title: "Processos Seletivos",
+      icon: <AssignmentIcon />,
+      link: APP_ROUTES.SELECTION_PROCESS,
     },
     {
       title: "Lista de Presença",
