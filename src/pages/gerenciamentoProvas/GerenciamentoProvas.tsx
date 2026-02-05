@@ -19,7 +19,6 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Divider,
   Tooltip,
   Table,
   TableBody,

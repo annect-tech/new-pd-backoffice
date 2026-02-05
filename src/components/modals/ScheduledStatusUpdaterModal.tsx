@@ -51,7 +51,10 @@ const ScheduledStatusUpdaterModal: React.FC<ScheduledStatusUpdaterModalProps> = 
     setLoading(true);
     setError(null);
     try {
-      const response = await examsScheduledService.updateStatus(selectedExam, newStatus);
+      const response = await examsScheduledService.updateStatus(
+        selectedExam,
+        examsScheduledService.mapStatusToAPI(newStatus)
+      );
 
       if (response.status >= 200 && response.status < 300) {
         setSuccess(true);
