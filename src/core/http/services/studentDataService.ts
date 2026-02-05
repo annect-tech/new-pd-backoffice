@@ -24,13 +24,14 @@ export interface StudentData {
 }
 
 export interface StudentReadyToEnrolledCsvDto {
-  student_data_id: string;
+  id: string;                    // ID do student_data (usado na confirmação)
+  student_data_id?: string;      // Alternativo (caso a API retorne assim)
   registration: string;
   corp_email: string;
-  full_name: string;
+  first_name: string;
+  last_name: string;
   personal_email: string;
-  cpf: string;
-  city: string;
+  defaultPassword: string;
 }
 
 export interface PaginatedResponse<T> {
@@ -209,29 +210,31 @@ export const studentDataService = {
   /**
    * Matrícula um único estudante via CSV
    * Reutiliza o endpoint de confirmação em lote com um único ID
-   * @param studentId - ID do estudante para matricular
+   * @param studentId - ID do estudante para matricular (ID do student_data)
    */
-  enrollSingleStudent: (studentId: string) => {
+  enrollSingleStudent: (studentId: string | number) => {
     const prefix = getEndpointPrefix();
+    const numericId = typeof studentId === 'string' ? parseInt(studentId, 10) : studentId;
     return httpClient.request<{ message: string }>(
       "PATCH",
       API_URL,
       `/${prefix}/student-data/confirm-enrolled-students`,
-      { studentDataIds: [studentId] }
+      { ids: [numericId] }
     );
   },
 
   /**
    * Matrícula múltiplos estudantes via CSV
-   * @param studentIds - Array de IDs dos estudantes para matricular
+   * @param studentIds - Array de IDs dos estudantes para matricular (IDs do student_data)
    */
-  enrollMultipleStudents: (studentIds: string[]) => {
+  enrollMultipleStudents: (studentIds: (string | number)[]) => {
     const prefix = getEndpointPrefix();
+    const numericIds = studentIds.map(id => typeof id === 'string' ? parseInt(id, 10) : id);
     return httpClient.request<{ message: string }>(
       "PATCH",
       API_URL,
       `/${prefix}/student-data/confirm-enrolled-students`,
-      { studentDataIds: studentIds }
+      { ids: numericIds }
     );
   },
 };
