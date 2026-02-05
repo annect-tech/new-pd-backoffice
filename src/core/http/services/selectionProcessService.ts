@@ -57,6 +57,17 @@ export const selectionProcessService = {
   },
 
   /**
+   * Ativa um processo seletivo (torna-o o ativo da cidade sede)
+   * @param id - UUID do processo
+   */
+  activate: (id: string | number) => {
+    return httpClient.customPatch<{ message: string }>(
+      API_URL,
+      `/${prefix}/processes/${id}/activate`
+    );
+  },
+
+  /**
    * Cria um novo processo seletivo
    * @param data - Objeto contendo name e tenant_city_id
    */

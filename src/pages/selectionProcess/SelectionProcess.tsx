@@ -24,12 +24,16 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Tooltip,
+  DialogContentText,
 } from "@mui/material";
 import {
   Refresh as RefreshIcon,
   Search as SearchIcon,
   Add as AddIcon,
   Edit as EditIcon,
+  CheckCircle as CheckCircleIcon,
+  RadioButtonUnchecked as UncheckedIcon,
 } from "@mui/icons-material";
 
 import PageHeader from "../../components/ui/page/PageHeader";
@@ -58,50 +62,46 @@ const GestaoProcessosSeletivos: React.FC = () => {
   const [formData, setFormData] = useState({ name: "", tenant_city_id: "" });
   const [submitting, setSubmitting] = useState(false);
 
+  const [confirmActivateOpen, setConfirmActivateOpen] = useState(false);
+  const [processToActivate, setProcessToActivate] = useState<SelectionProcess | null>(null);
+
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
     severity: "success" | "error";
   }>({ open: false, message: "", severity: "success" });
 
-  const fetchProcesses = async () => {
+  const fetchData = async () => {
     setLoading(true);
     try {
-      const response = await selectionProcessService.findAll();
+      const [procRes, cityRes] = await Promise.all([
+        selectionProcessService.findAll(),
+        tenantCitiesService.list()
+      ]);
 
-      if (response && response.data) {
-        setProcesses(response.data.data || []);
+      if (procRes?.data) setProcesses(procRes.data.data || []);
+      if (cityRes?.data) {
+        const filteredCities = cityRes.data.data.filter((city: TenantCity) => city.name);
+        setTenantCities(filteredCities || []);
       }
-
     } catch (err) {
-      showSnackbar("Erro ao carregar processos seletivos", "error");
+      showSnackbar("Erro ao carregar dados", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchCities = async () => {
-    try {
-      const allCities = await tenantCitiesService.list();
-
-      if (allCities && allCities.data) {        
-        const filteredCities = allCities.data.data.filter((currentCity => currentCity.name));
-
-        setTenantCities(filteredCities || []);
-      }
-    } catch (err) {
-      console.error("Erro ao carregar cidades", err);
-    }
-  };
-
   useEffect(() => {
-    fetchProcesses();
-    fetchCities();
+    fetchData();
   }, []);
 
-  const getCityName = (cityId: string) => {
-    const city = tenantCities.find((c) => c.id === cityId);
-    return city?.name || "Cidade não identificada";
+  const getCityInfo = (cityId: string) => {
+    return tenantCities.find((c) => c.id === cityId);
+  };
+
+  const isProcessActive = (processId: string, cityId: string) => {
+    const city = getCityInfo(cityId);
+    return city?.activeProcessId === processId;
   };
 
   const showSnackbar = (message: string, severity: "success" | "error") => {
@@ -142,9 +142,30 @@ const GestaoProcessosSeletivos: React.FC = () => {
         showSnackbar(res.message || "Processo criado com sucesso", "success");
       }
       setModalOpen(false);
-      fetchProcesses();
+      fetchData();
     } catch (err: any) {
       showSnackbar(err.message || "Erro ao salvar processo", "error");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleOpenConfirmActivate = (process: SelectionProcess) => {
+    setProcessToActivate(process);
+    setConfirmActivateOpen(true);
+  };
+
+  const handleConfirmActivation = async () => {
+    if (!processToActivate) return;
+    
+    setSubmitting(true);
+    try {
+      const res = await selectionProcessService.activate(processToActivate.id);
+      showSnackbar(res.message || "Processo ativado com sucesso!", "success");
+      setConfirmActivateOpen(false);
+      fetchData();
+    } catch (err: any) {
+      showSnackbar(err.message || "Erro ao ativar processo", "error");
     } finally {
       setSubmitting(false);
     }
@@ -156,7 +177,7 @@ const GestaoProcessosSeletivos: React.FC = () => {
         <PageHeader
           title="Processos Seletivos"
           subtitle="Configuração e Gestão de Editais"
-          description="Gerencie os processos seletivos do sistema. Clique em um processo para editar seus detalhes ou utilize o botão 'Novo Processo' para cadastrar um novo edital e associá-lo a uma cidade sede."
+          description="Gerencie os processos seletivos. O ícone verde indica o processo ativo atual de cada cidade."
           breadcrumbs={[
             { label: "Dashboard", path: APP_ROUTES.DASHBOARD },
             { label: "Processos Seletivos" },
@@ -178,7 +199,7 @@ const GestaoProcessosSeletivos: React.FC = () => {
                 />
               </Box>
               <Box sx={{ display: "flex", gap: 1 }}>
-                <IconButton {...iconButtonStyles} onClick={fetchProcesses}>
+                <IconButton {...iconButtonStyles} onClick={fetchData}>
                   <RefreshIcon />
                 </IconButton>
                 <Button
@@ -199,9 +220,9 @@ const GestaoProcessosSeletivos: React.FC = () => {
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell {...tableHeadStyles}>ID</TableCell>
                     <TableCell {...tableHeadStyles}>Nome do Processo</TableCell>
                     <TableCell {...tableHeadStyles}>Cidade Sede</TableCell>
+                    <TableCell {...tableHeadStyles} align="center">Ativo</TableCell>
                     <TableCell {...tableHeadStyles} align="center">Ações</TableCell>
                   </TableRow>
                 </TableHead>
@@ -213,25 +234,34 @@ const GestaoProcessosSeletivos: React.FC = () => {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredProcesses.map((p) => (
-                      <TableRow 
-                        key={p.id} 
-                        {...tableRowHoverStyles}
-                        onClick={() => handleOpenModal(p)}
-                        sx={{ cursor: "pointer" }}
-                      >
-                        <TableCell sx={{ fontSize: "0.75rem", color: "text.secondary" }}>
-                          {p.id.split("-")[0]}...
-                        </TableCell>
-                        <TableCell sx={{ fontWeight: 600 }}>{p.name}</TableCell>
-                        <TableCell>{getCityName(p.tenant_city_id)}</TableCell>
-                        <TableCell align="center">
-                          <IconButton size="small" color="primary">
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    ))
+                    filteredProcesses.map((p) => {
+                      const active = isProcessActive(p.id, p.tenant_city_id);
+                      return (
+                        <TableRow key={p.id} {...tableRowHoverStyles}>
+                          <TableCell sx={{ fontWeight: 600 }}>{p.name}</TableCell>
+                          <TableCell>{getCityInfo(p.tenant_city_id)?.name || "N/A"}</TableCell>
+                          <TableCell align="center">
+                            <Tooltip title={active ? "Este processo já está ativo" : "Clique para ativar este processo"}>
+                              <span>
+                                <IconButton 
+                                  onClick={() => handleOpenConfirmActivate(p)}
+                                  sx={{ 
+                                    color: active ? designSystem.colors.success?.main || "green" : "text.disabled" 
+                                  }}
+                                >
+                                  {active ? <CheckCircleIcon /> : <UncheckedIcon />}
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                          </TableCell>
+                          <TableCell align="center">
+                            <IconButton size="small" color="primary" onClick={() => handleOpenModal(p)}>
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>
@@ -252,7 +282,6 @@ const GestaoProcessosSeletivos: React.FC = () => {
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             />
-            
             <FormControl fullWidth>
               <InputLabel id="select-city-label">Cidade Sede</InputLabel>
               <Select
@@ -261,32 +290,47 @@ const GestaoProcessosSeletivos: React.FC = () => {
                 value={formData.tenant_city_id}
                 onChange={(e) => setFormData({ ...formData, tenant_city_id: e.target.value })}
               >
-                {tenantCities.length === 0 ? (
-                  <MenuItem disabled value="">
-                    <em>Nenhuma cidade carregada</em>
+                {tenantCities.map((city) => (
+                  <MenuItem key={city.id} value={city.id}>
+                    {city.name}
                   </MenuItem>
-                ) : (
-                  tenantCities.map((city) => (
-                    <MenuItem key={city.id} value={city.id}>
-                      {city.name || "Cidade sem nome"}
-                    </MenuItem>
-                  ))
-                )}
+                ))}
               </Select>
             </FormControl>
           </Box>
         </DialogContent>
-        <DialogActions sx={{ p: 2, gap: 1 }}>
-          <Button onClick={() => setModalOpen(false)} disabled={submitting}>
-            Cancelar
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setModalOpen(false)} disabled={submitting}>Cancelar</Button>
+          <Button variant="contained" onClick={handleSave} disabled={submitting}>
+            {editingId ? "Salvar" : "Criar"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={confirmActivateOpen} onClose={() => !submitting && setConfirmActivateOpen(false)}>
+        <DialogTitle sx={{ fontWeight: 700, color: designSystem.colors.primary.main }}>
+          Confirmar Ativação
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Você está prestes a definir <strong>{processToActivate?.name}</strong> como o processo seletivo ativo para <strong> {processToActivate ? getCityInfo(processToActivate.tenant_city_id)?.name : ""}</strong>
+          </DialogContentText>
+          <Alert severity="warning" sx={{ mt: 2 }}>
+            Esta ação desativará automaticamente qualquer outro processo que esteja ativo para esta cidade no momento.
+          </Alert>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setConfirmActivateOpen(false)} disabled={submitting}>
+            Voltar
           </Button>
           <Button 
             variant="contained" 
-            onClick={handleSave} 
+            color="primary" 
+            onClick={handleConfirmActivation}
             disabled={submitting}
             startIcon={submitting && <CircularProgress size={16} />}
           >
-            {editingId ? "Salvar Alterações" : "Criar Processo"}
+            Confirmar e Ativar
           </Button>
         </DialogActions>
       </Dialog>
@@ -297,9 +341,7 @@ const GestaoProcessosSeletivos: React.FC = () => {
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       >
-        <Alert severity={snackbar.severity} variant="filled">
-          {snackbar.message}
-        </Alert>
+        <Alert severity={snackbar.severity} variant="filled">{snackbar.message}</Alert>
       </Snackbar>
     </Box>
   );
