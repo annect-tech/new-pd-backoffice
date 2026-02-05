@@ -30,13 +30,21 @@ import { useUsers } from "../../hooks/useUsers";
 import { useAuth } from "../../hooks/useAuth";
 import CreateUserModal from "../../components/modals/CreateUserModal";
 import type { CreateUserPayload } from "../../core/http/services/usersService";
+import { useUserProfile } from "../../hooks/useUserProfile";
+import type { UserProfilePayload } from "../../interfaces/profile";
+import CreateProfileForOtherUserModal from "../../components/modals/CreateProfileForOtherUserModal";
 
 export default function UserList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
+
+
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
   const { users, loading, error, refetch, createUser, creating, toggleUserActive, toggling, snackbar, closeSnackbar } = useUsers(1, 100);
+  const { createProfile } = useUserProfile();
 
   const filteredUsers = users.filter((user) => {
     const firstName = user.first_name || "";
@@ -86,6 +94,29 @@ export default function UserList() {
       throw error;
     }
   };
+
+  const handleCreateProfile = async (payload: UserProfilePayload, user_id?: number) => {
+    setProfileLoading(true);
+
+    if (!user_id) {
+      throw new Error('Identificador de usuário não encontrado')
+    }
+
+    try {
+      const result = await createProfile({
+        ...payload,
+        user_id,
+      });
+      if (result) {
+        setProfileModalOpen(false);
+      }
+    } catch (error: any) {
+      setProfileLoading(false)
+      throw error;
+    }
+
+    setProfileLoading(false)
+  }
 
   const handleToggleActive = async (email: string, currentStatus: boolean) => {
     await toggleUserActive(email, !currentStatus);
@@ -222,6 +253,25 @@ export default function UserList() {
                   >
                     Novo Usuário
                   </Button>
+
+                  <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    onClick={() => setProfileModalOpen(true)}
+                    sx={{
+                      backgroundColor: designSystem.colors.primary.main,
+                      color: "#FFFFFF",
+                      fontWeight: 500,
+                      fontSize: "0.875rem",
+                      "&:hover": {
+                        backgroundColor: designSystem.colors.primary.dark,
+                      },
+                    }}
+                  >
+                    Novo perfil de usuário
+                  </Button>
+
+
                   <IconButton
                     onClick={refetch}
                     sx={{
@@ -455,6 +505,13 @@ export default function UserList() {
         loading={creating}
         onCreateUser={handleCreateUser}
         onClose={() => setCreateModalOpen(false)}
+      />
+
+      <CreateProfileForOtherUserModal 
+        open={profileModalOpen}
+        loading={profileLoading}
+        onCreateProfile={handleCreateProfile}
+        onClose={() => setProfileModalOpen(false)}
       />
 
       {/* Snackbar */}
