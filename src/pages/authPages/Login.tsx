@@ -1,11 +1,13 @@
-import React, { useState } from 'react'
-import { Box, Typography, TextField, Button, Alert, InputAdornment, IconButton } from '@mui/material'
+import React, { useEffect, useState } from 'react'
+import { Box, Typography, TextField, Button, Alert, InputAdornment, IconButton, Link } from '@mui/material'
 import { useAuth } from '../../hooks/useAuth'
 import { useNavigate } from 'react-router'
 import Visibility from '@mui/icons-material/Visibility'
 import VisibilityOff from '@mui/icons-material/VisibilityOff'
 import { APP_ROUTES } from '../../util/constants'
 import AuthPromotionalSection from '../../components/auth/SideAuthSection'
+import { PasswordService } from '../../core/http/services/passwordService'
+import ResetPassword from '../../components/auth/resetPassword'
 
 export default function Login() {
   const { login, loading, error } = useAuth()
@@ -14,6 +16,41 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+
+  const [forgotPasswordData, setForgotPasswordData] = useState<{ message: string; show: boolean } | null>(null);
+  const [forgotLoading, setForgotLoading] = useState(false);
+
+  const [redefinitionSuccess, setRedefinitionSuccess] = useState(false);
+
+  useEffect(() => {
+    if (!forgotPasswordData) return;
+
+    const hideForgotPasswordComponent = () => {
+      setForgotPasswordData(null);
+    }
+
+    hideForgotPasswordComponent();
+  }, [credential])
+
+  const handleForgotPassword = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!credential) {
+      setForgotPasswordData({ message: '', show: true });
+      return;
+    }
+
+    setForgotLoading(true);
+    setFormError(null);
+    try {
+      const response = await PasswordService.forgotPassword(credential);
+
+      setForgotPasswordData({ message: response.message, show: true });
+    } catch (err: any) {
+      setFormError(err.message);
+    } finally {
+      setForgotLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -127,7 +164,7 @@ export default function Login() {
               }}
             />
 
-            <TextField
+            {!forgotPasswordData?.show && <TextField
               label="Senha"
               type={showPassword ? 'text' : 'password'}
               value={password}
@@ -196,27 +233,62 @@ export default function Login() {
                   </InputAdornment>
                 ),
               }}
-            />
+            />}
+
+            {forgotPasswordData?.show && (
+              <Box>
+                <ResetPassword
+                  message={forgotPasswordData.message}
+                  credential={credential}
+                  hideComponent={() => setForgotPasswordData(null)}
+                  setSuccess={() => setRedefinitionSuccess(true)}
+                />
+                <Button 
+                   fullWidth 
+                   sx={{ mt: 2, textTransform: 'none' }} 
+                   onClick={() => setForgotPasswordData(null)}
+                >
+                  Voltar para o login
+                </Button>
+              </Box>
+            )}
 
             {/* Link esqueci a senha */}
-            {/* <Box sx={{ textAlign: 'right', mb: 3 }}>
+            <Box sx={{ textAlign: 'right', mb: 3 }}>
               <Link
-                href="#"
-                underline="hover"
+                component="button"
+                type="button"
+                onClick={handleForgotPassword}
+                disabled={forgotLoading}
                 sx={{
                   fontSize: '0.875rem',
                   color: 'text.secondary',
-                  '&:hover': {
-                    color: 'primary.main',
-                  },
+                  background: 'none',
+                  border: 'none',
+                  cursor: forgotLoading ? 'default' : 'pointer',
+                  textDecoration: 'none',
+                  '&:hover': { color: 'primary.main', textDecoration: 'underline' },
                 }}
               >
                 Esqueceu a senha?
               </Link>
-            </Box> */}
+            </Box>
+
+            {redefinitionSuccess && (
+              <Alert
+                severity="success"
+                sx={{
+                  mb: 3,
+                  borderRadius: 1,
+                  border: '1px solid #fee',
+                }}
+              >
+                Senha redefinida com sucesso!
+              </Alert>
+            )}
 
             {/* Botão de login */}
-            <Button
+            {!forgotPasswordData?.show && <Button
               type="submit"
               variant="contained"
               color="primary"
@@ -236,7 +308,7 @@ export default function Login() {
               }}
             >
               {loading ? 'Entrando...' : 'Entrar'}
-            </Button>
+            </Button>}
             {/* Registro removido - não existe no backend */}
             {/* Apenas administradores podem criar usuários */}
           </form>
