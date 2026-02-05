@@ -20,9 +20,10 @@ export default function Login() {
   const [forgotPasswordData, setForgotPasswordData] = useState<{ message: string; show: boolean } | null>(null);
   const [forgotLoading, setForgotLoading] = useState(false);
 
+  const [redefinitionSuccess, setRedefinitionSuccess] = useState(false);
+
   useEffect(() => {
     if (!forgotPasswordData) return;
-    console.log('está no useffect')
 
     const hideForgotPasswordComponent = () => {
       setForgotPasswordData(null);
@@ -236,7 +237,12 @@ export default function Login() {
 
             {forgotPasswordData?.show && (
               <Box>
-                <ResetPassword message={forgotPasswordData.message} credential={credential} />
+                <ResetPassword
+                  message={forgotPasswordData.message}
+                  credential={credential}
+                  hideComponent={() => setForgotPasswordData(null)}
+                  setSuccess={() => setRedefinitionSuccess(true)}
+                />
                 <Button 
                    fullWidth 
                    sx={{ mt: 2, textTransform: 'none' }} 
@@ -267,6 +273,19 @@ export default function Login() {
                 Esqueceu a senha?
               </Link>
             </Box>
+
+            {redefinitionSuccess && (
+              <Alert
+                severity="success"
+                sx={{
+                  mb: 3,
+                  borderRadius: 1,
+                  border: '1px solid #fee',
+                }}
+              >
+                Senha redefinida com sucesso!
+              </Alert>
+            )}
 
             {/* Botão de login */}
             {!forgotPasswordData?.show && <Button

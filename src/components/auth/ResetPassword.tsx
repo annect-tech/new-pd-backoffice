@@ -6,6 +6,8 @@ import { PasswordService } from '../../core/http/services/passwordService';
 interface ResetPasswordProps {
   message: string;
   credential: string;
+  hideComponent: () => void;
+  setSuccess: () => void;
 }
 
 interface ResetPasswordFormData {
@@ -21,7 +23,7 @@ interface FieldErrors {
 }
 
 
-export default function ResetPassword({ message, credential }: ResetPasswordProps) {
+export default function ResetPassword({ message, credential, hideComponent, setSuccess }: ResetPasswordProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [showError, setShowError] = useState('');
@@ -77,12 +79,15 @@ export default function ResetPassword({ message, credential }: ResetPasswordProp
         formData.newPassword,
         formData.confirmNewPassword
       );
-      console.log({response})
 
       if (response.message === 'Senha redefinida com sucesso.') {
-        //TODO: chamar a função setForgotPasswordData(null) do componente pai para voltar à exibir a tela de login.
-        // Caso a message seja diferente disso, exibir no alert
-        return;
+        setSuccess();
+        return hideComponent();
+      }
+
+      if (response.message === 'Código expirado.') {
+        await PasswordService.forgotPassword(credential);
+        return setShowError(`${response.message} Novo código já enviado ao email.`)
       }
 
       setShowError(response.message);
