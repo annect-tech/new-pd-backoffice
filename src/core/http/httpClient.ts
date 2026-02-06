@@ -249,8 +249,9 @@ export const httpClient = {
   customPatch<T>(
     baseUrl: string,
     endpoint: string,
+    payload?: any,
   ) {
-    return this.request<T>("PATCH", baseUrl, endpoint);
+    return this.request<T>("PATCH", baseUrl, endpoint, payload);
   },
 
   /**

@@ -17,7 +17,7 @@ interface SnackbarState {
   severity: "success" | "error" | "warning" | "info";
 }
 
-export function useUsers(page: number = 1, size: number = 10) {
+export function useUsers(page: number = 1, size: number = 10, excludeStudents: boolean = false) {
   const [users, setUsers] = useState<UserWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +48,9 @@ export function useUsers(page: number = 1, size: number = 10) {
     
     try {
       // Buscar usuários
-      const usersResponse = await usersService.listUsers(page, size);
+      const usersResponse = excludeStudents
+        ? await usersService.listUsersWithoutStudents(page, size)
+        : await usersService.listUsers(page, size);
       
       if (usersResponse.status !== 200) {
         throw new Error(usersResponse.message || "Erro ao buscar usuários");

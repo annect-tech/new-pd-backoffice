@@ -7,7 +7,7 @@ import VisibilityOff from '@mui/icons-material/VisibilityOff'
 import { APP_ROUTES } from '../../util/constants'
 import AuthPromotionalSection from '../../components/auth/SideAuthSection'
 import { PasswordService } from '../../core/http/services/passwordService'
-import ResetPassword from '../../components/auth/resetPassword'
+import ResetPassword from '../../components/auth/ResetPassword'
 
 export default function Login() {
   const { login, loading, error } = useAuth()
