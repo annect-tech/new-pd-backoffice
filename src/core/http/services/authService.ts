@@ -21,6 +21,7 @@ export const authService = {
     httpClient.post<RefreshTokenResponse>(
       API_URL,
       ENDPOINTS.AUTH.REFRESH_TOKEN,
-      payload
+      payload,
+      { skipAuth: true }
     ),
 };

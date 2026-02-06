@@ -41,6 +41,17 @@ const authSlice = createSlice({
       state.accessToken = action.payload;
       httpClient.setAuthToken(action.payload);
     },
+    setTokens(
+      state,
+      action: PayloadAction<{
+        accessToken: string;
+        refreshToken: string;
+      }>
+    ) {
+      state.accessToken = action.payload.accessToken;
+      state.refreshToken = action.payload.refreshToken;
+      httpClient.setAuthToken(action.payload.accessToken);
+    },
   },
   extraReducers: (builder) => {
     // Quando o estado é restaurado pelo Redux Persist, configurar o token no httpClient
@@ -53,6 +64,6 @@ const authSlice = createSlice({
   },
 });
 
-export const { setCredentials, clearCredentials, setAccessToken } =
+export const { setCredentials, clearCredentials, setAccessToken, setTokens } =
   authSlice.actions;
 export default authSlice.reducer;

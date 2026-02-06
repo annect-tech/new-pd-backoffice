@@ -8,6 +8,7 @@ import { encryptTransform } from "redux-persist-transform-encrypt";
 import authReducer, {
   clearCredentials,
   setAccessToken,
+  setTokens,
 } from "./slices/authSlice";
 import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import { httpClient } from "../http/httpClient";
@@ -71,7 +72,14 @@ httpClient.setOnUnauthorized(async () => {
   try {
     const res = await authService.refreshToken({ refreshToken });
     if (res.status === 200 && res.data) {
-      store.dispatch(setAccessToken(res.data.accessToken));
+      if (res.data.accessToken && res.data.refreshToken) {
+        store.dispatch(setTokens({
+          accessToken: res.data.accessToken,
+          refreshToken: res.data.refreshToken,
+        }));
+      } else {
+        store.dispatch(clearCredentials());
+      }
     } else {
       store.dispatch(clearCredentials());
     }
