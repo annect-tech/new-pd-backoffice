@@ -78,9 +78,9 @@ export const AppRoutes = () => (
       <Route
         path={APP_ROUTES.ALLOWED_CITIES}
         element={
-          <RoleGuard allowedRoles={["ADMIN", "ADMIN_MASTER"]}>
+          // <RoleGuard allowedRoles={["ADMIN", "ADMIN_MASTER"]}>
             <AllowedCities />
-          </RoleGuard>
+          // </RoleGuard>
         }
       />
       <Route
@@ -90,41 +90,41 @@ export const AppRoutes = () => (
       <Route
         path={APP_ROUTES.CONTRACTS}
         element={
-          <RoleGuard allowedRoles={["ADMIN", "ADMIN_MASTER"]}>
+          // <RoleGuard allowedRoles={["ADMIN", "ADMIN_MASTER"]}>
             <Contratos />
-          </RoleGuard>
+          // </RoleGuard>
         }
       />
       <Route
         path={APP_ROUTES.CONTRACT_APPROVAL}
         element={
-          <RoleGuard allowedRoles={["ADMIN", "ADMIN_MASTER"]}>
+          // <RoleGuard allowedRoles={["ADMIN", "ADMIN_MASTER"]}>
             <AprovacaoContratos />
-          </RoleGuard>
+          // </RoleGuard>
         }
       />
       <Route
         path={APP_ROUTES.USER_CREATION}
         element={
-          <RoleGuard allowedRoles={["ADMIN", "ADMIN_MASTER"]}>
+          // <RoleGuard allowedRoles={["ADMIN", "ADMIN_MASTER"]}>
             <CriacaoUsuarios />
-          </RoleGuard>
+          // </RoleGuard>
         }
       />
       <Route
         path={APP_ROUTES.DOCUMENTS}
         element={
-          <RoleGuard allowedRoles={["ADMIN", "ADMIN_MASTER"]}>
+          // <RoleGuard allowedRoles={["ADMIN", "ADMIN_MASTER"]}>
             <Documentos />
-          </RoleGuard>
+          // </RoleGuard>
         }
       />
       <Route
         path={APP_ROUTES.QUOTA_DOCUMENTS}
         element={
-          <RoleGuard allowedRoles={["ADMIN", "ADMIN_MASTER"]}>
+          // <RoleGuard allowedRoles={["ADMIN", "ADMIN_MASTER"]}>
             <DocumentosCotas />
-          </RoleGuard>
+          // </RoleGuard>
         }
       />
       <Route

@@ -65,7 +65,7 @@ export interface ScheduleBulkPayload {
 // ============== STUDENT EXAM ==============
 
 // Status possíveis do aluno
-export type StudentExamStatus = 'pendente' | 'aprovado' | 'ausente' | 'desqualificado';
+export type StudentExamStatus = 'pendente' | 'aprovado' | 'ausente' | 'desqualificado' | string;
 
 // Dados do usuário associado ao student exam
 export interface StudentUserData {
