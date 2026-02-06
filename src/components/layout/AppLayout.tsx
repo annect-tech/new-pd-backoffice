@@ -276,12 +276,12 @@ export default function AppLayout() {
         },
         {
           icon: <PersonIcon />,
-          label: "Usuários",
+          label: "Usuários Gerenciais",
           to: APP_ROUTES.USERS_LIST,
         },
         {
           icon: <HowToRegIcon />,
-          label: "Criação de Usuários",
+          label: "Matrícula de Estudantes",
           to: APP_ROUTES.USER_CREATION,
         },
         {
