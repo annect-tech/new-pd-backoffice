@@ -451,20 +451,22 @@ export default function UserList() {
                               }}
                             />
 
-                            <Tooltip title={user.is_active !== false ? "Desativar usuário" : "Ativar usuário"}>
-                              <FormControlLabel
-                                control={
-                                  <Switch
-                                    checked={user.is_active !== false}
-                                    onChange={() => handleToggleActive(user.email, user.is_active !== false)}
-                                    disabled={toggling}
-                                    size="small"
-                                  />
-                                }
-                                label=""
-                                sx={{ m: 0 }}
-                              />
-                            </Tooltip>
+                            { currentUser?.id !== user.id && (
+                              <Tooltip title={user.is_active !== false ? "Desativar usuário" : "Ativar usuário"}>
+                                <FormControlLabel
+                                  control={
+                                    <Switch
+                                      checked={user.is_active !== false}
+                                      onChange={() => handleToggleActive(user.email, user.is_active !== false)}
+                                      disabled={toggling}
+                                      size="small"
+                                    />
+                                  }
+                                  label=""
+                                  sx={{ m: 0 }}
+                                />
+                              </Tooltip>
+                            )}
 
                             { rolesLoadingMap[user.id] ? (
                               <Typography
