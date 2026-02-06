@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { APP_ROUTES } from "../../util/constants";
 import {
@@ -33,12 +33,21 @@ import type { CreateUserPayload } from "../../core/http/services/usersService";
 import { useUserProfile } from "../../hooks/useUserProfile";
 import type { UserProfilePayload } from "../../interfaces/profile";
 import CreateProfileForOtherUserModal from "../../components/modals/CreateProfileForOtherUserModal";
+import { roleService } from "../../core/http/services/roleService";
+import type { Role } from "../../core/http/services/roleService";
+import EditUserRolesModal from "../../components/modals/EditUserRolesModal";
 
 export default function UserList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
+
+  const [rolesModalOpen, setRolesModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<typeof users[0] | null>(null);
+
+  const [userRolesMap, setUserRolesMap] = useState<Record<number, Role[]>>({});
+  const [rolesLoadingMap, setRolesLoadingMap] = useState<Record<number, boolean>>({});
 
 
   const navigate = useNavigate();
@@ -56,6 +65,14 @@ export default function UserList() {
 
     return fullName.includes(search) || email.includes(search) || username.includes(search);
   });
+
+  useEffect(() => {
+    users.forEach((user) => {
+      if (user.id && !userRolesMap[user.id] && !rolesLoadingMap[user.id]) {
+        fetchUserRoles(user.id);
+      }
+    });
+  }, [users]);
 
   const getUserDisplayName = (user: typeof users[0]) => {
     if (user.profile?.user_display) {
@@ -143,6 +160,26 @@ export default function UserList() {
     } else {
       // Caso contrário, redireciona para a página de edição de perfil de outro usuário
       navigate(`/usuario/${user.profile.id}/editar`);
+    }
+  };
+
+  const fetchUserRoles = async (userId: number, force=false) => {
+    if (!force && userRolesMap[userId] || rolesLoadingMap[userId]) return;
+
+    setRolesLoadingMap((prev) => ({ ...prev, [userId]: true }));
+
+    try {
+      const response = await roleService.listUserRoles(userId);
+      const filteredResponse = response.data || [];
+
+      setUserRolesMap((prev) => ({
+        ...prev,
+        [userId]: filteredResponse,
+      }));
+    } catch (err) {
+      console.error("Erro ao buscar roles do usuário", err);
+    } finally {
+      setRolesLoadingMap((prev) => ({ ...prev, [userId]: false }));
     }
   };
 
@@ -319,7 +356,12 @@ export default function UserList() {
                   </Box>
                 ) : (
                   <Stack spacing={2}>
-                    {filteredUsers.map((user) => (
+                    {filteredUsers.map((user) => {
+                      // if (user.id && !userRolesMap[user.id]) {
+                      //   fetchUserRoles(user.id);
+                      // }
+
+                      return (
                       <Paper
                         key={user.id}
                         elevation={0}
@@ -408,6 +450,7 @@ export default function UserList() {
                                 height: "20px",
                               }}
                             />
+
                             <Tooltip title={user.is_active !== false ? "Desativar usuário" : "Ativar usuário"}>
                               <FormControlLabel
                                 control={
@@ -422,6 +465,35 @@ export default function UserList() {
                                 sx={{ m: 0 }}
                               />
                             </Tooltip>
+
+                            { rolesLoadingMap[user.id] ? (
+                              <Typography
+                                variant="caption"
+                                sx={{ fontSize: "0.75rem", opacity: 0.6 }}
+                              >
+                                Carregando roles...
+                              </Typography>
+                            ) : userRolesMap[user.id]?.length ? (
+                              <Box display="flex" gap={0.5} mt={1} flexWrap="wrap">
+                                {userRolesMap[user.id].map((role) => (
+                                  <Chip
+                                    key={role.id}
+                                    label={role.name}
+                                    size="small"
+                                    variant="outlined"
+                                    sx={{ fontSize: "0.7rem" }}
+                                  />
+                                ))}
+                              </Box>
+                            ) : (
+                              <Typography
+                                variant="caption"
+                                sx={{ fontSize: "0.75rem", opacity: 0.6 }}
+                              >
+                                Sem roles
+                              </Typography>
+                            )}
+
                           </Box>
                         </Box>
                         <Box display="flex" gap={1.5}>
@@ -488,9 +560,25 @@ export default function UserList() {
                               </Button>
                             </span>
                           </Tooltip>
+
+                          <Button
+                            variant="text"
+                            onClick={() => {
+                              if (!user.id) return;
+                              setSelectedUser(user);
+                              setRolesModalOpen(true);
+                            }}
+                            sx={{
+                              fontSize: "0.75rem",
+                              color: designSystem.colors.primary.main,
+                            }}
+                          >
+                            Editar roles
+                          </Button>
                         </Box>
                       </Paper>
-                    ))}
+                    )}
+                    )}
                   </Stack>
                 )}
               </Box>
@@ -512,6 +600,15 @@ export default function UserList() {
         loading={profileLoading}
         onCreateProfile={handleCreateProfile}
         onClose={() => setProfileModalOpen(false)}
+      />
+
+      <EditUserRolesModal
+        open={rolesModalOpen}
+        userId={selectedUser?.id}
+        onClose={() => setRolesModalOpen(false)}
+        onSuccess={async (userId: number) => {
+          await fetchUserRoles(userId, true);
+        }}
       />
 
       {/* Snackbar */}
