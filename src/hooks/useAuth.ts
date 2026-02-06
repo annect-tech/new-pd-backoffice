@@ -16,7 +16,6 @@ export function useAuth() {
     setError(null)
     try {
       const response = await authService.login({ credential, password })
-
       if (response.status !== 200) {
         const errorMsg = (response.data as any)?.message || response.message || 'Erro ao fazer login'
         throw new Error(errorMsg)

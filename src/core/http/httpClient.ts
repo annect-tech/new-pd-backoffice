@@ -60,6 +60,8 @@ export const httpClient = {
       url += this._buildQueryString(options.queryParams);
     }
 
+    const isRefreshTokenEndpoint = endpoint.includes('/auth/refresh-token');
+
     // Determinar se é FormData
     const isFormData = payload && this._isFormData(payload);
 
@@ -124,7 +126,7 @@ export const httpClient = {
       }
 
       // Se ainda estiver refrescando, aguardar
-      if (_isRefreshing && _refreshPromise) {
+      if (_isRefreshing && _refreshPromise && !options?.skipAuth && !isRefreshTokenEndpoint) {
         await _refreshPromise;
         // Tentar novamente após refresh
         if (_authToken) {
