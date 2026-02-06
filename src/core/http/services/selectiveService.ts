@@ -1,7 +1,7 @@
-import { httpClient } from "../httpClient";
-import { getEndpointPrefix } from "../utils/endpointPrefix";
 import type { UserProfile } from "../../../interfaces/userProfile";
 import { getApiUrl } from "../apiUrl";
+import { httpClient } from "../httpClient";
+import { getEndpointPrefix } from "../utils/endpointPrefix";
 
 const API_URL = getApiUrl();
 
@@ -89,4 +89,35 @@ export const selectiveService = {
       {}
     );
   },
+
+  getPersonaByUserId: (userId: string | number) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.get<any>(
+      API_URL,
+      `/${prefix}/persona/user/${userId}`
+    );
+  },
+
+  getAddressByUserId: (userId: string | number) => {
+    return httpClient.get<any>(
+      API_URL,
+      `/user/addresses/by-user/${userId}`
+    );
+  },
+
+  getGuardiansByUserId: (userId: string | number) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.get<any>(
+      API_URL,
+      `/${prefix}/guardians/user/${userId}`
+    );
+  },
+
+  getDocumentsByUserId: (userId: string | number) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.get<any>(
+      API_URL,
+      `/${prefix}/candidate-documents/${userId}`
+    );
+  }
 };
