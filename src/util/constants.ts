@@ -47,6 +47,7 @@ export const APP_ROUTES = {
   USER_DETAIL: "/usuario/",
   USER_EDIT: "/usuario/",
   MY_PROFILE: "/meu-perfil",
+  SELECTION_PROCESS: "/selection-process",
 };
 
 export const ENDPOINTS = {

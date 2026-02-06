@@ -29,6 +29,7 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import HowToRegIcon from "@mui/icons-material/HowToReg";
 import EventIcon from "@mui/icons-material/Event";
 import SettingsIcon from "@mui/icons-material/Settings";
+import AssignmentIcon from "@mui/icons-material/Assignment";
 
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(true);
@@ -188,6 +189,11 @@ export default function AppLayout() {
           icon: <TrackChangesIcon />,
           label: "Seletivo",
           to: APP_ROUTES.SELECTIVE,
+        },
+        {
+          icon: <AssignmentIcon />,
+          label: "Processos Seletivos",
+          to: APP_ROUTES.SELECTION_PROCESS,
         },
         {
           icon: <CalendarMonthIcon />,

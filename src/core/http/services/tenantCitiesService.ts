@@ -9,6 +9,7 @@ export interface TenantCity {
   name?: string | null;
   domain: string | null;
   tag?: string | null;
+  activeProcessId?: string | null;
   createdAt: string;
   updatedAt: string;
 }

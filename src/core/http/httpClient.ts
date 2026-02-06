@@ -246,6 +246,14 @@ export const httpClient = {
     return this.request<T>("PATCH", baseUrl, `${endpoint}/${id}`, payload, options);
   },
 
+  customPatch<T>(
+    baseUrl: string,
+    endpoint: string,
+    payload?: any,
+  ) {
+    return this.request<T>("PATCH", baseUrl, endpoint, payload);
+  },
+
   /**
    * Método específico para upload de arquivo único (FormData)
    */

@@ -11,7 +11,8 @@ export interface UserResponse {
   first_name?: string;
   last_name?: string;
   is_active?: boolean;
-  cpf?: string; // Pode vir do auth_user.cpf
+  cpf?: string;
+  birth_date?: Date;
   celphone?: string; // Pode vir de relacionamento com seletivo_userdata
 }
 
@@ -79,7 +80,7 @@ export const usersService = {
    * Lista todos os usuários com paginação
    * Filtra por tenant do usuário logado
    */
-  listUsers: (page: number = 1, size: number = 10) => {
+  listUsers: (page: number = 1, size: number = 10, search?: string) => {
     const prefix = getEndpointPrefix();
     return httpClient.get<PaginatedResponse<UserResponse>>(
       API_URL,
@@ -88,6 +89,21 @@ export const usersService = {
         queryParams: {
           page,
           size,
+          search,
+        },
+      }
+    );
+  },
+
+  listUsersWithoutStudents: (page: number = 1, size: number = 10, search?: string) => {
+    return httpClient.get<PaginatedResponse<UserResponse>>(
+      API_URL,
+      `/user/users/exclude-students`,
+      {
+        queryParams: {
+          page,
+          size,
+          search,
         },
       }
     );
@@ -138,7 +154,7 @@ export const usersService = {
   toggleUserActive: (email: string, isActive: boolean) =>
     httpClient.patch<ToggleActiveResponse>(
       API_URL,
-      "/admin/users/active",
+      "/user/users/active",
       email,
       { is_active: isActive }
     ),
