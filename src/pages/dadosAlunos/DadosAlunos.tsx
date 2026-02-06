@@ -48,8 +48,7 @@ import {
 import AgentModal from "../../components/modals/AgentModal";
 import PsychologistModal from "../../components/modals/PsychologistModal";
 import EditStudentModal from "../../components/modals/EditStudentModal";
-import { useSelective } from "../../hooks/useSelective";
-import { studentDataService } from "../../core/http/services/studentDataService";
+import { useStudentData } from "../../hooks/useStudentData";
 
 interface StudentRow {
   id: string;
@@ -68,24 +67,22 @@ interface StudentRow {
 const DadosAlunos: React.FC = () => {
   const navigate = useNavigate();
   
-  // Hook para buscar dados de user_data (dados pessoais)
+  // Hook para buscar dados de alunos (student_data)
   const {
-    users: userData,
-    loading: userDataLoading,
-    pagination: userDataPagination,
-    fetchUsers,
+    students,
+    loading: studentLoading,
+    pagination: studentPagination,
+    fetchStudents,
     snackbar: hookSnackbar,
     closeSnackbar: closeHookSnackbar,
-  } = useSelective();
+  } = useStudentData();
 
   const [items, setItems] = useState<StudentRow[]>([]);
   const [oldItems, setOldItems] = useState<StudentRow[]>([]);
   const [oldLoading, setOldLoading] = useState(false);
   const [_oldError, setOldError] = useState<string | null>(null);
   const [hasFetchedOld, setHasFetchedOld] = useState(false);
-  const [studentDataMap, setStudentDataMap] = useState<Map<string, any>>(new Map());
-  const [loadingStudentData, setLoadingStudentData] = useState(false);
-  const loading = userDataLoading || loadingStudentData;
+  const loading = studentLoading;
   const error = null;
   const [viewerUrl] = useState<string | null>(null); // reservado se necessário
   const [statusAnchor, setStatusAnchor] = useState<null | HTMLElement>(null);
@@ -116,69 +113,37 @@ const DadosAlunos: React.FC = () => {
     { name: "Isabela Jales", value: "isabelajales@projetodesenvolve.com.br" },
   ];
   
-  // Buscar student_data (dados acadêmicos) ao montar
+  // Buscar student_data com paginação
   useEffect(() => {
-    const fetchStudentData = async () => {
-      setLoadingStudentData(true);
-      try {
-        // Buscar todos os student_data sem paginação para fazer o mapa completo
-        const response = await studentDataService.list(1, 1000);
-        
-        if (response.status >= 200 && response.status < 300 && response.data) {
-          const raw = response.data as any;
-          const studentDataList = Array.isArray(raw?.data) ? raw.data : [];
-          
-          // Criar mapa de user_data_id -> student_data
-          const map = new Map();
-          studentDataList.forEach((sd: any) => {
-            map.set(sd.user_data_id, sd);
-          });
-          
-          setStudentDataMap(map);
-        }
-      } catch {
-      } finally {
-        setLoadingStudentData(false);
-      }
-    };
-    
-    fetchStudentData();
-  }, []);
+    fetchStudents(page + 1, rowsPerPage, searchTerm.trim() || undefined);
+  }, [page, rowsPerPage, searchTerm, fetchStudents]);
 
-  // Buscar user_data (dados pessoais) com paginação
+  // Mapear StudentData para StudentRow
   useEffect(() => {
-    fetchUsers(page + 1, rowsPerPage, searchTerm.trim() || undefined);
-  }, [page, rowsPerPage, searchTerm, fetchUsers]);
+    if (students && students.length > 0) {
+      const convertedStudents: StudentRow[] = students.map((student) => {
+        // Construir nome completo a partir de first_name + last_name se completeName não existir
+        const completeName = student.completeName
+          || [student.first_name, student.last_name].filter(Boolean).join(" ")
+          || "—";
 
-  // Fazer merge de user_data + student_data
-  useEffect(() => {
-    if (userData && userData.length > 0) {
-      const convertedStudents: StudentRow[] = userData.map((user) => {
-        const userId = String(user.id);
-        const studentData = studentDataMap.get(userId);
-        
-        // Nome completo
-        const completeName = [user.first_name, user.last_name]
-          .filter(Boolean)
-          .join(" ") || (user as any)?.name || "—";
-        
         return {
-          id: userId,
-          user_data_id: userId,
+          id: String(student.id),
+          user_data_id: student.user_data_id ? String(student.user_data_id) : (student.user_id ? String(student.user_id) : String(student.id)),
           completeName,
-          registration: studentData?.registration || "—",
-          corp_email: studentData?.corp_email || user.email || "—",
-          monitor: studentData?.monitor || "—",
-          status: studentData?.status || "Inativo",
-          cpf: user.cpf || "—",
-          birth_date: user.birth_date || "—",
-          username: user.username || "—",
+          registration: student.registration || "—",
+          corp_email: student.corp_email || "—",
+          monitor: student.monitor || "—",
+          status: student.status || "Inativo",
+          cpf: student.cpf || "—",
+          birth_date: student.birth_date || "—",
+          username: student.username || "—",
           origin: "novo" as const,
         };
       });
       setItems(convertedStudents);
     }
-  }, [userData, studentDataMap]);
+  }, [students]);
 
   const combinedRows = useMemo(() => {
     return showOld ? oldItems : items;
@@ -220,7 +185,7 @@ const DadosAlunos: React.FC = () => {
   }, [filteredRows, page, rowsPerPage, showOld]);
   
   // Total de itens para paginação
-  const totalItems = showOld ? filteredRows.length : userDataPagination.totalItems;
+  const totalItems = showOld ? filteredRows.length : studentPagination.totalItems;
 
   const handleRefresh = () => {
     setStatusFilter("all");
@@ -231,7 +196,7 @@ const DadosAlunos: React.FC = () => {
     setShowOld(false);
     setPage(0);
     setSelectedStudent(null);
-    fetchUsers(1, rowsPerPage);
+    fetchStudents(1, rowsPerPage);
   };
   
   const fetchOldFromApi = async () => {

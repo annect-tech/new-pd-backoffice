@@ -16,6 +16,7 @@ import {
   CircularProgress,
 } from "@mui/material";
 import type { Exam } from "../../interfaces/exam";
+import { examsService } from "../../core/http/services/examsService";
 
 interface NoteUpdaterModalProps {
   open: boolean;
@@ -44,20 +45,22 @@ const NoteUpdaterModal: React.FC<NoteUpdaterModalProps> = ({
 
     setLoading(true);
     try {
-      // TODO: Implementar chamada à API para atualizar nota
-      // await httpClient.patch(API_URL, `/exams/${selectedExam}/`, { score: score });
-      
-      // Simular delay da API
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      setSuccess(true);
-      
-      setTimeout(() => {
-        onClose();
-        setSelectedExam("");
-        setNewScore("");
-        setSuccess(false);
-      }, 1500);
-    } catch {
+      const response = await examsService.updateScore(selectedExam, score);
+
+      if (response.status >= 200 && response.status < 300) {
+        setSuccess(true);
+
+        setTimeout(() => {
+          onClose();
+          setSelectedExam("");
+          setNewScore("");
+          setSuccess(false);
+        }, 1500);
+      } else {
+        alert(response.message || "Erro ao atualizar nota");
+      }
+    } catch (err: any) {
+      alert(err.message || "Erro ao atualizar nota");
     } finally {
       setLoading(false);
     }

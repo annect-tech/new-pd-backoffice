@@ -18,6 +18,7 @@ import logoAberta from "../../../assets/images/logo/logo aberta.png";
 import logoAbertaBranca from "../../../assets/images/logo/logo aberta branca.png";
 import logoFechada from "../../../assets/images/logo/logo fechada.png";
 import logoFechadaBranca from "../../../assets/images/logo/logo fechada branca.png";
+import logoText from "../../../assets/images/logo/logo_text.svg";
 import { APP_ROUTES } from "../../../util/constants";
 import { designSystem } from "../../../styles/designSystem";
 
@@ -104,13 +105,14 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
       }}
     >
       <Toolbar
+        disableGutters
         sx={{
           minHeight: 72,
           height: 72,
           display: "flex",
-          justifyContent: "space-between",
+          justifyContent: isExpanded ? "space-between" : "center",
           alignItems: "center",
-          px: 0,
+          px: "0 !important",
           width: "100%",
           backgroundColor: (theme) => theme.palette.mode === "dark" ? "#1E1E1E" : "#FFFFFF",
           borderBottom: (theme) => theme.palette.mode === "dark" 
@@ -125,14 +127,15 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
           onClick={handleLogoClick}
           sx={{
             cursor: "pointer",
-            width: collapsedWidth,
             height: 72,
-            flexShrink: 0,
-            position: "relative",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            transition: "opacity 0.2s ease",
+            gap: 1.5,
+            width: isExpanded ? "auto" : collapsedWidth,
+            pl: isExpanded ? 1.5 : 0,
+            ml: isExpanded ? "30px": "20px",
+            transition: "opacity 0.2s ease, padding 0.3s ease, width 0.3s ease",
             "&:hover": {
               opacity: 0.85,
             },
@@ -155,11 +158,23 @@ const LayoutSidebar: React.FC<SidebarProps> = ({
               height: 35,
               objectFit: "contain",
               display: "block",
-              position: "absolute",
-              left: -10,
-              top: "50%",
-              transform: "translateY(-50%)",
               transition: "opacity 0.2s ease",
+            }}
+          />
+          {/* Logo Text - aparece quando expandido */}
+          <Box
+            component="img"
+            src={logoText}
+            alt="Desenvolve"
+            sx={{
+              height: 15,
+              objectFit: "contain",
+              opacity: isExpanded ? 1 : 0,
+              width: isExpanded ? "auto" : 0,
+              pl: "8px",
+              mt: "5px",
+              transition: "opacity 0.25s ease, width 0.25s ease",
+              filter: isDark ? "brightness(2)" : "brightness(0.3)",
             }}
           />
         </Box>

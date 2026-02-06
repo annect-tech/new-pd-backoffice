@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import type { ExamScheduled } from "../interfaces/examScheduled";
+import type { StudentExamStatus, ScheduleGridResponse } from "../interfaces/examScheduleTypes";
 import { examsScheduledService } from "../core/http/services/examsScheduledService";
 
 interface SnackbarState {
@@ -17,6 +18,7 @@ interface PaginationState {
 
 export const useExamsScheduled = () => {
   const [exams, setExams] = useState<ExamScheduled[]>([]);
+  const [scheduleGrid, setScheduleGrid] = useState<ScheduleGridResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState<PaginationState>({
@@ -42,51 +44,49 @@ export const useExamsScheduled = () => {
     setSnackbar((prev) => ({ ...prev, open: false }));
   }, []);
 
+  /**
+   * Lista todos os alunos inscritos
+   * GET /user/student-exams
+   */
   const fetchExams = useCallback(
-    async (page: number = 1, size: number = 10, search?: string) => {
+    async (page: number = 1, limit: number = 10, search?: string) => {
       setLoading(true);
       setError(null);
       try {
-        const response = await examsScheduledService.list(page, size, search);
+        const response = await examsScheduledService.list(page, limit, search);
 
         if (response.status >= 200 && response.status < 300 && response.data) {
           const raw = response.data as any;
           
-          // A resposta pode vir como array direto ou como objeto com propriedade data
-          let list: any[] = [];
-          let paginationData: any = {};
+          // A resposta pode vir como array direto ou como objeto paginado
+          let list: ExamScheduled[] = [];
+          let paginationData: PaginationState;
           
           if (Array.isArray(raw)) {
-            // Se a resposta é um array direto
             list = raw;
             paginationData = {
               currentPage: page,
-              itemsPerPage: size,
+              itemsPerPage: limit,
               totalItems: raw.length,
-              totalPages: Math.ceil(raw.length / size),
+              totalPages: Math.ceil(raw.length / limit),
             };
-          } else if (Array.isArray(raw?.data)) {
-            // Se a resposta tem estrutura paginada
+          } else if (raw?.data && Array.isArray(raw.data)) {
             list = raw.data;
             paginationData = {
-              currentPage: Number(raw?.currentPage ?? page),
-              itemsPerPage: Number(raw?.itemsPerPage ?? size),
-              totalItems: Number(raw?.totalItems ?? list.length),
-              totalPages: Number(raw?.totalPages ?? 0),
+              currentPage: Number(raw.meta?.page ?? page),
+              itemsPerPage: Number(raw.meta?.limit ?? limit),
+              totalItems: Number(raw.meta?.total ?? list.length),
+              totalPages: Number(raw.meta?.totalPages ?? Math.ceil(list.length / limit)),
+            };
+          } else {
+            list = [];
+            paginationData = {
+              currentPage: page,
+              itemsPerPage: limit,
+              totalItems: 0,
+              totalPages: 0,
             };
           }
-
-          // API retorna status em português (pendente, aprovado, ausente, desqualificado)
-          const statusMap: Record<string, string> = {
-            pendente: "scheduled",
-            aprovado: "present",
-            ausente: "absent",
-            desqualificado: "desqualificado",
-          };
-          list = list.map((exam: any) => ({
-            ...exam,
-            status: statusMap[exam.status?.toLowerCase()] ?? exam.status,
-          }));
 
           setExams(list);
           setPagination(paginationData);
@@ -111,6 +111,122 @@ export const useExamsScheduled = () => {
     [showSnackbar]
   );
 
+  /**
+   * Busca grade de alunos por horário
+   * GET /user/student-exams/schedule/:localId/:dateId
+   */
+  const fetchScheduleGrid = useCallback(
+    async (localId: string | number, dateId: string | number) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await examsScheduledService.getScheduleGrid(localId, dateId);
+
+        if (response.status >= 200 && response.status < 300 && response.data) {
+          setScheduleGrid(response.data);
+          showSnackbar("Grade carregada com sucesso", "success");
+          return response.data;
+        } else {
+          setScheduleGrid(null);
+          const errorMessage = response.message || "Erro ao carregar grade";
+          setError(errorMessage);
+          showSnackbar(errorMessage, "error");
+          return null;
+        }
+      } catch (err: any) {
+        setScheduleGrid(null);
+        const errorMessage = err?.message || "Erro ao carregar grade";
+        setError(errorMessage);
+        showSnackbar(errorMessage, "error");
+        return null;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [showSnackbar]
+  );
+
+  /**
+   * Atualiza status de um aluno
+   * PATCH /user/student-exams/:id
+   */
+  const updateStatus = useCallback(
+    async (id: string | number, status: StudentExamStatus) => {
+      try {
+        const response = await examsScheduledService.updateStatus(id, status);
+
+        if (response.status >= 200 && response.status < 300) {
+          showSnackbar("Status atualizado com sucesso", "success");
+          return true;
+        } else {
+          const errorMessage = response.message || "Erro ao atualizar status";
+          showSnackbar(errorMessage, "error");
+          return false;
+        }
+      } catch (err: any) {
+        const errorMessage = err?.message || "Erro ao atualizar status";
+        showSnackbar(errorMessage, "error");
+        return false;
+      }
+    },
+    [showSnackbar]
+  );
+
+  /**
+   * Atualiza nota de um aluno
+   * PATCH /user/student-exams/:id
+   */
+  const updateScore = useCallback(
+    async (id: string | number, score: number) => {
+      try {
+        const response = await examsScheduledService.updateScore(id, score);
+
+        if (response.status >= 200 && response.status < 300) {
+          showSnackbar("Nota atualizada com sucesso", "success");
+          return true;
+        } else {
+          const errorMessage = response.message || "Erro ao atualizar nota";
+          showSnackbar(errorMessage, "error");
+          return false;
+        }
+      } catch (err: any) {
+        const errorMessage = err?.message || "Erro ao atualizar nota";
+        showSnackbar(errorMessage, "error");
+        return false;
+      }
+    },
+    [showSnackbar]
+  );
+
+  /**
+   * Reagenda um aluno para outro horário
+   * PATCH /user/student-exams/:id
+   */
+  const reschedule = useCallback(
+    async (id: string | number, examScheduledHourId: number) => {
+      try {
+        const response = await examsScheduledService.reschedule(id, examScheduledHourId);
+
+        if (response.status >= 200 && response.status < 300) {
+          showSnackbar("Aluno reagendado com sucesso", "success");
+          return true;
+        } else {
+          const errorMessage = response.message || "Erro ao reagendar aluno";
+          showSnackbar(errorMessage, "error");
+          return false;
+        }
+      } catch (err: any) {
+        const errorMessage = err?.message || "Erro ao reagendar aluno";
+        showSnackbar(errorMessage, "error");
+        return false;
+      }
+    },
+    [showSnackbar]
+  );
+
+  /**
+   * Exporta lista para CSV
+   */
   const handleExportCSV = useCallback(() => {
     if (exams.length === 0) {
       showSnackbar("Nenhum dado para exportar", "warning");
@@ -118,22 +234,18 @@ export const useExamsScheduled = () => {
     }
 
     const headers = ["ID", "User Data ID", "CPF", "Nome", "Celular", "Status", "Local", "Data", "Hora", "Nota"];
-    const rows = exams.map((exam: any) => [
+    const rows = exams.map((exam) => [
       exam.id || "—",
       exam.user_data_id || "—",
-      // Tenta acessar dados completos (se disponíveis), caso contrário usa fallbacks
       exam.user_data?.cpf || "—",
       exam.user_data?.user
         ? `${exam.user_data.user.first_name} ${exam.user_data.user.last_name}`
-        : exam.user_data?.username || "—",
+        : "—",
       exam.user_data?.celphone || "Não informado",
-      exam.status === "absent" ? "ausente" : exam.status === "scheduled" ? "agendado" : "presente",
-      exam.exam_scheduled_hour?.exam_date?.local?.name || 
-      exam.exam_schedule_info?.local_name || "—",
-      exam.exam_scheduled_hour?.exam_date?.date || 
-      exam.exam_schedule_info?.date || "—",
-      exam.exam_scheduled_hour?.hour || 
-      exam.exam_schedule_info?.hour || "—",
+      examsScheduledService.getStatusLabel(exam.status),
+      exam.exam_scheduled_hour?.exam_date?.local?.name || "—",
+      exam.exam_scheduled_hour?.exam_date?.date || "—",
+      exam.exam_scheduled_hour?.hour || "—",
       exam.score ?? "—",
     ]);
 
@@ -149,6 +261,9 @@ export const useExamsScheduled = () => {
     showSnackbar("Arquivo CSV exportado com sucesso", "success");
   }, [exams, showSnackbar]);
 
+  /**
+   * Exporta lista para JSON
+   */
   const handleExportJSON = useCallback(() => {
     if (exams.length === 0) {
       showSnackbar("Nenhum dado para exportar", "warning");
@@ -164,6 +279,9 @@ export const useExamsScheduled = () => {
     showSnackbar("Arquivo JSON exportado com sucesso", "success");
   }, [exams, showSnackbar]);
 
+  /**
+   * Exporta lista para XLSX
+   */
   const handleExportXLSX = useCallback(() => {
     showSnackbar("Exportação XLSX em desenvolvimento", "info");
     // TODO: Implementar exportação XLSX usando biblioteca como xlsx
@@ -171,16 +289,19 @@ export const useExamsScheduled = () => {
 
   return {
     exams,
+    scheduleGrid,
     loading,
     error,
     pagination,
     snackbar,
     closeSnackbar,
     fetchExams,
+    fetchScheduleGrid,
+    updateStatus,
+    updateScore,
+    reschedule,
     handleExportCSV,
     handleExportJSON,
     handleExportXLSX,
   };
 };
-
-

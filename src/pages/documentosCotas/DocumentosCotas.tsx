@@ -13,8 +13,9 @@ import { useQuotaDocuments } from "../../hooks/useQuotaDocuments";
 import { APP_ROUTES } from "../../util/constants";
 import PageHeader from "../../components/ui/page/PageHeader";
 import { designSystem, paperStyles, progressStyles } from "../../styles/designSystem";
+import { getApiUrl } from "../../core/http/apiUrl";
 
-const API_URL = import.meta.env.VITE_API_URL as string || "http://186.248.135.172:31535";
+const API_URL = getApiUrl();
 
 const DocumentosCotas: React.FC = () => {
   const {

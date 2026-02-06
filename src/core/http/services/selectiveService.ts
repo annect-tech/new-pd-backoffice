@@ -1,8 +1,9 @@
 import { httpClient } from "../httpClient";
 import { getEndpointPrefix } from "../utils/endpointPrefix";
 import type { UserProfile } from "../../../interfaces/userProfile";
+import { getApiUrl } from "../apiUrl";
 
-const API_URL = import.meta.env.VITE_API_URL as string || "http://186.248.135.172:31535";
+const API_URL = getApiUrl();
 
 export interface PaginatedResponse<T> {
   data: T[];
@@ -15,8 +16,7 @@ export interface PaginatedResponse<T> {
 export const selectiveService = {
   /**
    * Lista todos os candidatos do seletivo com paginação
-   * Busca dados do auth_user (endpoint /user/users)
-   * O backend deve retornar dados completos com relacionamentos (seletivo_userdata, endereços, etc)
+   * Busca dados completos dos candidatos (endpoint /user/user-data)
    * @param page - Número da página (padrão: 1)
    * @param size - Itens por página (padrão: 10)
    * @param search - Termo de busca opcional
@@ -25,7 +25,7 @@ export const selectiveService = {
     const prefix = getEndpointPrefix();
     return httpClient.get<PaginatedResponse<UserProfile>>(
       API_URL,
-      `/${prefix}/users`,
+      `/${prefix}/user-data`,
       {
         queryParams: {
           page,

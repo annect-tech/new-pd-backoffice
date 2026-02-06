@@ -1,33 +1,46 @@
 import { httpClient } from "../httpClient";
 import { getEndpointPrefix } from "../utils/endpointPrefix";
-import type { ExamScheduled } from "../../../interfaces/examScheduled";
+import { getApiUrl } from "../apiUrl";
+import type {
+  StudentExam,
+  StudentExamPayload,
+  StudentExamStatus,
+  ScheduleGridResponse,
+  PaginatedResponse,
+} from "../../../interfaces/examScheduleTypes";
 
-const API_URL = import.meta.env.VITE_API_URL as string || "http://186.248.135.172:31535";
-
-export interface PaginatedResponse<T> {
-  data: T[];
-  currentPage: number;
-  itemsPerPage: number;
-  totalItems: number;
-  totalPages: number;
-}
+const API_URL = getApiUrl();
 
 export const examsScheduledService = {
+  // ============== STUDENT EXAMS ==============
+  // Base URL: /user/student-exams
+
   /**
-   * Lista todos os exames agendados com paginação
-   * @param page - Número da página (padrão: 1)
-   * @param size - Itens por página (padrão: 10)
-   * @param search - Termo de busca opcional
+   * Inscreve um aluno no processo seletivo
+   * POST /user/student-exams
    */
-  list: (page: number = 1, size: number = 10, search?: string) => {
+  create: (payload: StudentExamPayload) => {
     const prefix = getEndpointPrefix();
-    return httpClient.get<PaginatedResponse<ExamScheduled>>(
+    return httpClient.post<{ id: string; message: string }>(
+      API_URL,
+      `/${prefix}/student-exams`,
+      payload
+    );
+  },
+
+  /**
+   * Lista todos os alunos inscritos (paginado)
+   * GET /user/student-exams
+   */
+  list: (page: number = 1, limit: number = 10, search?: string) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.get<PaginatedResponse<StudentExam>>(
       API_URL,
       `/${prefix}/student-exams`,
       {
         queryParams: {
           page,
-          size,
+          limit,
           ...(search ? { search } : {}),
         },
       }
@@ -35,54 +48,64 @@ export const examsScheduledService = {
   },
 
   /**
-   * Obtém detalhes de um exame agendado específico
-   * @param id - ID do exame agendado
+   * Busca inscrição de aluno por ID
+   * GET /user/student-exams/:id
    */
   getById: (id: string | number) => {
     const prefix = getEndpointPrefix();
-    return httpClient.get<ExamScheduled>(
+    return httpClient.get<StudentExam>(
       API_URL,
       `/${prefix}/student-exams/${id}`
     );
   },
 
   /**
-   * Mapeia status do frontend para o valor aceito pela API (português).
-   * API aceita: pendente | aprovado | ausente | desqualificado
+   * Lista alunos por horário (visualização de grade)
+   * GET /user/student-exams/schedule/:localId/:dateId
+   * 
+   * Retorna os alunos agrupados por horário para um local e data específicos.
    */
-  _mapStatusToApi(status: string): string {
-    const map: Record<string, string> = {
-      scheduled: "pendente",
-      present: "aprovado",
-      absent: "ausente",
-      pendente: "pendente",
-      aprovado: "aprovado",
-      ausente: "ausente",
-      desqualificado: "desqualificado",
-    };
-    return map[status.toLowerCase()] ?? status;
-  },
-
-  /**
-   * Atualiza o status de um exame agendado
-   * @param id - ID do exame agendado
-   * @param status - Novo status (present, absent, scheduled ou pendente, aprovado, ausente)
-   */
-  updateStatus: (id: string | number, status: string) => {
+  getScheduleGrid: (localId: string | number, dateId: string | number) => {
     const prefix = getEndpointPrefix();
-    const apiStatus = examsScheduledService._mapStatusToApi(status);
-    return httpClient.patch<{ message: string }>(
+    return httpClient.get<ScheduleGridResponse>(
       API_URL,
-      `/${prefix}/student-exams`,
-      id,
-      { status: apiStatus }
+      `/${prefix}/student-exams/schedule/${localId}/${dateId}`
     );
   },
 
   /**
-   * Atualiza a nota de um exame agendado
-   * @param id - ID do exame agendado
-   * @param score - Nova nota
+   * Atualiza dados da prova do aluno
+   * PATCH /user/student-exams/:id
+   * 
+   * Permite atualizar nota, status ou reagendar o horário.
+   */
+  update: (id: string | number, payload: Partial<StudentExamPayload>) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.patch<{ message: string }>(
+      API_URL,
+      `/${prefix}/student-exams`,
+      id,
+      payload
+    );
+  },
+
+  /**
+   * Atualiza o status de um aluno
+   * PATCH /user/student-exams/:id
+   */
+  updateStatus: (id: string | number, status: StudentExamStatus) => {
+    const prefix = getEndpointPrefix();
+    return httpClient.patch<{ message: string }>(
+      API_URL,
+      `/${prefix}/student-exams`,
+      id,
+      { status }
+    );
+  },
+
+  /**
+   * Atualiza a nota de um aluno
+   * PATCH /user/student-exams/:id
    */
   updateScore: (id: string | number, score: number) => {
     const prefix = getEndpointPrefix();
@@ -95,21 +118,22 @@ export const examsScheduledService = {
   },
 
   /**
-   * Cria um novo agendamento de exame
-   * @param payload - Dados do agendamento
+   * Reagenda o horário de um aluno
+   * PATCH /user/student-exams/:id
    */
-  create: (payload: Partial<ExamScheduled>) => {
+  reschedule: (id: string | number, examScheduledHourId: number) => {
     const prefix = getEndpointPrefix();
-    return httpClient.post<{ id: string; message: string }>(
+    return httpClient.patch<{ message: string }>(
       API_URL,
       `/${prefix}/student-exams`,
-      payload
+      id,
+      { exam_scheduled_hour_id: examScheduledHourId }
     );
   },
 
   /**
-   * Deleta um exame agendado
-   * @param id - ID do exame agendado
+   * Remove inscrição de aluno
+   * DELETE /user/student-exams/:id
    */
   delete: (id: string | number) => {
     const prefix = getEndpointPrefix();
@@ -118,5 +142,65 @@ export const examsScheduledService = {
       `/${prefix}/student-exams`,
       id
     );
+  },
+
+  // ============== HELPERS ==============
+
+  /**
+   * Mapeia status do frontend para o valor aceito pela API
+   * API aceita: pendente | aprovado | ausente | desqualificado
+   */
+  mapStatusToAPI: (status: string): StudentExamStatus => {
+    const map: Record<string, StudentExamStatus> = {
+      scheduled: "pendente",
+      agendado: "pendente",
+      pendente: "pendente",
+      present: "aprovado",
+      presente: "aprovado",
+      aprovado: "aprovado",
+      absent: "ausente",
+      ausente: "ausente",
+      desqualificado: "desqualificado",
+    };
+    return map[status.toLowerCase()] ?? "pendente";
+  },
+
+  /**
+   * Mapeia status da API para o frontend
+   */
+  mapStatusFromAPI: (status: string): string => {
+    const map: Record<string, string> = {
+      pendente: "scheduled",
+      aprovado: "present",
+      ausente: "absent",
+      desqualificado: "desqualificado",
+    };
+    return map[status.toLowerCase()] ?? status;
+  },
+
+  /**
+   * Labels para exibição dos status
+   */
+  getStatusLabel: (status: StudentExamStatus): string => {
+    const labels: Record<StudentExamStatus, string> = {
+      pendente: "Pendente",
+      aprovado: "Aprovado",
+      ausente: "Ausente",
+      desqualificado: "Desqualificado",
+    };
+    return labels[status] ?? status;
+  },
+
+  /**
+   * Cores para os status
+   */
+  getStatusColor: (status: StudentExamStatus): "warning" | "success" | "error" | "default" => {
+    const colors: Record<StudentExamStatus, "warning" | "success" | "error" | "default"> = {
+      pendente: "warning",
+      aprovado: "success",
+      ausente: "error",
+      desqualificado: "default",
+    };
+    return colors[status] ?? "default";
   },
 };

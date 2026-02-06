@@ -18,6 +18,8 @@ import HomeIcon from "@mui/icons-material/Home";
 import DescriptionIcon from "@mui/icons-material/Description";
 import ApartmentIcon from "@mui/icons-material/Apartment";
 import HowToRegIcon from "@mui/icons-material/HowToReg";
+import EventIcon from "@mui/icons-material/Event";
+import SettingsIcon from "@mui/icons-material/Settings";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import DashboardCard from "../../components/ui/card/DashboardCard";
 import { APP_ROUTES } from "../../util/constants";
@@ -97,6 +99,11 @@ const Dashboard: React.FC = () => {
       link: APP_ROUTES.RETENTION,
     },
     {
+      title: "Gerenciamento de Provas",
+      icon: <SettingsIcon sx={{ fontSize: 48 }} />,
+      link: APP_ROUTES.EXAM_MANAGEMENT,
+    },
+    {
       title: "Cidades Sedes",
       icon: <ApartmentIcon sx={{ fontSize: 48 }} />,
       link: APP_ROUTES.TENANT_CITIES,
@@ -109,7 +116,13 @@ const Dashboard: React.FC = () => {
       isAdmin: true,
     },
     {
-      title: "Contratos",
+      title: "Aprovação Contratos",
+      icon: <WorkspacePremiumIcon sx={{ fontSize: 48 }} />,
+      link: APP_ROUTES.CONTRACT_APPROVAL,
+      isAdmin: true,
+    },
+    {
+      title: "Resultados Contratos",
       icon: <EditIcon sx={{ fontSize: 48 }} />,
       link: APP_ROUTES.CONTRACTS,
       isAdmin: true,
@@ -142,6 +155,12 @@ const Dashboard: React.FC = () => {
       title: "Criação de Usuários",
       icon: <HowToRegIcon sx={{ fontSize: 48 }} />,
       link: APP_ROUTES.USER_CREATION,
+      isAdmin: true,
+    },
+    {
+      title: "Agendamento de Provas",
+      icon: <EventIcon sx={{ fontSize: 48 }} />,
+      link: APP_ROUTES.EXAM_SCHEDULE,
       isAdmin: true,
     },
   ];

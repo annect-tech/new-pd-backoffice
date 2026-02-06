@@ -33,6 +33,7 @@ import { selectiveService } from "../../core/http/services/selectiveService";
 import { academicMeritService } from "../../core/http/services/academicMeritService";
 import PdfViewModal from "../../components/modals/PdfViewModal";
 import { APP_ROUTES } from "../../util/constants";
+import { getApiUrl } from "../../core/http/apiUrl";
 import PageHeader from "../../components/ui/page/PageHeader";
 import {
   designSystem,
@@ -46,7 +47,7 @@ import {
   tablePaginationStyles,
 } from "../../styles/designSystem";
 
-const API_URL = import.meta.env.VITE_API_URL as string || "http://186.248.135.172:31535";
+const API_URL = getApiUrl();
 
 const ResultadosMerito: React.FC = () => {
   const { allMerits, loading, error, fetchAllMerits, snackbar, closeSnackbar } = useAcademicMerit();

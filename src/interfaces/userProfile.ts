@@ -2,11 +2,14 @@ export interface UserProfile {
   id: number;
   username: string;
   email: string;
+  name?: string;
   cpf?: string;
   first_name?: string;
   last_name?: string;
   birth_date?: string;
   celphone?: string;
+  social_name?: string;
+  user_data_id?: number;
   allowed_city?: {
     active: boolean;
     localidade: string;

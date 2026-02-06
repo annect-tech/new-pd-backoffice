@@ -44,8 +44,9 @@ import PdfViewModal from "../../components/modals/PdfViewModal";
 import EnemStatusUpdaterModal from "../../components/modals/EnemStatusUpdaterModal";
 import { APP_ROUTES } from "../../util/constants";
 import { useEnemResults } from "../../hooks/useEnemResults";
+import { getApiUrl } from "../../core/http/apiUrl";
 
-const API_URL = import.meta.env.VITE_API_URL as string || "http://186.248.135.172:31535";
+const API_URL = getApiUrl();
 
 const ResultadosEnem: React.FC = () => {
   const { items, loading, error, fetchEnemResults, updateStatus, snackbar, closeSnackbar } = useEnemResults();

@@ -27,6 +27,8 @@ import DashboardIcon from "@mui/icons-material/Dashboard";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import DescriptionIcon from "@mui/icons-material/Description";
 import HowToRegIcon from "@mui/icons-material/HowToReg";
+import EventIcon from "@mui/icons-material/Event";
+import SettingsIcon from "@mui/icons-material/Settings";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 
 export default function AppLayout() {
@@ -248,8 +250,13 @@ export default function AppLayout() {
           to: APP_ROUTES.ALLOWED_CITIES,
         },
         {
+          icon: <WorkspacePremiumIcon />,
+          label: "Aprovação Contratos",
+          to: APP_ROUTES.CONTRACT_APPROVAL,
+        },
+        {
           icon: <EditIcon />,
-          label: "Contratos",
+          label: "Resultados Contratos",
           to: APP_ROUTES.CONTRACTS,
         },
         {
@@ -276,6 +283,16 @@ export default function AppLayout() {
           icon: <HowToRegIcon />,
           label: "Criação de Usuários",
           to: APP_ROUTES.USER_CREATION,
+        },
+        {
+          icon: <EventIcon />,
+          label: "Agendamento de Provas",
+          to: APP_ROUTES.EXAM_SCHEDULE,
+        },
+        {
+          icon: <SettingsIcon />,
+          label: "Gerenciamento de Provas",
+          to: APP_ROUTES.EXAM_MANAGEMENT,
         },
       ],
     },

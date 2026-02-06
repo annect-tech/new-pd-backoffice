@@ -25,6 +25,9 @@ import Perfil from "../../pages/perfil/Perfil";
 import EditarPerfil from "../../pages/perfil/EditarPerfil";
 import MeuPerfil from "../../pages/meuPerfil/MeuPerfil";
 import ApiExplorer from "../../pages/apiExplorer/ApiExplorer";
+import AgendamentoProvas from "../../pages/agendamentoProvas/AgendamentoProvas";
+import GerenciamentoProvas from "../../pages/gerenciamentoProvas/GerenciamentoProvas";
+
 import Login from "../../pages/authPages/Login";
 import { AuthMiddleware } from "../../core/middleware/AuthMiddleware";
 import { RoleGuard } from "../../core/middleware/RoleGuard";
@@ -59,6 +62,8 @@ export const AppRoutes = () => (
       <Route path={APP_ROUTES.STUDENTS} element={<DadosAlunos />} />
       <Route path={APP_ROUTES.STUDENT_CREATE} element={<CadastroAlunos />} />
       <Route path={APP_ROUTES.RETENTION} element={<Retencao />} />
+      <Route path={APP_ROUTES.EXAM_SCHEDULE} element={<AgendamentoProvas />} />
+      <Route path={APP_ROUTES.EXAM_MANAGEMENT} element={<GerenciamentoProvas />} />
       <Route path={APP_ROUTES.USERS_LIST} element={<Usuarios />}/>
 
       {/* Rotas dos Cards de Admin */}

@@ -17,6 +17,7 @@ export interface CandidateDocument {
   school_history_doc_status: string;
   contract_doc: string | null;
   contract_doc_status: string;
+  contract_doc_refuse_reason: string | null;
   created_at: string;
 }
 
