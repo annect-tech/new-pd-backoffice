@@ -59,6 +59,7 @@ export const AppRoutes = () => (
       <Route path={APP_ROUTES.STUDENTS} element={<DadosAlunos />} />
       <Route path={APP_ROUTES.STUDENT_CREATE} element={<CadastroAlunos />} />
       <Route path={APP_ROUTES.RETENTION} element={<Retencao />} />
+      <Route path={APP_ROUTES.USERS_LIST} element={<Usuarios />}/>
 
       {/* Rotas dos Cards de Admin */}
       <Route
@@ -118,14 +119,6 @@ export const AppRoutes = () => (
         element={
           <RoleGuard allowedRoles={["ADMIN", "ADMIN_MASTER"]}>
             <DocumentosCotas />
-          </RoleGuard>
-        }
-      />
-      <Route
-        path={APP_ROUTES.USERS_LIST}
-        element={
-          <RoleGuard allowedRoles={["ADMIN", "ADMIN_MASTER"]}>
-            <Usuarios />
           </RoleGuard>
         }
       />
