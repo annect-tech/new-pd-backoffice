@@ -52,7 +52,7 @@ export default function UserList() {
 
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
-  const { users, loading, error, refetch, createUser, creating, toggleUserActive, toggling, snackbar, closeSnackbar } = useUsers(1, 100);
+  const { users, loading, error, refetch, createUser, creating, toggleUserActive, toggling, snackbar, closeSnackbar } = useUsers(1, 100, true);
   const { createProfile } = useUserProfile();
 
   const filteredUsers = users.filter((user) => {
@@ -573,7 +573,7 @@ export default function UserList() {
                               color: designSystem.colors.primary.main,
                             }}
                           >
-                            Editar roles
+                            Editar Nível de Acesso
                           </Button>
                         </Box>
                       </Paper>

@@ -94,6 +94,20 @@ export const usersService = {
     );
   },
 
+  listUsersWithoutStudents: (page: number = 1, size: number = 10, search?: string) => {
+    return httpClient.get<PaginatedResponse<UserResponse>>(
+      API_URL,
+      `/user/users/exclude-students`,
+      {
+        queryParams: {
+          page,
+          size,
+          search,
+        },
+      }
+    );
+  },
+
   /**
    * Lista TODOS os usuários (sem filtro de tenant)
    * Requer role ADMIN_MASTER

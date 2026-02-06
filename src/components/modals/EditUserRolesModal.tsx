@@ -84,7 +84,7 @@ export default function EditUserRolesModal({
 
   return (
     <Dialog open={open && !!userId} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Editar roles do usuário</DialogTitle>
+      <DialogTitle>Editar níveis de acesso do usuário</DialogTitle>
 
       <DialogContent dividers>
         {loading ? (
@@ -93,18 +93,22 @@ export default function EditUserRolesModal({
           </Stack>
         ) : (
           <Stack>
-            {allRoles.map((role) => (
-              <FormControlLabel
-                key={role.id}
-                control={
-                  <Checkbox
-                    checked={selectedRoleIds.includes(role.id)}
-                    onChange={() => toggleRole(role.id)}
-                  />
-                }
-                label={role.name}
-              />
-            ))}
+            {allRoles.map((role) => {
+              if (role.name !== 'STUDENT') {
+                return (
+                <FormControlLabel
+                  key={role.id}
+                  control={
+                    <Checkbox
+                      checked={selectedRoleIds.includes(role.id)}
+                      onChange={() => toggleRole(role.id)}
+                    />
+                  }
+                  label={role.name}
+                />
+              )
+              }
+          })}
           </Stack>
         )}
       </DialogContent>
