@@ -7,7 +7,6 @@ import storage from "redux-persist/lib/storage";
 import { encryptTransform } from "redux-persist-transform-encrypt";
 import authReducer, {
   clearCredentials,
-  setAccessToken,
   setTokens,
 } from "./slices/authSlice";
 import { combineReducers, configureStore } from "@reduxjs/toolkit";
