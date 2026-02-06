@@ -29,7 +29,7 @@ const ScheduledStatusUpdaterModal: React.FC<ScheduledStatusUpdaterModalProps> = 
   onClose,
 }) => {
   const [selectedExam, setSelectedExam] = useState<string | "">("");
-  const [newStatus, setNewStatus] = useState<"scheduled" | "absent" | "present">("scheduled");
+  const [newStatus, setNewStatus] = useState<"pendente" | "ausente" | "aprovado" | "desqualificado">("pendente");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +38,7 @@ const ScheduledStatusUpdaterModal: React.FC<ScheduledStatusUpdaterModalProps> = 
   useEffect(() => {
     if (!open) {
       setSelectedExam("");
-      setNewStatus("scheduled");
+      setNewStatus("pendente");
       setSuccess(false);
       setError(null);
       setLoading(false);
@@ -62,7 +62,7 @@ const ScheduledStatusUpdaterModal: React.FC<ScheduledStatusUpdaterModalProps> = 
         setTimeout(() => {
           onClose();
           setSelectedExam("");
-          setNewStatus("scheduled");
+          setNewStatus("pendente");
           setSuccess(false);
           setError(null);
         }, 1500);
@@ -82,7 +82,7 @@ const ScheduledStatusUpdaterModal: React.FC<ScheduledStatusUpdaterModalProps> = 
     if (!loading) {
       onClose();
       setSelectedExam("");
-      setNewStatus("scheduled");
+      setNewStatus("pendente");
       setSuccess(false);
     }
   };
@@ -130,6 +130,7 @@ const ScheduledStatusUpdaterModal: React.FC<ScheduledStatusUpdaterModalProps> = 
                 disabled={loading}
               >
                 {exams
+                  .filter((exam) => exam.status !== "present")
                   .filter((exam) => exam.user_data?.user) // Filtrar apenas exames com user_data válido
                   .map((exam) => {
                     const firstName = exam.user_data?.user?.first_name || "";
@@ -152,14 +153,15 @@ const ScheduledStatusUpdaterModal: React.FC<ScheduledStatusUpdaterModalProps> = 
               <Select
                 value={newStatus}
                 onChange={(e) =>
-                  setNewStatus(e.target.value as "scheduled" | "absent" | "present")
+                  setNewStatus(e.target.value as "pendente" | "ausente" | "aprovado" | "desqualificado")
                 }
                 label="Novo Status"
                 disabled={loading}
               >
-                <MenuItem value="scheduled">Agendado</MenuItem>
-                <MenuItem value="present">Presente</MenuItem>
-                <MenuItem value="absent">Ausente</MenuItem>
+                <MenuItem value="pendente">Pendente</MenuItem>
+                <MenuItem value="aprovado">Aprovado</MenuItem>
+                <MenuItem value="ausente">Ausente</MenuItem>
+                <MenuItem value="desqualificado">Desqualificado</MenuItem>
               </Select>
             </FormControl>
 

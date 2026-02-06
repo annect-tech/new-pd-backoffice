@@ -40,17 +40,14 @@ import {
   progressStyles,
   tablePaginationStyles,
 } from "../../styles/designSystem";
-import PdfViewModal from "../../components/modals/PdfViewModal";
 import EnemStatusUpdaterModal from "../../components/modals/EnemStatusUpdaterModal";
 import { APP_ROUTES } from "../../util/constants";
 import { useEnemResults } from "../../hooks/useEnemResults";
-import { getApiUrl } from "../../core/http/apiUrl";
-
-const API_URL = getApiUrl();
+import EnemDetailsModal from "../../components/modals/EnemDetailsModal";
+import type { EnemResult } from "../../interfaces/enemResult";
 
 const ResultadosEnem: React.FC = () => {
   const { items, loading, error, fetchEnemResults, updateStatus, snackbar, closeSnackbar } = useEnemResults();
-  const [viewerUrl, setViewerUrl] = useState<string | null>(null);
   const [statusAnchor, setStatusAnchor] = useState<null | HTMLElement>(null);
   const [statusFilter, setStatusFilter] = useState<"all" | "aprovado" | "reprovado" | "pendente">("all");
   const [searchTerm, setSearchTerm] = useState("");
@@ -58,6 +55,7 @@ const ResultadosEnem: React.FC = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [downloadAnchor, setDownloadAnchor] = useState<null | HTMLElement>(null);
+  const [enemResultToView, setEnemResultToView] = useState<EnemResult | null>(null);
 
   useEffect(() => {
     fetchEnemResults();
@@ -99,22 +97,6 @@ const ResultadosEnem: React.FC = () => {
     return normalized;
   };
 
-  // Constrói URL completa do PDF
-  const buildPdfUrl = (pdfPath: string | null | undefined): string | null => {
-    if (!pdfPath) return null;
-    
-    // Se já for uma URL completa, retorna como está
-    if (pdfPath.startsWith("http://") || pdfPath.startsWith("https://")) {
-      return pdfPath;
-    }
-    
-    // Remove barra inicial se existir
-    const cleanPath = pdfPath.startsWith("/") ? pdfPath.slice(1) : pdfPath;
-    
-    // Constrói URL completa
-    return `${API_URL}/${cleanPath}`;
-  };
-
   const filteredItems = useMemo(() => {
     const term = searchTerm.toLowerCase();
     return items
@@ -133,14 +115,9 @@ const ResultadosEnem: React.FC = () => {
 
   const rows = useMemo(() => {
     return filteredItems.map((item) => ({
-      id: item.id,
-      inscription: item.inscription_number,
-      name: item.name,
-      cpf: item.cpf,
-      language: item.foreign_language,
+      ...item,
       status: normalizeStatus(item.status),
-      createdAt: new Date(item.created_at).toLocaleString("pt-BR"),
-      pdf: item.pdf_file,
+      created_at: new Date(item.created_at).toLocaleString("pt-BR"),
     }));
   }, [filteredItems]);
 
@@ -159,12 +136,12 @@ const ResultadosEnem: React.FC = () => {
     if (rows.length === 0) return;
     const headers = ["Inscrição", "Nome", "CPF", "Idioma", "Status", "Enviado em"];
     const csvRows = rows.map((row) => [
-      row.inscription,
+      row.inscription_number,
       row.name,
       row.cpf,
-      row.language,
+      row.foreign_language,
       row.status,
-      row.createdAt,
+      row.created_at,
     ]);
     const csvContent = [headers, ...csvRows]
       .map((r) => r.map((cell) => `"${cell}"`).join(","))
@@ -216,16 +193,16 @@ const ResultadosEnem: React.FC = () => {
                   </IconButton>
                   <Menu anchorEl={statusAnchor} open={Boolean(statusAnchor)} onClose={() => setStatusAnchor(null)}>
                     <MenuItem onClick={() => { setStatusFilter("all"); setStatusAnchor(null); }}>
-                      Todos ({items.length})
+                      Todos
                     </MenuItem>
                     <MenuItem onClick={() => { setStatusFilter("aprovado"); setStatusAnchor(null); }}>
-                      Aprovados ({items.filter((i) => normalizeStatus(i.status) === "aprovado").length})
+                      Aprovados
                     </MenuItem>
                     <MenuItem onClick={() => { setStatusFilter("reprovado"); setStatusAnchor(null); }}>
-                      Reprovados ({items.filter((i) => normalizeStatus(i.status) === "reprovado").length})
+                      Reprovados
                     </MenuItem>
                     <MenuItem onClick={() => { setStatusFilter("pendente"); setStatusAnchor(null); }}>
-                      Pendentes ({items.filter((i) => normalizeStatus(i.status) === "pendente").length})
+                      Pendentes
                     </MenuItem>
                   </Menu>
                   <IconButton {...iconButtonStyles} onClick={(e) => setDownloadAnchor(e.currentTarget)}>
@@ -301,10 +278,10 @@ const ResultadosEnem: React.FC = () => {
                             key={row.id}
                             {...tableRowHoverStyles}
                           >
-                            <TableCell>{row.inscription}</TableCell>
+                            <TableCell>{row.inscription_number}</TableCell>
                             <TableCell>{row.name}</TableCell>
                             <TableCell>{row.cpf}</TableCell>
-                            <TableCell>{row.language}</TableCell>
+                            <TableCell>{row.foreign_language}</TableCell>
                             <TableCell>
                               <Typography
                                 sx={{
@@ -316,12 +293,11 @@ const ResultadosEnem: React.FC = () => {
                                 {row.status}
                               </Typography>
                             </TableCell>
-                            <TableCell>{row.createdAt}</TableCell>
+                            <TableCell>{row.created_at}</TableCell>
                             <TableCell>
                               <IconButton 
                                 {...iconButtonStyles} 
-                                onClick={() => setViewerUrl(buildPdfUrl(row.pdf))}
-                                disabled={!row.pdf}
+                                onClick={() => setEnemResultToView(row)}
                               >
                                 <VisibilityIcon />
                               </IconButton>
@@ -350,8 +326,12 @@ const ResultadosEnem: React.FC = () => {
         </Box>
       </Box>
 
-      {viewerUrl && (
-        <PdfViewModal open documentUrl={viewerUrl} onClose={() => setViewerUrl(null)} />
+      {enemResultToView && (
+        <EnemDetailsModal
+          open={Boolean(enemResultToView)}
+          onClose={() => setEnemResultToView(null)}
+          candidate={enemResultToView}
+        />
       )}
 
       <EnemStatusUpdaterModal

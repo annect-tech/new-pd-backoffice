@@ -29,7 +29,6 @@ import {
   MoreVert as MoreVertIcon,
 } from "@mui/icons-material";
 import { useAcademicMerit } from "../../hooks/useAcademicMerit";
-import { selectiveService } from "../../core/http/services/selectiveService";
 import { academicMeritService } from "../../core/http/services/academicMeritService";
 import PdfViewModal from "../../components/modals/PdfViewModal";
 import { APP_ROUTES } from "../../util/constants";
@@ -51,13 +50,8 @@ const API_URL = getApiUrl();
 
 const ResultadosMerito: React.FC = () => {
   const { allMerits, loading, error, fetchAllMerits, snackbar, closeSnackbar } = useAcademicMerit();
-  const [userNamesMap, setUserNamesMap] = useState<Record<string, string>>({});
-  const [loadingNames, setLoadingNames] = useState(false);
-
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState<
-    "all" | "pendente" | "aprovado" | "reprovado"
-  >("all");
+  const [filterStatus, setFilterStatus] = useState<"all" | "pendente" | "aprovado" | "reprovado">("all");
   const [filterAnchor, setFilterAnchor] = useState<null | HTMLElement>(null);
   const [downloadAnchor, setDownloadAnchor] = useState<null | HTMLElement>(null);
   const [page, setPage] = useState(0);
@@ -78,22 +72,10 @@ const ResultadosMerito: React.FC = () => {
     }
     
     return allMerits.map((m) => {
-      // Tentar obter nome do user_data_display se disponível
       let alunoNome = "Nome não disponível";
-      if (m.user_data_display?.user?.first_name || m.user_data_display?.user?.last_name) {
-        const firstName = m.user_data_display.user.first_name || "";
-        const lastName = m.user_data_display.user.last_name || "";
-        alunoNome = `${firstName} ${lastName}`.trim();
-      } else if (m.user_data_id) {
-        const userIdKey = String(m.user_data_id);
-        if (userNamesMap[userIdKey]) {
-          // Usar nome do mapa se disponível
-          alunoNome = userNamesMap[userIdKey];
-        } else {
-          // Se ainda não tiver nome carregado, mostrar "Carregando..." ou ID
-          alunoNome = loadingNames ? "Carregando..." : `Usuário ${m.user_data_id}`;
-        }
-      }
+      const firstName = m?.user_data_display?.user?.first_name || "";
+      const lastName = m?.user_data_display?.user?.last_name || "";
+      alunoNome = `${firstName} ${lastName}`.trim();
       
       // Mapear status da API para formato usado no frontend
       const statusMap: Record<string, string> = {
@@ -118,7 +100,7 @@ const ResultadosMerito: React.FC = () => {
           : "N/A",
       };
     });
-  }, [allMerits, userNamesMap, loadingNames]);
+  }, [allMerits]);
 
   // Filter rows
   const filtered = useMemo(() => {
@@ -146,57 +128,6 @@ const ResultadosMerito: React.FC = () => {
     fetchAllMerits(1, 1000);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Buscar nomes dos usuários quando allMerits mudar
-  useEffect(() => {
-    if (!allMerits || allMerits.length === 0) return;
-
-    const fetchUserNames = async () => {
-      setLoadingNames(true);
-      // Extrair user_data_id únicos e converter para string para consistência
-      const uniqueUserIds = [...new Set(
-        allMerits
-          .map(m => m.user_data_id)
-          .filter(Boolean)
-          .map(id => String(id))
-      )];
-      
-      if (uniqueUserIds.length === 0) {
-        setLoadingNames(false);
-        return;
-      }
-
-      const namesMap: Record<string, string> = {};
-
-      try {
-        const promises = uniqueUserIds.map(async (userId) => {
-          try {
-            const response = await selectiveService.getById(userId);
-            
-            if (response.status === 200 && response.data) {
-              const userData = response.data as any;
-              const name = userData.name && userData.name !== 'N/A' 
-                ? userData.name 
-                : `Usuário ${userId}`;
-              namesMap[userId] = name;
-            } else {
-              namesMap[userId] = `Usuário ${userId}`;
-            }
-          } catch {
-            namesMap[userId] = `Usuário ${userId}`;
-          }
-        });
-
-        await Promise.all(promises);
-        setUserNamesMap(namesMap);
-      } catch {
-      } finally {
-        setLoadingNames(false);
-      }
-    };
-
-    fetchUserNames();
-  }, [allMerits]);
 
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);

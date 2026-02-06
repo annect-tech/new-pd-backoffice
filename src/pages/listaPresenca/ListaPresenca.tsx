@@ -95,9 +95,7 @@ const ListaPresenca: React.FC = () => {
   } = useExamsScheduled();
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState<
-    "all" | "scheduled" | "present" | "absent"
-  >("all");
+  const [filterStatus, setFilterStatus] = useState<"all" | "scheduled" | "present" | "absent">("all");
   const [filterAnchor, setFilterAnchor] = useState<null | HTMLElement>(null);
   const [downloadAnchor, setDownloadAnchor] = useState<null | HTMLElement>(null);
   const [generalAnchor, setGeneralAnchor] = useState<null | HTMLElement>(null);
@@ -131,10 +129,10 @@ const ListaPresenca: React.FC = () => {
           normalizedStatus === "absent" || normalizedStatus === "ausente"
             ? "ausente"
             : normalizedStatus === "scheduled" || normalizedStatus === "pendente"
-            ? "agendado"
+            ? "pendente"
             : normalizedStatus === "desqualificado"
             ? "desqualificado"
-            : "presente",
+            : "aprovado",
         local: exam.exam_scheduled_hour?.exam_date?.local?.name || "—",
         date: formatDate(exam.exam_scheduled_hour?.exam_date?.date || "—"),
         hour: formatHour(exam.exam_scheduled_hour?.hour || "—"),
@@ -215,11 +213,11 @@ const ListaPresenca: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "presente":
+      case "aprovado":
         return designSystem.colors.success.main;
       case "ausente":
         return designSystem.colors.error.main;
-      case "agendado":
+      case "pendente":
         return designSystem.colors.warning.main;
       default:
         return designSystem.colors.text.disabled;
@@ -295,16 +293,16 @@ const ListaPresenca: React.FC = () => {
                     }}
                   >
                     <MenuItem onClick={() => applyFilter("all")}>
-                      Todos ({rows.length})
+                      Todos
                     </MenuItem>
                     <MenuItem onClick={() => applyFilter("scheduled")}>
-                      Agendados ({rows.filter((r) => r.originalStatus === "scheduled").length})
+                      Agendados
                     </MenuItem>
                     <MenuItem onClick={() => applyFilter("present")}>
-                      Presentes ({rows.filter((r) => r.originalStatus === "present").length})
+                      Presentes
                     </MenuItem>
                     <MenuItem onClick={() => applyFilter("absent")}>
-                      Ausentes ({rows.filter((r) => r.originalStatus === "absent").length})
+                      Ausentes
                     </MenuItem>
                   </Menu>
                   <IconButton onClick={openDownloadMenu} {...iconButtonStyles}>
