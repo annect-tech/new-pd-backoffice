@@ -167,7 +167,7 @@ const ResultadosEnem: React.FC = () => {
           <PageHeader
             title="Resultados ENEM"
             subtitle="Gerenciamento de Notas do ENEM"
-            description="Esta página permite gerenciar e visualizar as NOTAS DO ENEM dos candidatos. Você pode pesquisar por CPF ou nome, atualizar notas e exportar os dados em diferentes formatos (CSV, JSON, XLSX)."
+            description="Esta página permite gerenciar e visualizar as NOTAS DO ENEM dos candidatos. Você pode pesquisar por CPF ou nome, atualizar notas e exportar os dados no formato CSV."
             breadcrumbs={[
               { label: "Dashboard", path: APP_ROUTES.DASHBOARD },
               { label: "Resultados ENEM" },

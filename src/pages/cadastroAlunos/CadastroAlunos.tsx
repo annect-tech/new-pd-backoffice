@@ -249,7 +249,7 @@ const CadastroAlunos: React.FC = () => {
       }
 
       const createResponse = await studentDataService.create({
-        user_id: foundUserId,
+        user_data_id: foundUserId,
         registration: formValues.registration,
         corp_email: formValues.corp_email,
         monitor: formValues.monitor,
