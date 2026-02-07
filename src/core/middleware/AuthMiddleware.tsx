@@ -27,8 +27,8 @@ export const AuthMiddleware = ({ children }: AuthMiddlewareProps) => {
     }
 
     try {
-      const parts = accessToken.split('.');
-      if (parts.length !== 3) {
+      const parts = accessToken?.split('.');
+      if (parts?.length !== 3) {
         if (!refreshToken) {
           dispatch(clearCredentials());
           navigate(APP_ROUTES.LOGIN, { replace: true });
@@ -36,7 +36,7 @@ export const AuthMiddleware = ({ children }: AuthMiddlewareProps) => {
         return;
       }
 
-      if (accessToken.startsWith('mock-')) {
+      if (accessToken?.startsWith('mock-')) {
         if (!refreshToken) {
           dispatch(clearCredentials());
           navigate(APP_ROUTES.LOGIN, { replace: true });
@@ -44,7 +44,7 @@ export const AuthMiddleware = ({ children }: AuthMiddlewareProps) => {
         return;
       }
 
-      const payload = decodeJWT(accessToken);
+      const payload = decodeJWT(accessToken || '');
 
       if (!payload.sub || !payload.roles || !payload.tenant_city_id) {
         if (!refreshToken) {
@@ -54,7 +54,7 @@ export const AuthMiddleware = ({ children }: AuthMiddlewareProps) => {
         return;
       }
 
-      if (isTokenExpired(accessToken)) {
+      if (isTokenExpired(accessToken || '')) {
         // Não limpar credenciais se houver refreshToken; o refresh automático cuidará disso
         if (!refreshToken) {
           dispatch(clearCredentials());
