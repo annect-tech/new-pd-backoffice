@@ -146,13 +146,13 @@ const Dashboard: React.FC = () => {
       isAdmin: true,
     },
     {
-      title: "Usuários",
+      title: "Usuários Gerenciais",
       icon: <PersonIcon sx={{ fontSize: 48 }} />,
       link: APP_ROUTES.USERS_LIST,
       isAdmin: true,
     },
     {
-      title: "Criação de Usuários",
+      title: "Matrícula de Estudantes",
       icon: <HowToRegIcon sx={{ fontSize: 48 }} />,
       link: APP_ROUTES.USER_CREATION,
       isAdmin: true,

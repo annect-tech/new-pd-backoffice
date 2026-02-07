@@ -210,9 +210,9 @@ export default function UserList() {
         >
           {/* Header da Página */}
           <PageHeader
-            title="Usuários"
+            title="Usuários Gerenciais"
             subtitle="Gerencie os perfis de usuários do sistema."
-            description="Esta página permite visualizar todos os usuários cadastrados no sistema. Você pode ver os perfis completos, editar informações e pesquisar por nome, email ou username."
+            description="Esta página permite visualizar todos os perfis de usuários gerenciais cadastrados no sistema. Você pode ver os perfis completos, editar informações e pesquisar por nome, email ou username."
             breadcrumbs={[
               { label: "Dashboard", path: APP_ROUTES.DASHBOARD },
               { label: "Usuários" },

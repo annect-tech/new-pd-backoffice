@@ -76,12 +76,12 @@ const Seletivo: React.FC = () => {
   const [openModalType, setOpenModalType] = useState<
     "persona" | "addresses" | "guardians" | "registration" | null
   >(null);
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const [currentUser, setCurrentUser] = useState<any | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [loadingDetails, setLoadingDetails] = useState(false);
-  const [addressesMap, setAddressesMap] = useState<Map<number, Address[]>>(new Map());
-  const [loadingAddresses, setLoadingAddresses] = useState(false);
+  const [addressesMap] = useState<Map<number, Address[]>>(new Map());
+  const [loadingAddresses] = useState(false);
 
   // Enriquecer usuários com dados de endereço do mapa
   const enrichedUsers = useMemo(() => {
@@ -169,43 +169,6 @@ const Seletivo: React.FC = () => {
     return result;
   }, [enrichedUsers, filterStatus, sortOrder, debouncedSearchTerm]);
 
-  useEffect(() => {
-    const fetchUsersDetails = async () => {
-      if (!users || users.length === 0) return;
-      
-      setLoadingAddresses(true);
-      try {
-        const map = new Map<number, Address[]>();
-        
-        // Buscar dados completos de cada usuário em paralelo
-        const promises = users.map(async (user) => {
-          try {
-            const response = await selectiveService.getById(user.id);
-            
-            if (response.status >= 200 && response.status < 300 && response.data) {
-              const fullUser = response.data;
-              
-              // Se o usuário tem endereços, adicionar ao mapa
-              if (fullUser.addresses && fullUser.addresses.length > 0) {
-                map.set(user.id, fullUser.addresses);
-              }
-            }
-          } catch {
-          }
-        });
-        
-        await Promise.all(promises);
-        
-        setAddressesMap(map);
-      } catch {
-      } finally {
-        setLoadingAddresses(false);
-      }
-    };
-    
-    fetchUsersDetails();
-  }, [users]);
-
   // Debounce do searchTerm
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -261,15 +224,32 @@ const Seletivo: React.FC = () => {
     
     try {
       // Buscar dados completos do usuário
-      const response = await selectiveService.getById(user.id);
+      let response: any;
+
+      switch (type) {
+        case 'persona':
+          response = await selectiveService.getPersonaByUserId(user.id);
+          break;
+        case 'addresses':
+          response = await selectiveService.getAddressByUserId(user.id);
+          break;
+        case 'guardians':
+          response = await selectiveService.getGuardiansByUserId(user.id);
+          break;
+        case 'registration':
+          response = await selectiveService.getDocumentsByUserId(user.id);
+          break;
+        default:
+          response = null;
+      }
       
       if (response.status >= 200 && response.status < 300 && response.data) {
         setCurrentUser(response.data);
       } else {
-        setCurrentUser(user);
+        setCurrentUser(null);
       }
     } catch {
-      setCurrentUser(user);
+      setCurrentUser(null);
     } finally {
       setLoadingDetails(false);
     }
@@ -584,7 +564,6 @@ const Seletivo: React.FC = () => {
                               {...tableRowHoverStyles}
                               sx={{
                                 ...tableRowHoverStyles.sx,
-                                cursor: "pointer",
                               }}
                             >
                             <TableCell sx={{ 
@@ -627,42 +606,22 @@ const Seletivo: React.FC = () => {
                             <TableCell align="center" sx={{ py: 1.5, width: 150 }}>
                               <Box display="flex" alignItems="center" justifyContent="center" gap={1}>
                                 <IconButton
-                                  size="small"
                                   onClick={() => openModal("persona", user)}
-                                  {...iconButtonStyles}
-                                  sx={{ ...iconButtonStyles.sx, padding: "4px" }}
-                                  disabled={!user.personas}
-                                  title={!user.personas ? "Dados de persona não disponíveis" : "Ver dados de persona"}
                                 >
                                   <PersonIcon sx={{ fontSize: "1rem" }} />
                                 </IconButton>
                                 <IconButton
-                                  size="small"
                                   onClick={() => openModal("addresses", user)}
-                                  {...iconButtonStyles}
-                                  sx={{ ...iconButtonStyles.sx, padding: "4px" }}
-                                  disabled={!user.addresses || user.addresses.length === 0}
-                                  title={!user.addresses || user.addresses.length === 0 ? "Endereços não disponíveis" : "Ver endereços"}
                                 >
                                   <HomeIcon sx={{ fontSize: "1rem" }} />
                                 </IconButton>
                                 <IconButton
-                                  size="small"
                                   onClick={() => openModal("guardians", user)}
-                                  {...iconButtonStyles}
-                                  sx={{ ...iconButtonStyles.sx, padding: "4px" }}
-                                  disabled={!user.guardians || user.guardians.length === 0}
-                                  title={!user.guardians || user.guardians.length === 0 ? "Guardiões não disponíveis" : "Ver guardiões"}
                                 >
                                   <PeopleIcon sx={{ fontSize: "1rem" }} />
                                 </IconButton>
                                 <IconButton
-                                  size="small"
                                   onClick={() => openModal("registration", user)}
-                                  {...iconButtonStyles}
-                                  sx={{ ...iconButtonStyles.sx, padding: "4px" }}
-                                  disabled={!user.registration_data}
-                                  title={!user.registration_data ? "Dados de registro não disponíveis" : "Ver dados de registro"}
                                 >
                                   <DescriptionIcon sx={{ fontSize: "1rem" }} />
                                 </IconButton>
@@ -728,18 +687,23 @@ const Seletivo: React.FC = () => {
           Dados de Persona
         </DialogTitle>
         <DialogContent dividers>
-          {loadingDetails ? (
+          {loadingDetails && (
             <Box display="flex" justifyContent="center" p={4}>
               <CircularProgress {...progressStyles} />
             </Box>
-          ) : currentUser?.personas && Object.keys(currentUser.personas).length > 0 ? (
-            Object.entries(currentUser.personas).map(([k, v]) => (
-              <Typography key={k} sx={{ mb: 1.5, color: "#374151" }}>
-                <strong style={{ color: "#1F2937" }}>{translateLabel(k)}:</strong> {String(v)}
-              </Typography>
+          )}
+          {!loadingDetails && currentUser && (
+            Object
+              .entries(currentUser)
+              .filter(([k]) => k !== 'auth_user_id')
+              .map(([k, v]) => (
+                <Typography key={k} sx={{ mb: 1.5 }}>
+                  <strong>{translateLabel(k)}:</strong> <span style={{ color: "#fff" }}>{String(v)}</span>
+                </Typography>
             ))
-          ) : (
-            <Typography color="#6B7280">Nenhum dado de persona disponível</Typography>
+          )}
+          {!loadingDetails && !currentUser && (
+            <Typography color="#6B7280">Nenhum dado disponível</Typography>
           )}
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
@@ -776,31 +740,33 @@ const Seletivo: React.FC = () => {
           Endereços
         </DialogTitle>
         <DialogContent dividers>
-          {loadingDetails ? (
+          {loadingDetails && (
             <Box display="flex" justifyContent="center" p={4}>
               <CircularProgress {...progressStyles} />
             </Box>
-          ) : currentUser?.addresses && currentUser.addresses.length > 0 ? (
-            currentUser.addresses.map((a) => (
+          )}
+          {!loadingDetails && currentUser && (
+            currentUser?.data?.map((a: any) => (
               <Box key={a.id} mb={2} pb={2} borderBottom="1px solid #E5E7EB">
-                <Typography sx={{ mb: 0.5, color: "#374151" }}>
-                  <strong style={{ color: "#1F2937" }}>CEP:</strong> {a.cep}
+                <Typography sx={{ mb: 0.5 }}>
+                  <strong>CEP:</strong> {a.cep}
                 </Typography>
-                <Typography sx={{ mb: 0.5, color: "#374151" }}>
-                  <strong style={{ color: "#1F2937" }}>Logradouro:</strong> {a.logradouro}
+                <Typography sx={{ mb: 0.5 }}>
+                  <strong>Logradouro:</strong> {a.logradouro}
                 </Typography>
-                <Typography sx={{ mb: 0.5, color: "#374151" }}>
-                  <strong style={{ color: "#1F2937" }}>Complemento:</strong> {a.complemento || "—"}
+                <Typography sx={{ mb: 0.5 }}>
+                  <strong>Complemento:</strong> {a.complemento || "—"}
                 </Typography>
-                <Typography sx={{ mb: 0.5, color: "#374151" }}>
-                  <strong style={{ color: "#1F2937" }}>Bairro:</strong> {a.bairro}
+                <Typography sx={{ mb: 0.5 }}>
+                  <strong>Bairro:</strong> {a.bairro}
                 </Typography>
-                <Typography sx={{ color: "#374151" }}>
-                  <strong style={{ color: "#1F2937" }}>Cidade:</strong> {a.localidade} ({a.uf})
+                <Typography sx={{ mb: 0.5 }}>
+                  <strong>Cidade:</strong> {a.localidade} ({a.uf})
                 </Typography>
               </Box>
             ))
-          ) : (
+          )}
+          {!loadingDetails && !currentUser && (
             <Typography color="#6B7280">Nenhum endereço cadastrado</Typography>
           )}
         </DialogContent>
@@ -838,31 +804,31 @@ const Seletivo: React.FC = () => {
           Dados do Guardião
         </DialogTitle>
         <DialogContent dividers>
-          {loadingDetails ? (
+          {loadingDetails && (
             <Box display="flex" justifyContent="center" p={4}>
               <CircularProgress {...progressStyles} />
             </Box>
-          ) : currentUser?.guardians && currentUser.guardians.length > 0 ? (
-            currentUser.guardians.map((g) => (
-              <Box key={g.cpf} mb={2} pb={2} borderBottom="1px solid #E5E7EB">
-                <Typography sx={{ mb: 0.5, color: "#374151" }}>
-                  <strong style={{ color: "#1F2937" }}>Relacionamento:</strong> {g.relationship}
-                </Typography>
-                <Typography sx={{ mb: 0.5, color: "#374151" }}>
-                  <strong style={{ color: "#1F2937" }}>Nome:</strong> {g.name}
-                </Typography>
-                <Typography sx={{ mb: 0.5, color: "#374151" }}>
-                  <strong style={{ color: "#1F2937" }}>CPF:</strong> {g.cpf}
-                </Typography>
-                <Typography sx={{ mb: 0.5, color: "#374151" }}>
-                  <strong style={{ color: "#1F2937" }}>Celular:</strong> {g.cellphone}
-                </Typography>
-                <Typography sx={{ color: "#374151" }}>
-                  <strong style={{ color: "#1F2937" }}>Email:</strong> {g.email}
-                </Typography>
-              </Box>
-            ))
-          ) : (
+          )}
+          {!loadingDetails && currentUser && (
+            <Box key={currentUser.cpf} mb={2} pb={2} borderBottom="1px solid #E5E7EB">
+              <Typography sx={{ mb: 0.5 }}>
+                <strong>Relacionamento:</strong> {currentUser.relationship}
+              </Typography>
+              <Typography sx={{ mb: 0.5 }}>
+                <strong>Nome:</strong> {currentUser.name}
+              </Typography>
+              <Typography sx={{ mb: 0.5 }}>
+                <strong>CPF:</strong> {currentUser.cpf}
+              </Typography>
+              <Typography sx={{ mb: 0.5 }}>
+                <strong>Celular:</strong> {currentUser.cellphone}
+              </Typography>
+              <Typography sx={{ mb: 0.5 }}>
+                <strong>Email:</strong> {currentUser.email}
+              </Typography>
+            </Box>
+          )}
+          {!loadingDetails && !currentUser && (
             <Typography color="#6B7280">Nenhum guardião cadastrado</Typography>
           )}
         </DialogContent>
@@ -900,33 +866,19 @@ const Seletivo: React.FC = () => {
           Dados de Registro
         </DialogTitle>
         <DialogContent dividers>
-          {loadingDetails ? (
+          {loadingDetails && (
             <Box display="flex" justifyContent="center" p={4}>
               <CircularProgress {...progressStyles} />
             </Box>
-          ) : currentUser ? (
-            <>
-              {currentUser.registration_data && Object.keys(currentUser.registration_data).length > 0 ? (
-                Object.entries(currentUser.registration_data).map(([k, v]) => (
-                  <Typography key={k} sx={{ mb: 1.5, color: "#374151" }}>
-                    <strong style={{ color: "#1F2937" }}>{translateLabel(k)}:</strong>{" "}
-                    {typeof v === "string"
-                      ? v
-                          .replace(/_/g, " ")
-                          .replace(/^./, (match) => match.toUpperCase())
-                      : String(v)}
-                  </Typography>
-                ))
-              ) : (
-                <Typography color="#6B7280" sx={{ mb: 2 }}>Nenhum dado de registro disponível</Typography>
-              )}
-              {currentUser.contract && (
-                <Typography sx={{ color: "#374151", mt: 2, pt: 2, borderTop: "1px solid #E5E7EB" }}>
-                  <strong style={{ color: "#1F2937" }}>Contrato:</strong> {currentUser.contract.status}
-                </Typography>
-              )}
-            </>
-          ) : (
+          )}
+          {!loadingDetails && currentUser && (
+            <Box key={currentUser.id} mb={2} pb={2} borderBottom="1px solid #E5E7EB">
+              <Typography sx={{ mb: 0.5 }}>
+                <strong>Contrato:</strong> <a target="_blank" href={currentUser.contract_doc}>{currentUser.contract_doc}</a>
+              </Typography>
+            </Box>
+          )}
+          {!loadingDetails && !currentUser && (
             <Typography color="#6B7280">Nenhum dado disponível</Typography>
           )}
         </DialogContent>
